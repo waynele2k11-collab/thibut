@@ -1,8 +1,8 @@
 /**
  * Client-Side Instant Calligraphy Vector Synthesizer
  * 
- * Provides 0ms instant vector rendering on the client side so the user
- * sees instant visual feedback without waiting for server network hops.
+ * Provides 0ms instant vector rendering on both SSR and client
+ * with identical base64 encoding to prevent React hydration mismatch.
  */
 
 export interface ClientRenderOptions {
@@ -15,6 +15,26 @@ export interface ClientRenderOptions {
   hasSeal?: boolean;
   scale?: number;
   rotation?: number;
+}
+
+export function safeBase64Encode(str: string): string {
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(str, "utf-8").toString("base64");
+  }
+  if (typeof btoa !== "undefined") {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+  return "";
+}
+
+export function safeBase64Decode(b64: string): string {
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(b64, "base64").toString("utf-8");
+  }
+  if (typeof atob !== "undefined") {
+    return decodeURIComponent(escape(atob(b64)));
+  }
+  return "";
 }
 
 export function generateInstantSvgUri(options: ClientRenderOptions): string {
@@ -129,6 +149,6 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
     </svg>
   `.trim();
 
-  const encoded = typeof window !== "undefined" ? btoa(unescape(encodeURIComponent(svgContent))) : "";
+  const encoded = safeBase64Encode(svgContent);
   return `data:image/svg+xml;base64,${encoded}`;
 }

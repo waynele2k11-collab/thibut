@@ -15,7 +15,7 @@ import {
   RefreshCw,
   Info
 } from "lucide-react";
-import { generateInstantSvgUri } from "@/lib/calligraphy/ClientCalligraphyRenderer";
+import { generateInstantSvgUri, safeBase64Encode, safeBase64Decode } from "@/lib/calligraphy/ClientCalligraphyRenderer";
 
 export type CulturalTradition = 
   | "VIETNAMESE_THU_PHAP" 
@@ -191,11 +191,11 @@ function recolorSvgString(svgDataUri: string, targetColor: InkPigment): string {
     if (isBase64) {
       try {
         const base64Content = svgDataUri.split(";base64,")[1];
-        let svgString = typeof window !== "undefined" ? atob(base64Content) : "";
+        let svgString = safeBase64Decode(base64Content);
         svgString = svgString
           .replace(/fill="#[0-9a-fA-F]{6}"/gi, `fill="${targetHex}"`)
           .replace(/stroke="#[0-9a-fA-F]{6}"/gi, `stroke="${targetHex}"`);
-        const encoded = typeof window !== "undefined" ? btoa(svgString) : "";
+        const encoded = safeBase64Encode(svgString);
         return `data:image/svg+xml;base64,${encoded}`;
       } catch {
         return svgDataUri;
