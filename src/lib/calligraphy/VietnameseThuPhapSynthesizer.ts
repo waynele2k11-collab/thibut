@@ -55,13 +55,21 @@ export class VietnameseThuPhapSynthesizer {
       fontFile = "Arizonia-Regular.ttf";
       fontName = "Arizonia";
       customLetterSpacing = "0.05em";
-    } else if (lowerId.includes("great vibes") || lowerId.includes("long vũ") || lowerId.includes("long vu")) {
+    } else if (lowerId.includes("great") || lowerId.includes("vibes") || lowerId.includes("long vũ") || lowerId.includes("long vu")) {
       fontFile = "GreatVibes-Regular.ttf";
       fontName = "Great Vibes";
+      customLetterSpacing = "0.03em";
+    } else if (lowerId.includes("kaushan") || lowerId.includes("phi bạch") || lowerId.includes("phi bach")) {
+      fontFile = "KaushanScript-Regular.ttf";
+      fontName = "Kaushan Script";
       customLetterSpacing = "0.03em";
     } else if (lowerId.includes("caveat") || lowerId.includes("mực nho") || lowerId.includes("muc nho")) {
       fontFile = "CaveatBrush-Regular.ttf";
       fontName = "Caveat Brush";
+      customLetterSpacing = "0.04em";
+    } else if (lowerId.includes("alex") || lowerId.includes("khí phách") || lowerId.includes("khi phach")) {
+      fontFile = "AlexBrush-Regular.ttf";
+      fontName = "Alex Brush";
       customLetterSpacing = "0.04em";
     } else if (lowerId.includes("thi bút 2") || lowerId.includes("thi but 2") || lowerId.includes("ấn triện") || lowerId.includes("an trien") || lowerId.includes("seal")) {
       fontFile = "UtmThuphapThienAn.ttf";
