@@ -125,20 +125,50 @@ export const PRODUCT_CATALOG: Record<string, ProductConfig> = {
 export default function CreatePage({ params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId } = use(params); // Next.js 16: params is a Promise
   const searchParams = useSearchParams();
+  const initialText = searchParams.get("text") || "Có Chí Thì Nên";
 
   const [currentStage, setCurrentStage] = useState<"studio" | "product" | "compose">("studio");
   
   // Canonical Studio State
-  const [studioState, setStudioState] = useState<StudioState | null>(null);
-  const [activeCandidate, setActiveCandidate] = useState<any>(null);
+  const [studioState, setStudioState] = useState<StudioState>({
+    inputText: initialText,
+    tradition: "VIETNAMESE_THU_PHAP",
+    treatment: "KEEP_ORIGINAL",
+    interpretation: {
+      text: initialText,
+      romanization: initialText,
+      meaning: "Where there is a will, there is a way.",
+      culturalNote: "Master Vietnamese Thư Pháp vector composition.",
+      type: "ORIGINAL",
+    },
+    strokePreset: "BOLD_BRUSH",
+    variationIndex: "01_CONTROLLED",
+    fontId: "utm-thuphap-thien-an",
+    layout: "HORIZONTAL",
+    inkColor: "black",
+    hasSeal: true,
+    sealStyle: "IMPERIAL_RED",
+    flourish: "DRAGON",
+    advanced: {
+      pressureMultiplier: 1.0,
+      dryBrushIntensity: 0.15,
+      letterSpacing: "0.02em",
+      rotation: 0,
+      scale: 1.0,
+    },
+  });
+  const [activeCandidate, setActiveCandidate] = useState<any>({
+    id: "studio-master-vector",
+    imageUrl: "",
+    variationType: "01_CONTROLLED",
+    variationName: "01 Harmony",
+  });
 
   // Merchandising State
   const [selectedProduct, setSelectedProduct] = useState("Premium Hoodie");
   const [selectedSize, setSelectedSize] = useState("L");
   const [selectedColor, setSelectedColor] = useState("Bone White");
   const [compositionData, setCompositionData] = useState<any>(null);
-
-  const initialText = searchParams.get("text") || "Có Chí Thì Nên";
 
   const handleSelectProduct = (prodId: string) => {
     setSelectedProduct(prodId);
@@ -151,6 +181,9 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
     setStudioState(state);
     setActiveCandidate(candidate);
     setCurrentStage("product");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   return (
@@ -182,16 +215,11 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
             </button>
             <span className="text-outline-variant text-[10px]">→</span>
             <button 
-              onClick={() => {
-                if (studioState && activeCandidate) {
-                  setCurrentStage("product");
-                }
-              }}
-              disabled={!studioState}
+              onClick={() => setCurrentStage("product")}
               className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors font-bold ${
                 currentStage === "product" 
                   ? "bg-black text-white" 
-                  : "text-on-surface-variant hover:text-black disabled:opacity-40"
+                  : "text-on-surface-variant hover:text-black"
               }`}
             >
               <span className="hidden sm:inline">2. Merchandise & Size</span>
@@ -215,12 +243,13 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
         )}
 
         {/* ── STAGE 2: PRODUCT MERCHANDISING & SPECIFICATIONS ────────────────── */}
-        {currentStage === "product" && activeCandidate && studioState && (() => {
+        {currentStage === "product" && (() => {
           const currentConfig = PRODUCT_CATALOG[selectedProduct] || PRODUCT_CATALOG["Premium Hoodie"];
           const activeMockup = currentConfig.colors.find(c => c.name === selectedColor)?.mockup || currentConfig.colors[0]?.mockup || "/mockups/blank_hoodie.jpg";
           const hasUserCustomPhoto = (compositionData?.productMode === "photo" || compositionData?.productMode === "generate") && compositionData?.bgImage;
           const previewBackground = hasUserCustomPhoto ? compositionData.bgImage : (selectedProduct !== "Digital Download (All 6)" ? activeMockup : null);
           const isApparel = currentConfig.category === "apparel";
+          const artworkUrlToRender = activeCandidate?.imageUrl || "";
 
           return (
             <div className="max-w-6xl mx-auto flex flex-col gap-8">
@@ -254,19 +283,25 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
                           isApparel ? "w-[48%] mt-[-10%]" : "w-[65%]"
                         }`}
                       >
-                        <img 
-                          src={activeCandidate.imageUrl} 
-                          alt={studioState.interpretation.text} 
-                          className={`w-full h-auto object-contain pointer-events-none select-none ${
-                            !hasUserCustomPhoto && selectedColor === "Bone White" ? "mix-blend-multiply" : ""
-                          }`}
-                          style={{
-                            transform: `scale(${studioState.advanced.scale}) rotate(${studioState.advanced.rotation}deg)`,
-                            filter: studioState.inkColor === "ivory" && !hasUserCustomPhoto ? "drop-shadow(0px 2px 4px rgba(0,0,0,0.4))" : undefined,
-                          }}
-                          onContextMenu={(e) => e.preventDefault()} 
-                          draggable={false} 
-                        />
+                        {artworkUrlToRender ? (
+                          <img 
+                            src={artworkUrlToRender} 
+                            alt={studioState?.interpretation?.text || initialText} 
+                            className={`w-full h-auto object-contain pointer-events-none select-none ${
+                              !hasUserCustomPhoto && selectedColor === "Bone White" ? "mix-blend-multiply" : ""
+                            }`}
+                            style={{
+                              transform: `scale(${studioState?.advanced?.scale || 1}) rotate(${studioState?.advanced?.rotation || 0}deg)`,
+                              filter: studioState?.inkColor === "ivory" && !hasUserCustomPhoto ? "drop-shadow(0px 2px 4px rgba(0,0,0,0.4))" : undefined,
+                            }}
+                            onContextMenu={(e) => e.preventDefault()} 
+                            draggable={false} 
+                          />
+                        ) : (
+                          <div className="font-serif font-bold text-2xl text-black">
+                            {studioState?.interpretation?.text || initialText}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -275,11 +310,11 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
                       <div>
                         <p className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-wider">Calligraphy Artwork</p>
                         <p className="font-headline-sm text-base font-bold text-on-background mt-0.5">
-                          &ldquo;{studioState.interpretation.text}&rdquo;
+                          &ldquo;{studioState?.interpretation?.text || initialText}&rdquo;
                         </p>
                       </div>
                       <span className="text-xs text-on-surface-variant italic max-w-[240px] text-right truncate">
-                        {studioState.interpretation.meaning}
+                        {studioState?.interpretation?.meaning || ""}
                       </span>
                     </div>
                   </div>

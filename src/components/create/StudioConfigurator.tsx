@@ -868,12 +868,21 @@ export function StudioConfigurator({
         {/* ── Primary Action CTA ────────────────────────────────────────────── */}
         <button
           onClick={() => {
-            if (activeCandidate) {
-              onProceedToMerchandise(state, activeCandidate);
-            }
+            const candidateToUse = activeCandidate || candidates[0] || {
+              id: `studio-candidate-${Date.now()}`,
+              index: 1,
+              imageUrl: displayArtworkUrl || "",
+              variationType: state.variationIndex,
+              variationName: state.variationIndex,
+              variationNote: "Studio Vector Master",
+              seed: 42,
+            };
+            onProceedToMerchandise(state, {
+              ...candidateToUse,
+              imageUrl: displayArtworkUrl || candidateToUse.imageUrl,
+            });
           }}
-          disabled={!activeCandidate || isRendering}
-          className="w-full bg-[#111111] text-white py-4 font-label-caps uppercase text-center hover:bg-black transition-all rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 text-sm disabled:opacity-50 tracking-wider"
+          className="w-full bg-[#111111] text-white py-4 font-label-caps uppercase text-center hover:bg-black transition-all rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 text-sm tracking-wider cursor-pointer active:scale-[0.99]"
         >
           <span>Preview on Products</span>
           <ArrowRight className="w-4 h-4" />
