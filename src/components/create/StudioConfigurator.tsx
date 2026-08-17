@@ -4,16 +4,16 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { 
   Sparkles, 
   Check, 
-  RotateCw, 
   ChevronDown, 
   ChevronUp, 
-  ShieldCheck, 
   Sliders, 
   Layers, 
-  Compass, 
   Feather,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Maximize2,
+  RefreshCw,
+  Info
 } from "lucide-react";
 
 export type CulturalTradition = 
@@ -95,34 +95,38 @@ interface StudioConfiguratorProps {
   onProceedToMerchandise: (state: StudioState, activeCandidate: CandidateVariation) => void;
 }
 
-const TRADITIONS: { id: CulturalTradition; label: string; flag: string; desc: string; defaultSample: string }[] = [
+const TRADITIONS: { id: CulturalTradition; label: string; flag: string; native: string; desc: string; sample: string }[] = [
   { 
     id: "VIETNAMESE_THU_PHAP", 
     label: "Vietnamese Thư Pháp", 
     flag: "🇻🇳", 
+    native: "Thư Pháp",
     desc: "Authentic Quốc Ngữ brush calligraphy with sweeping dragon ascenders.",
-    defaultSample: "Có Chí Thì Nên"
+    sample: "Có Chí Thì Nên"
   },
   { 
     id: "JAPANESE_SHODO", 
     label: "Japanese Shodō", 
     flag: "🇯🇵", 
+    native: "書道",
     desc: "Classical Sumi-e brushwork (Kanji / Hiragana / Katakana).",
-    defaultSample: "七転八起"
+    sample: "七転八起"
   },
   { 
     id: "CHINESE_CALLIGRAPHY", 
     label: "Chinese Shūfǎ", 
     flag: "🇨🇳", 
+    native: "書法",
     desc: "Traditional Hanzi brush scripts (Grass, Regular, Running).",
-    defaultSample: "天道酬勤"
+    sample: "天道酬勤"
   },
   { 
     id: "KOREAN_BRUSH", 
     label: "Korean Seoye", 
     flag: "🇰🇷", 
-    desc: "Dynamic Hangul brush dynamics and ancient stone-rubbing script.",
-    defaultSample: "영원한 사랑"
+    native: "서예",
+    desc: "Dynamic Hangul stroke dynamics and ancient stone-rubbing script.",
+    sample: "영원한 사랑"
   },
 ];
 
@@ -130,29 +134,29 @@ const TREATMENTS: { id: WordTreatment; label: string; tag: string; desc: string 
   { 
     id: "KEEP_ORIGINAL", 
     label: "Keep My Words", 
-    tag: "Exact Phrasing", 
+    tag: "Exact Words", 
     desc: "Render your exact words (e.g. WAYNE or Có Chí Thì Nên) in authentic Asian brush aesthetic." 
   },
   { 
     id: "MATCH_SOUND", 
     label: "Match the Sound", 
     tag: "Phonetic", 
-    desc: "Transliterate names and foreign words phonetically into cultural script characters." 
+    desc: "Transliterate names and words phonetically into cultural script characters." 
   },
   { 
     id: "TRANSLATE_MEANING", 
     label: "Translate the Meaning", 
     tag: "Deep Meaning", 
-    desc: "AI transforms the philosophical meaning of your quote into a timeless cultural proverb." 
+    desc: "AI transforms the philosophical meaning into a timeless cultural proverb." 
   },
 ];
 
-const STROKE_PRESETS: { id: StrokePreset; label: string; subtitle: string; icon: string }[] = [
-  { id: "BOLD_BRUSH", label: "Bold Brush", subtitle: "Heavy sumi ink & deep pressure", icon: "💥" },
-  { id: "FLOWING_INK", label: "Flowing Ink", subtitle: "Graceful dancing rhythm & loops", icon: "🌊" },
-  { id: "DRY_BRUSH", label: "Dry Brush", subtitle: "Visible bristle texture & flying white", icon: "⚡" },
-  { id: "CLASSICAL", label: "Classical", subtitle: "Authoritative balanced precision", icon: "🏛️" },
-  { id: "FREE_SPIRIT", label: "Free Spirit", subtitle: "Wild expressive grass cursive", icon: "🍃" },
+const STROKE_PRESETS: { id: StrokePreset; label: string; subtitle: string; icon: string; glyph: string }[] = [
+  { id: "BOLD_BRUSH", label: "Bold Brush", subtitle: "Heavy sumi ink & deep pressure", icon: "💥", glyph: "大" },
+  { id: "FLOWING_INK", label: "Flowing Ink", subtitle: "Graceful dancing rhythm & loops", icon: "🌊", glyph: "水" },
+  { id: "DRY_BRUSH", label: "Dry Brush", subtitle: "Visible bristle texture & flying white", icon: "⚡", glyph: "飛" },
+  { id: "CLASSICAL", label: "Classical", subtitle: "Authoritative balanced precision", icon: "🏛️", glyph: "正" },
+  { id: "FREE_SPIRIT", label: "Free Spirit", subtitle: "Wild expressive grass cursive", icon: "🍃", glyph: "草" },
 ];
 
 const VARIATION_PILLS: { id: VariationType; label: string; short: string; desc: string }[] = [
@@ -244,12 +248,14 @@ export function StudioConfigurator({
     },
   });
 
-  // UI States
+  // UI State
   const [candidates, setCandidates] = useState<CandidateVariation[]>([]);
   const [activeCandidate, setActiveCandidate] = useState<CandidateVariation | null>(null);
   const [isRendering, setIsRendering] = useState(false);
   const [isAnalyzingMeaning, setIsAnalyzingMeaning] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [traditionDropdownOpen, setTraditionDropdownOpen] = useState(false);
+  const [treatmentDropdownOpen, setTreatmentDropdownOpen] = useState(false);
 
   // Active Fonts loaded from registry
   const [activeFonts, setActiveFonts] = useState<any[]>([]);
@@ -397,62 +403,88 @@ export function StudioConfigurator({
     return activeFonts.filter((f) => f.category === state.tradition);
   }, [activeFonts, state.tradition]);
 
+  const activeTraditionObj = TRADITIONS.find((t) => t.id === state.tradition) || TRADITIONS[0];
+  const activeTreatmentObj = TREATMENTS.find((t) => t.id === state.treatment) || TREATMENTS[0];
+
   return (
-    <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start pb-16">
+    <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pb-20">
       
-      {/* ── LEFT COLUMN: Live Artwork Stage & Variation Presets (7 Cols) ─────── */}
+      {/* ── LEFT COLUMN: Live Artwork Visualizer Stage (7 Cols) ─────────────── */}
       <div className="lg:col-span-7 flex flex-col gap-5 static lg:sticky lg:top-24 z-10">
         
-        {/* Main Artwork Stage */}
-        <div className="border border-surface-variant bg-surface-container-lowest p-4 sm:p-6 rounded-2xl shadow-sm flex flex-col gap-4 sm:gap-5">
+        {/* Main Artwork Stage Box */}
+        <div className="border border-surface-variant bg-[#FFFFFF] p-5 sm:p-7 rounded-2xl shadow-sm flex flex-col gap-5 relative overflow-hidden">
           
           {/* Stage Top Bar */}
-          <div className="flex items-center justify-between pb-3 border-b border-surface-variant text-xs">
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-              <span className="font-bold text-on-background flex items-center gap-1 font-label-caps uppercase text-[11px] sm:text-xs">
-                {TRADITIONS.find((t) => t.id === state.tradition)?.flag} {TRADITIONS.find((t) => t.id === state.tradition)?.label}
+          <div className="flex items-center justify-between pb-3.5 border-b border-[#EBE6DC] text-xs">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-[#111111] flex items-center gap-1.5 font-label-caps uppercase tracking-wider text-xs">
+                {activeTraditionObj.flag} {activeTraditionObj.label}
               </span>
-              <span className="text-on-surface-variant text-[10px] hidden sm:inline">•</span>
-              <span className="px-2 py-0.5 bg-[#F4EFE6] border border-[#E5E0D8] text-[#111111] rounded text-[10px] sm:text-[11px] font-medium">
-                {TREATMENTS.find((t) => t.id === state.treatment)?.label}
+              <span className="text-[#C7C6CA]">•</span>
+              <span className="px-2.5 py-0.5 bg-[#F4EFE6] border border-[#E5E0D8] text-[#111111] rounded-md text-[11px] font-semibold">
+                {activeTreatmentObj.tag}
               </span>
             </div>
 
-            {isRendering && (
-              <span className="text-[11px] text-[#B3261E] font-medium flex items-center gap-1 animate-pulse font-mono flex-shrink-0">
-                <Sparkles className="w-3 h-3" /> Rendering...
+            {isRendering ? (
+              <span className="text-xs text-[#B3261E] font-semibold flex items-center gap-1.5 animate-pulse font-mono flex-shrink-0">
+                <Sparkles className="w-3.5 h-3.5" /> Rendering Brush...
+              </span>
+            ) : (
+              <span className="text-[11px] font-mono text-[#888580] hidden sm:inline">
+                Vector 300 DPI · Lossless
               </span>
             )}
           </div>
 
-          {/* SVG Canvas Box */}
-          <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] min-h-[240px] sm:min-h-[340px] flex items-center justify-center bg-[#FAF8F5] border border-[#EBE6DC] rounded-xl overflow-hidden shadow-inner group">
+          {/* Luxury Rice Paper Canvas Box */}
+          <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] min-h-[260px] sm:min-h-[360px] flex items-center justify-center bg-[#FBF9F5] border border-[#E8E2D5] rounded-xl overflow-hidden shadow-inner group">
+            
+            {/* Subtle Corner Registration Marks (Editorial Gallery Style) */}
+            <div className="absolute top-3 left-3 w-3 h-3 border-t-2 border-l-2 border-[#D8D2C5] pointer-events-none" />
+            <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-[#D8D2C5] pointer-events-none" />
+            <div className="absolute bottom-3 left-3 w-3 h-3 border-b-2 border-l-2 border-[#D8D2C5] pointer-events-none" />
+            <div className="absolute bottom-3 right-3 w-3 h-3 border-b-2 border-r-2 border-[#D8D2C5] pointer-events-none" />
+
+            {/* Subtle Studio Watermark */}
+            <span className="absolute bottom-3.5 right-4 font-serif text-[11px] tracking-widest text-[#111111]/20 font-bold uppercase select-none pointer-events-none">
+              THI BÚT STUDIO
+            </span>
+
+            {/* Live Vector Artwork Rendering */}
             {displayArtworkUrl ? (
               <img
                 src={displayArtworkUrl}
                 alt={state.interpretation.text}
-                className="max-h-[88%] max-w-[88%] object-contain select-none pointer-events-none transition-transform duration-200"
+                className="max-h-[86%] max-w-[86%] object-contain select-none pointer-events-none transition-transform duration-200"
                 style={{
                   transform: `scale(${state.advanced.scale}) rotate(${state.advanced.rotation}deg)`,
-                  filter: state.inkColor === "ivory" ? "drop-shadow(0px 2px 5px rgba(0,0,0,0.4))" : undefined,
+                  filter: state.inkColor === "ivory" ? "drop-shadow(0px 2px 6px rgba(0,0,0,0.45))" : undefined,
                 }}
                 onContextMenu={(e) => e.preventDefault()}
                 draggable={false}
               />
             ) : (
-              <div className="flex flex-col items-center gap-2 text-on-surface-variant p-4 text-center">
-                <Feather className="w-7 h-7 opacity-40 animate-bounce" />
-                <span className="text-xs font-mono">Synthesizing calligraphy brush strokes...</span>
+              <div className="flex flex-col items-center gap-2.5 text-on-surface-variant p-6 text-center">
+                <Feather className="w-8 h-8 text-[#B3261E] animate-bounce" />
+                <span className="text-xs font-mono font-medium text-[#66635D]">Synthesizing brush vector...</span>
               </div>
             )}
           </div>
 
           {/* ── 01–06 Variation Preset Quick-Pills (Prominent) ───────────────── */}
           <div>
-            <span className="text-[10px] sm:text-[11px] font-label-caps uppercase text-on-surface-variant font-bold tracking-wider block mb-2">
-              Variation Presets (Click to Experiment)
-            </span>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-label-caps uppercase text-[#46474A] font-bold tracking-wider">
+                Variation Presets (Click to Experiment)
+              </span>
+              <span className="text-[11px] font-mono text-[#888580]">
+                {state.variationIndex.replace(/^\d+_/, "").toLowerCase()}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {VARIATION_PILLS.map((pill) => {
                 const isActive = state.variationIndex === pill.id;
                 return (
@@ -460,14 +492,17 @@ export function StudioConfigurator({
                     key={pill.id}
                     onClick={() => handleSelectVariation(pill.id)}
                     title={pill.desc}
-                    className={`py-2 px-1 rounded-lg text-center transition-all flex flex-col items-center justify-center border ${
+                    className={`py-2.5 px-1.5 rounded-xl text-center transition-all flex flex-col items-center justify-center border relative ${
                       isActive
-                        ? "bg-black text-white border-black font-bold shadow-md ring-2 ring-black/20"
-                        : "bg-white border-outline-variant hover:border-black/50 text-on-background"
+                        ? "bg-[#111111] text-white border-[#111111] font-bold shadow-md ring-2 ring-black/20 scale-[1.02]"
+                        : "bg-white border-[#E0DBD1] hover:border-black/60 text-[#111111] hover:bg-[#FAF8F5]"
                     }`}
                   >
-                    <span className="text-[11px] font-mono font-bold block">{pill.short}</span>
-                    <span className="text-[9px] sm:text-[10px] truncate max-w-full font-medium block">
+                    {isActive && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#B3261E] rounded-full ring-2 ring-white" />
+                    )}
+                    <span className="text-xs font-mono font-bold block">{pill.short}</span>
+                    <span className="text-[10px] truncate max-w-full font-medium block mt-0.5">
                       {pill.label.replace(/^\d+\s*/, "")}
                     </span>
                   </button>
@@ -476,12 +511,18 @@ export function StudioConfigurator({
             </div>
           </div>
 
-          {/* ── Ink Pigments Quick Selector ──────────────────────────────────── */}
-          <div className="flex items-center justify-between pt-3 border-t border-surface-variant">
-            <span className="text-xs font-label-caps uppercase text-on-surface-variant font-bold">
-              Ink Pigment
-            </span>
-            <div className="flex items-center gap-2.5">
+          {/* ── Ink Pigment Swatches ─────────────────────────────────────────── */}
+          <div className="flex items-center justify-between pt-3.5 border-t border-[#EBE6DC]">
+            <div>
+              <span className="text-xs font-label-caps uppercase text-[#46474A] font-bold block">
+                Ink Pigment
+              </span>
+              <span className="text-[11px] text-[#888580] font-mono">
+                {INK_PIGMENTS.find((p) => p.id === state.inkColor)?.label}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-3">
               {INK_PIGMENTS.map((p) => {
                 const isSelected = state.inkColor === p.id;
                 return (
@@ -489,13 +530,15 @@ export function StudioConfigurator({
                     key={p.id}
                     onClick={() => setState((prev) => ({ ...prev, inkColor: p.id }))}
                     title={p.label}
-                    className={`w-8 h-8 rounded-full border shadow-sm flex items-center justify-center transition-all ${
-                      isSelected ? "ring-2 ring-primary scale-110" : "hover:scale-105 opacity-80"
+                    className={`w-9 h-9 rounded-full border shadow-sm flex items-center justify-center transition-all ${
+                      isSelected 
+                        ? "ring-2 ring-primary scale-110 shadow-md" 
+                        : "hover:scale-105 opacity-85 border-[#C7C6CA]"
                     }`}
                     style={{ backgroundColor: p.hex }}
                   >
                     {isSelected && (
-                      <span className={`w-2 h-2 rounded-full ${p.id === "black" ? "bg-white" : "bg-black"}`} />
+                      <span className={`w-2.5 h-2.5 rounded-full ${p.id === "black" ? "bg-white" : "bg-black"}`} />
                     )}
                   </button>
                 );
@@ -504,112 +547,160 @@ export function StudioConfigurator({
           </div>
         </div>
 
-        {/* ── Compact Semantic Meaning Card ─────────────────────────────────── */}
-        <div className="border border-surface-variant bg-[#F4EFE6]/60 p-4 rounded-xl flex items-start gap-4">
-          <div className="w-9 h-9 rounded-full bg-[#111111] text-white flex items-center justify-center flex-shrink-0 font-serif font-bold text-sm">
+        {/* ── Editorial Semantic Context Card ───────────────────────────────── */}
+        <div className="border border-[#E5E0D8] bg-[#F4EFE6] p-4.5 rounded-2xl flex items-start gap-4 shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-[#111111] text-white flex items-center justify-center flex-shrink-0 font-serif font-bold text-base shadow-sm">
             詩
           </div>
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-[#111111] font-display-md">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-base font-bold text-[#111111] font-display-md">
                 &ldquo;{state.interpretation.text}&rdquo;
               </span>
               {state.interpretation.romanization && state.interpretation.romanization !== state.interpretation.text && (
-                <span className="text-xs text-on-surface-variant font-mono">
-                  ({state.interpretation.romanization})
+                <span className="text-xs text-[#66635D] font-mono">
+                  [{state.interpretation.romanization}]
                 </span>
               )}
             </div>
-            <p className="text-xs text-on-surface-variant leading-relaxed">
-              {isAnalyzingMeaning ? "Analyzing cultural meaning..." : state.interpretation.meaning}
+            <p className="text-xs text-[#55524C] leading-relaxed">
+              {isAnalyzingMeaning ? "Analyzing cultural meaning & semantics..." : state.interpretation.meaning}
             </p>
           </div>
         </div>
 
       </div>
 
-      {/* ── RIGHT COLUMN: Studio Control Panel (4 Sections) (5 Cols) ─────────── */}
-      <div className="lg:col-span-5 flex flex-col gap-6 bg-white p-6 border border-surface-variant rounded-2xl shadow-sm">
+      {/* ── RIGHT COLUMN: Studio Control Panel (5 Cols) ─────────────────────── */}
+      <div className="lg:col-span-5 flex flex-col gap-6 bg-white p-6 sm:p-7 border border-surface-variant rounded-2xl shadow-sm">
         
         {/* Panel Header */}
-        <div>
-          <h1 className="font-headline-md text-xl font-bold text-on-background">
+        <div className="border-b border-[#EBE6DC] pb-4">
+          <h1 className="font-headline-md text-xl font-bold text-[#111111]">
             Studio Controls
           </h1>
-          <p className="text-xs text-on-surface-variant mt-0.5">
-            Configure your master typography, tradition, and stroke aesthetics.
+          <p className="text-xs text-[#66635D] mt-0.5">
+            Personalize your words, stroke aesthetics, and layout in real-time.
           </p>
         </div>
 
         {/* ── SECTION 1: YOUR WORDS ─────────────────────────────────────────── */}
-        <div className="flex flex-col gap-3.5 pb-5 border-b border-surface-variant">
+        <div className="flex flex-col gap-4 pb-5 border-b border-[#EBE6DC]">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-label-caps uppercase text-on-surface-variant font-bold tracking-wider">
+            <span className="text-xs font-label-caps uppercase text-[#111111] font-bold tracking-wider">
               1. Your Words
             </span>
-            <span className="text-[11px] font-mono text-on-surface-variant">
-              {state.inputText.length}/100
+            <span className="text-[11px] font-mono text-[#888580]">
+              {state.inputText.length} chars
             </span>
           </div>
 
-          {/* Master Text Input */}
-          <input
-            type="text"
-            value={state.inputText}
-            onChange={(e) => setState((prev) => ({ ...prev, inputText: e.target.value }))}
-            placeholder="Type your phrase or name..."
-            className="w-full px-4 py-3 border border-outline-variant rounded-xl text-base font-bold text-on-background bg-[#FAF8F5] focus:bg-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-          />
-
-          {/* Tradition Dropdown */}
-          <div>
-            <label className="text-[11px] font-label-caps uppercase text-on-surface-variant block mb-1 font-semibold">
-              Cultural Tradition
-            </label>
-            <select
-              value={state.tradition}
-              onChange={(e) => {
-                const trad = e.target.value as CulturalTradition;
-                setState((prev) => ({
-                  ...prev,
-                  tradition: trad,
-                  fontId: trad === "VIETNAMESE_THU_PHAP" ? "utm-thuphap-thien-an" 
-                    : trad === "JAPANESE_SHODO" ? "yuji-boku"
-                    : trad === "CHINESE_CALLIGRAPHY" ? "long-cang" : "nanum-brush-script",
-                }));
-              }}
-              className="w-full px-3.5 py-2.5 border border-outline-variant rounded-xl text-xs font-semibold text-on-background bg-white focus:border-primary outline-none cursor-pointer"
-            >
-              {TRADITIONS.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.flag} {t.label}
-                </option>
-              ))}
-            </select>
+          {/* Master Text Input Box */}
+          <div className="relative">
+            <input
+              type="text"
+              value={state.inputText}
+              onChange={(e) => setState((prev) => ({ ...prev, inputText: e.target.value }))}
+              placeholder="Type your phrase, name, or quote..."
+              className="w-full px-4 py-3.5 border-2 border-[#E0DBD1] rounded-xl text-base font-bold text-[#111111] bg-[#FAF8F5] focus:bg-white focus:border-black outline-none transition-all"
+            />
           </div>
 
-          {/* Treatment Dropdown */}
+          {/* Custom Tradition Selector Card */}
           <div>
-            <label className="text-[11px] font-label-caps uppercase text-on-surface-variant block mb-1 font-semibold">
+            <label className="text-[11px] font-label-caps uppercase text-[#66635D] block mb-1.5 font-bold">
+              Cultural Tradition
+            </label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setTraditionDropdownOpen(!traditionDropdownOpen)}
+                className="w-full px-4 py-3 border border-[#E0DBD1] rounded-xl text-xs font-semibold text-[#111111] bg-white hover:border-black flex items-center justify-between transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{activeTraditionObj.flag}</span>
+                  <span className="font-bold text-sm">{activeTraditionObj.label}</span>
+                  <span className="text-[11px] text-[#888580] font-serif font-normal">({activeTraditionObj.native})</span>
+                </div>
+                <ChevronDown className="w-4 h-4 text-[#888580]" />
+              </button>
+
+              {traditionDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#D8D2C5] rounded-xl shadow-xl z-30 p-1.5 flex flex-col gap-1">
+                  {TRADITIONS.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setState((prev) => ({
+                          ...prev,
+                          tradition: t.id,
+                          fontId: t.id === "VIETNAMESE_THU_PHAP" ? "utm-thuphap-thien-an" 
+                            : t.id === "JAPANESE_SHODO" ? "yuji-boku"
+                            : t.id === "CHINESE_CALLIGRAPHY" ? "long-cang" : "nanum-brush-script",
+                        }));
+                        setTraditionDropdownOpen(false);
+                      }}
+                      className={`w-full p-2.5 rounded-lg text-left text-xs transition-all flex items-center justify-between ${
+                        state.tradition === t.id ? "bg-[#F4EFE6] font-bold text-black" : "hover:bg-[#FAF8F5] text-[#444]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{t.flag}</span>
+                        <span>{t.label}</span>
+                        <span className="text-[11px] text-[#888580] font-serif font-normal">({t.native})</span>
+                      </div>
+                      {state.tradition === t.id && <Check className="w-4 h-4 text-[#B3261E]" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Treatment Options (3 Explicit Buttons) */}
+          <div>
+            <label className="text-[11px] font-label-caps uppercase text-[#66635D] block mb-1.5 font-bold">
               How Should Thi Bút Treat Your Words?
             </label>
-            <select
-              value={state.treatment}
-              onChange={(e) => setState((prev) => ({ ...prev, treatment: e.target.value as WordTreatment }))}
-              className="w-full px-3.5 py-2.5 border border-outline-variant rounded-xl text-xs font-semibold text-on-background bg-white focus:border-primary outline-none cursor-pointer"
-            >
-              {TREATMENTS.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label} — {t.desc.substring(0, 48)}...
-                </option>
-              ))}
-            </select>
+            <div className="flex flex-col gap-2">
+              {TREATMENTS.map((t) => {
+                const isSelected = state.treatment === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setState((prev) => ({ ...prev, treatment: t.id }))}
+                    className={`p-3 rounded-xl text-left border transition-all flex items-start justify-between ${
+                      isSelected
+                        ? "border-black bg-[#111111] text-white shadow-sm"
+                        : "border-[#E0DBD1] bg-[#FAF8F5] text-[#111111] hover:border-black/50"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold">{t.label}</span>
+                        <span className={`text-[10px] px-2 py-0.2 rounded font-mono ${
+                          isSelected ? "bg-white/20 text-white" : "bg-[#EAE5DC] text-[#444]"
+                        }`}>
+                          {t.tag}
+                        </span>
+                      </div>
+                      <span className={`text-[11px] block mt-0.5 leading-snug ${
+                        isSelected ? "text-white/80" : "text-[#66635D]"
+                      }`}>
+                        {t.desc}
+                      </span>
+                    </div>
+                    {isSelected && <CheckCircle2 className="w-4 h-4 text-[#B3261E] flex-shrink-0 mt-0.5" />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         {/* ── SECTION 2: CHOOSE YOUR STROKE ─────────────────────────────────── */}
-        <div className="flex flex-col gap-3.5 pb-5 border-b border-surface-variant">
-          <span className="text-xs font-label-caps uppercase text-on-surface-variant font-bold tracking-wider">
+        <div className="flex flex-col gap-3.5 pb-5 border-b border-[#EBE6DC]">
+          <span className="text-xs font-label-caps uppercase text-[#111111] font-bold tracking-wider">
             2. Choose Your Stroke
           </span>
           <div className="grid grid-cols-2 gap-2">
@@ -619,17 +710,20 @@ export function StudioConfigurator({
                 <button
                   key={s.id}
                   onClick={() => setState((prev) => ({ ...prev, strokePreset: s.id }))}
-                  className={`p-3 rounded-xl text-left border transition-all ${
+                  className={`p-3 rounded-xl text-left border transition-all relative overflow-hidden ${
                     isSelected
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "border-outline-variant hover:border-primary/50 bg-[#FAF8F5]"
+                      ? "border-black bg-[#F4EFE6] ring-1 ring-black shadow-sm"
+                      : "border-[#E0DBD1] hover:border-black/50 bg-[#FAF8F5]"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-on-background">
+                  <span className="absolute right-2 bottom-1 font-serif text-3xl opacity-10 font-bold select-none pointer-events-none">
+                    {s.glyph}
+                  </span>
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-[#111111]">
                     <span>{s.icon}</span>
                     <span>{s.label}</span>
                   </div>
-                  <span className="text-[10px] text-on-surface-variant block mt-0.5 leading-snug">
+                  <span className="text-[10px] text-[#66635D] block mt-0.5 leading-snug">
                     {s.subtitle}
                   </span>
                 </button>
@@ -639,14 +733,14 @@ export function StudioConfigurator({
         </div>
 
         {/* ── SECTION 3: COMPOSITION ────────────────────────────────────────── */}
-        <div className="flex flex-col gap-3 pb-5 border-b border-surface-variant">
-          <span className="text-xs font-label-caps uppercase text-on-surface-variant font-bold tracking-wider">
+        <div className="flex flex-col gap-3 pb-5 border-b border-[#EBE6DC]">
+          <span className="text-xs font-label-caps uppercase text-[#111111] font-bold tracking-wider">
             3. Composition Layout
           </span>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { id: "HORIZONTAL", label: "↔ Horizontal", desc: "Modern balanced banner" },
-              { id: "VERTICAL", label: "⬍ Vertical Scroll", desc: "Hanging scroll format" },
+              { id: "HORIZONTAL", label: "↔ Horizontal Banner", desc: "Modern balanced line" },
+              { id: "VERTICAL", label: "⬍ Vertical Scroll", desc: "Traditional hanging scroll" },
               { id: "EMBLEM", label: "⭕ Centered Emblem", desc: "Circular badge focus" },
               { id: "FULL_BACK", label: "📜 Full Statement", desc: "Expansive layout" },
             ].map((layout) => {
@@ -655,13 +749,14 @@ export function StudioConfigurator({
                 <button
                   key={layout.id}
                   onClick={() => setState((prev) => ({ ...prev, layout: layout.id as CompositionLayout }))}
-                  className={`p-2.5 border rounded-xl text-left text-xs transition-all ${
+                  className={`p-3 border rounded-xl text-left text-xs transition-all ${
                     isSelected
-                      ? "border-primary bg-primary/5 font-bold ring-1 ring-primary"
-                      : "border-outline-variant bg-[#FAF8F5] hover:border-primary"
+                      ? "border-black bg-[#F4EFE6] font-bold ring-1 ring-black shadow-sm"
+                      : "border-[#E0DBD1] bg-[#FAF8F5] hover:border-black/50 text-[#111111]"
                   }`}
                 >
-                  <span className="block font-semibold text-on-background">{layout.label}</span>
+                  <span className="block font-bold text-[#111111]">{layout.label}</span>
+                  <span className="text-[10px] text-[#66635D] block mt-0.5">{layout.desc}</span>
                 </button>
               );
             })}
@@ -670,52 +765,53 @@ export function StudioConfigurator({
 
         {/* ── SECTION 4: DETAILS & ACCENTS ──────────────────────────────────── */}
         <div className="flex flex-col gap-3.5 pb-2">
-          <span className="text-xs font-label-caps uppercase text-on-surface-variant font-bold tracking-wider">
+          <span className="text-xs font-label-caps uppercase text-[#111111] font-bold tracking-wider">
             4. Finishing Details
           </span>
 
-          <div className="flex items-center justify-between p-3 bg-[#FAF8F5] border border-outline-variant rounded-xl">
-            <div className="flex items-center gap-2">
-              <span className="text-base">🈴</span>
+          {/* Imperial Seal Toggle Card */}
+          <div className="flex items-center justify-between p-3.5 bg-[#FAF8F5] border border-[#E0DBD1] rounded-xl">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🈴</span>
               <div>
-                <span className="text-xs font-bold text-on-background block">Imperial Cinnabar Seal</span>
-                <span className="text-[10px] text-on-surface-variant">Authentic Red Stamp (Ấn Triện Son 詩筆)</span>
+                <span className="text-xs font-bold text-[#111111] block">Imperial Cinnabar Seal</span>
+                <span className="text-[11px] text-[#66635D]">Authentic Red Chop (Ấn Triện Son 詩筆)</span>
               </div>
             </div>
             <button
               onClick={() => setState((prev) => ({ ...prev, hasSeal: !prev.hasSeal }))}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                state.hasSeal ? "bg-[#B3261E] text-white" : "bg-surface-variant text-on-surface-variant"
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${
+                state.hasSeal ? "bg-[#B3261E] text-white" : "bg-[#E5E0D8] text-[#66635D]"
               }`}
             >
               {state.hasSeal ? "ON" : "OFF"}
             </button>
           </div>
 
-          {/* Collapsible Advanced Styling */}
+          {/* Collapsible Advanced Fine-Tuning Drawer */}
           <div>
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full flex items-center justify-between py-2 text-xs font-label-caps uppercase text-on-surface-variant font-bold hover:text-black transition-colors"
+              className="w-full flex items-center justify-between py-2 text-xs font-label-caps uppercase text-[#66635D] font-bold hover:text-black transition-colors"
             >
               <span className="flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5" /> Advanced Styling
+                <Sliders className="w-3.5 h-3.5" /> Advanced Styling ▾
               </span>
               {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
 
             {showAdvanced && (
-              <div className="mt-2 p-4 bg-[#FAF8F5] border border-outline-variant rounded-xl flex flex-col gap-3 text-xs">
+              <div className="mt-2 p-4 bg-[#FAF8F5] border border-[#E0DBD1] rounded-xl flex flex-col gap-3.5 text-xs">
                 {/* Specific Font Override */}
                 {filteredFonts.length > 0 && (
                   <div>
-                    <label className="text-[10px] font-label-caps uppercase text-on-surface-variant block mb-1 font-bold">
+                    <label className="text-[10px] font-label-caps uppercase text-[#66635D] block mb-1 font-bold">
                       Typography Font Override
                     </label>
                     <select
                       value={state.fontId}
                       onChange={(e) => setState((prev) => ({ ...prev, fontId: e.target.value }))}
-                      className="w-full p-2 border border-outline-variant rounded-lg bg-white outline-none cursor-pointer"
+                      className="w-full p-2.5 border border-[#E0DBD1] rounded-lg bg-white outline-none cursor-pointer text-xs font-medium"
                     >
                       {filteredFonts.map((f) => (
                         <option key={f.id} value={f.id}>
@@ -729,8 +825,8 @@ export function StudioConfigurator({
                 {/* Scale & Rotation Sliders */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-label-caps uppercase text-on-surface-variant block mb-1 font-bold">
-                      Artwork Scale ({state.advanced.scale.toFixed(2)}x)
+                    <label className="text-[10px] font-label-caps uppercase text-[#66635D] block mb-1 font-bold">
+                      Scale ({state.advanced.scale.toFixed(2)}x)
                     </label>
                     <input
                       type="range"
@@ -747,7 +843,7 @@ export function StudioConfigurator({
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-label-caps uppercase text-on-surface-variant block mb-1 font-bold">
+                    <label className="text-[10px] font-label-caps uppercase text-[#66635D] block mb-1 font-bold">
                       Rotation ({state.advanced.rotation}°)
                     </label>
                     <input
@@ -769,7 +865,7 @@ export function StudioConfigurator({
           </div>
         </div>
 
-        {/* ── Primary CTA Button ────────────────────────────────────────────── */}
+        {/* ── Primary Action CTA ────────────────────────────────────────────── */}
         <button
           onClick={() => {
             if (activeCandidate) {
@@ -777,7 +873,7 @@ export function StudioConfigurator({
             }
           }}
           disabled={!activeCandidate || isRendering}
-          className="w-full bg-primary text-on-primary py-4 font-label-caps uppercase text-center hover:bg-surface-tint transition-all rounded-xl font-bold shadow-md flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+          className="w-full bg-[#111111] text-white py-4 font-label-caps uppercase text-center hover:bg-black transition-all rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 text-sm disabled:opacity-50 tracking-wider"
         >
           <span>Preview on Products</span>
           <ArrowRight className="w-4 h-4" />
