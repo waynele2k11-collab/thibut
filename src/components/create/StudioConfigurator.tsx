@@ -299,18 +299,25 @@ export function StudioConfigurator({
       .catch(() => {});
   }, []);
 
-  // Compute available fonts for active tradition (from server or default fallback)
+  // Compute available fonts for active tradition (always guarantees full catalog)
   const currentTraditionFonts = useMemo(() => {
-    const fromServer = activeFonts.filter((f) => f.category === state.tradition);
-    if (fromServer.length > 0) {
-      return fromServer.map((f) => ({
-        id: f.id,
-        name: f.name,
-        desc: f.description || "Master calligraphy typeface",
-        badge: f.license || "Verified",
-      }));
+    const fallbackList = DEFAULT_TRADITION_FONTS[state.tradition] || DEFAULT_TRADITION_FONTS.VIETNAMESE_THU_PHAP;
+    if (activeFonts.length > 0) {
+      const fromServer = activeFonts.filter((f) => f.category === state.tradition);
+      if (fromServer.length > 0) {
+        const serverIds = new Set(fromServer.map((f) => f.id));
+        return [
+          ...fromServer.map((f) => ({
+            id: f.id,
+            name: f.name,
+            desc: f.description || "Master calligraphy typeface",
+            badge: "Verified",
+          })),
+          ...fallbackList.filter((f) => !serverIds.has(f.id)),
+        ];
+      }
     }
-    return DEFAULT_TRADITION_FONTS[state.tradition] || DEFAULT_TRADITION_FONTS.VIETNAMESE_THU_PHAP;
+    return fallbackList;
   }, [activeFonts, state.tradition]);
 
   // ── Instant Client-Side Fallback SVG (0ms Latency on every stroke) ────────────

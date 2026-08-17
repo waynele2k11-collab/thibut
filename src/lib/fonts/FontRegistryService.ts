@@ -273,7 +273,6 @@ export class FontRegistryService {
   private static base64Cache: Record<string, string> = {};
 
   private static loadState(): Record<string, boolean> {
-    if (this.memoryState) return this.memoryState;
     try {
       if (fs.existsSync(CONFIG_FILE_PATH)) {
         const raw = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
@@ -283,13 +282,23 @@ export class FontRegistryService {
     } catch {
       // ignore
     }
-    // Default active state
+    // Default active state with all fonts enabled
     this.memoryState = {
       "utm-thuphap-thien-an": true,
+      "arizonia": true,
+      "great-vibes": true,
+      "kaushan-script": true,
+      "caveat-brush": true,
+      "alex-brush": true,
       "yuji-boku": true,
+      "yuji-syuku": true,
+      "yuji-mai": true,
       "long-cang": true,
-      "nanum-brush-script": true,
       "liu-jian-mao-cao": true,
+      "ma-shan-zheng": true,
+      "zhi-mang-xing": true,
+      "nanum-brush-script": true,
+      "east-sea-dokdo": true,
     };
     return this.memoryState;
   }
