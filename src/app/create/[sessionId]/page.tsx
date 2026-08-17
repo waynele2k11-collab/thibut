@@ -797,7 +797,7 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
               )}
 
               <Link
-                href={`/checkout?candidate=${selectedCandidate.id}&product=${encodeURIComponent(selectedProduct)}`}
+                href={`/checkout?candidate=${encodeURIComponent(selectedCandidate.id)}&product=${encodeURIComponent(selectedProduct)}&sessionId=${encodeURIComponent(sessionId)}&text=${encodeURIComponent(inputText || selectedInterpretation?.text || "")}&interpretedText=${encodeURIComponent(selectedInterpretation?.text || inputText || "")}&interpretation=${encodeURIComponent(selectedInterpretation?.type || "Original")}&meaning=${encodeURIComponent(selectedInterpretation?.meaning || "")}&romanization=${encodeURIComponent(selectedInterpretation?.romanization || "")}`}
                 className="w-full bg-primary text-on-primary py-4 font-label-caps text-label-caps uppercase text-center hover:bg-surface-tint transition-colors block mt-4"
               >
                 Proceed to Checkout →
