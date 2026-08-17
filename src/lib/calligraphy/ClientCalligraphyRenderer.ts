@@ -2,7 +2,8 @@
  * Client-Side Instant Calligraphy Vector Synthesizer
  * 
  * Provides 0ms instant vector rendering on both SSR and client
- * with identical base64 encoding to prevent React hydration mismatch.
+ * with full visual fidelity reflecting EVERY selected studio option
+ * (Font, Stroke, Layout, Seal, Variations, Ink Color).
  */
 
 export interface ClientRenderOptions {
@@ -52,6 +53,8 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
 
   const trimmed = text.trim() || "Thi Bút";
   const isVertical = layout === "VERTICAL";
+  const isEmblem = layout === "EMBLEM";
+  const isFullBack = layout === "FULL_BACK";
 
   // Exact Font Family Mapping if specific fontId chosen
   const FONT_MAP: Record<string, string> = {
@@ -95,13 +98,28 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
     }
   }
 
-  const strokeWidth = variationType === "02_BOLD" ? "9px" 
-    : variationType === "05_MINIMAL" ? "2px" 
-    : strokePreset === "BOLD_BRUSH" ? "8px" : "4px";
+  // Stroke dynamic weight reflecting strokePreset and variation
+  let strokeWidth = "5px";
+  let fontStyle = "normal";
+  let letterSpacing = "0.02em";
+
+  if (strokePreset === "BOLD_BRUSH" || variationType === "02_BOLD") {
+    strokeWidth = "9px";
+  } else if (strokePreset === "FLOWING_INK" || variationType === "04_EXPRESSIVE") {
+    strokeWidth = "4px";
+    fontStyle = "italic";
+  } else if (strokePreset === "DRY_BRUSH" || variationType === "03_DRY_BRUSH") {
+    strokeWidth = "5px";
+  } else if (strokePreset === "CLASSICAL" || variationType === "05_MINIMAL") {
+    strokeWidth = variationType === "05_MINIMAL" ? "2px" : "3.5px";
+    letterSpacing = "0.06em";
+  } else if (strokePreset === "FREE_SPIRIT") {
+    strokeWidth = "6px";
+  }
 
   const words = trimmed.split(/\s+/);
-  const width = isVertical ? 600 : Math.max(1000, trimmed.length * 120 + 300);
-  const height = isVertical ? Math.max(900, words.length * 280 + 200) : 480;
+  const width = isVertical ? 640 : isEmblem ? 800 : Math.max(1000, trimmed.length * 130 + 300);
+  const height = isVertical ? Math.max(900, words.length * 280 + 220) : isEmblem ? 800 : 500;
   const centerX = width / 2;
   const centerY = height / 2;
 
@@ -112,9 +130,10 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
   const swashMidX = (swashStartX + swashEndX) / 2;
   const swashCurveY = swashStartY + (variationType === "04_EXPRESSIVE" ? 45 : 25);
 
-  const shouldRenderSeal = hasSeal || variationType === "06_SIGNATURE" || variationType === "01_CONTROLLED";
-  const sealX = isVertical ? centerX + 80 : width - 90;
-  const sealY = isVertical ? height - 120 : centerY - 30;
+  // Exact Seal Position
+  const shouldRenderSeal = Boolean(hasSeal);
+  const sealX = isVertical ? centerX + 80 : isEmblem ? centerX + 110 : width - 90;
+  const sealY = isVertical ? height - 120 : isEmblem ? centerY + 90 : centerY - 30;
 
   const svgContent = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%">
@@ -123,7 +142,9 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
           @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&amp;family=Caveat+Brush&amp;family=Arizonia&amp;family=Alex+Brush&amp;family=Kaushan+Script&amp;family=Yuji+Boku&amp;family=Yuji+Mai&amp;family=Yuji+Syuku&amp;family=Long+Cang&amp;family=Ma+Shan+Zheng&amp;family=Liu+Jian+Mao+Cao&amp;family=Nanum+Brush+Script&amp;family=East+Sea+Dokdo&amp;display=swap');
           .calligraphy-text {
             font-family: ${fontFamily};
-            font-size: ${isVertical ? "110px" : "125px"};
+            font-size: ${isVertical ? "110px" : isEmblem ? "95px" : isFullBack ? "135px" : "125px"};
+            font-style: ${fontStyle};
+            letter-spacing: ${letterSpacing};
             fill: ${inkColor};
             stroke: ${inkColor};
             stroke-width: ${strokeWidth};
@@ -144,11 +165,24 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
             fill: ${inkColor};
             opacity: 0.85;
           }
+          .emblem-ring {
+            fill: none;
+            stroke: ${inkColor};
+            stroke-width: 3.5px;
+            stroke-linecap: round;
+            opacity: 0.75;
+          }
         </style>
       </defs>
 
-      <!-- Sweeping Underline Swash (Nét Liệng Rồng Bay) -->
-      ${!isVertical && variationType !== "05_MINIMAL" ? `
+      <!-- Emblem Circular Frame for EMBLEM Layout -->
+      ${isEmblem ? `
+        <circle class="emblem-ring" cx="${centerX}" cy="${centerY}" r="${Math.min(centerX, centerY) - 45}" stroke-dasharray="380, 25" />
+        <circle class="emblem-ring" cx="${centerX}" cy="${centerY}" r="${Math.min(centerX, centerY) - 60}" stroke-dasharray="10, 8" opacity="0.4" />
+      ` : ""}
+
+      <!-- Sweeping Underline Swash (Nét Liệng Rồng Bay) for Horizontal Layouts -->
+      ${!isVertical && !isEmblem && variationType !== "05_MINIMAL" ? `
         <path class="swash-line" d="M ${swashStartX} ${swashStartY} Q ${swashMidX} ${swashCurveY}, ${swashEndX} ${swashStartY - 10}" />
         <circle class="splatter-dot" cx="${swashEndX + 15}" cy="${swashStartY - 18}" r="4.5" />
         <circle class="splatter-dot" cx="${swashEndX + 30}" cy="${swashStartY - 24}" r="2.5" />
@@ -159,7 +193,7 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
         const wordY = 160 + idx * 220;
         return `<text class="calligraphy-text" x="${centerX}" y="${wordY}">${w}</text>`;
       }).join("") : `
-        <text class="calligraphy-text" x="${centerX}" y="${centerY - 10}">${trimmed}</text>
+        <text class="calligraphy-text" x="${centerX}" y="${centerY - (isEmblem ? 0 : 10)}">${trimmed}</text>
       `}
 
       <!-- Imperial Cinnabar Red Seal Stamp (Ấn Triện Son) -->

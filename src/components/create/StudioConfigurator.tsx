@@ -851,7 +851,10 @@ export function StudioConfigurator({
                 return (
                   <button
                     key={s.id}
-                    onClick={() => setState((prev) => ({ ...prev, strokePreset: s.id }))}
+                    onClick={() => {
+                      setState((prev) => ({ ...prev, strokePreset: s.id }));
+                      setActiveCandidate(null);
+                    }}
                     className={`py-2 px-2.5 rounded-lg border text-left text-xs transition-all flex items-center gap-1.5 ${
                       isSelected
                         ? "border-black bg-[#111111] text-white font-bold"
@@ -883,7 +886,10 @@ export function StudioConfigurator({
               return (
                 <button
                   key={layout.id}
-                  onClick={() => setState((prev) => ({ ...prev, layout: layout.id as CompositionLayout }))}
+                  onClick={() => {
+                    setState((prev) => ({ ...prev, layout: layout.id as CompositionLayout }));
+                    setActiveCandidate(null);
+                  }}
                   className={`p-3 border rounded-xl text-left text-xs transition-all flex flex-col justify-between ${
                     isSelected
                       ? "border-black bg-[#F4EFE6] font-bold ring-1 ring-black shadow-sm"
@@ -917,7 +923,10 @@ export function StudioConfigurator({
               </div>
             </div>
             <button
-              onClick={() => setState((prev) => ({ ...prev, hasSeal: !prev.hasSeal }))}
+              onClick={() => {
+                setState((prev) => ({ ...prev, hasSeal: !prev.hasSeal }));
+                setActiveCandidate(null);
+              }}
               className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${
                 state.hasSeal ? "bg-[#B3261E] text-white" : "bg-[#E5E0D8] text-[#66635D]"
               }`}
