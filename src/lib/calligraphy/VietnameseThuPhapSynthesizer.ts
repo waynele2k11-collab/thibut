@@ -43,26 +43,9 @@ export class VietnameseThuPhapSynthesizer {
     const trimmed = text.trim();
     const words = trimmed.split(/\s+/);
 
-    // Font mapping per Thư Pháp style
-    let fontFile = "UtmThuphapThienAn.ttf";
-    let fontName = "UTM ThuPhap Thien An";
-
-    if (stylePackId === "Thi Bút 2") {
-      fontFile = "GreatVibes-Regular.ttf";
-      fontName = "Great Vibes";
-    } else if (stylePackId === "Thi Bút 3") {
-      fontFile = "KaushanScript-Regular.ttf";
-      fontName = "Kaushan Script";
-    } else if (stylePackId === "Thi Bút 4") {
-      fontFile = "CaveatBrush-Regular.ttf";
-      fontName = "Caveat Brush";
-    } else if (stylePackId === "Thi Bút 5") {
-      fontFile = "Arizonia-Regular.ttf";
-      fontName = "Arizonia";
-    } else if (stylePackId === "Thi Bút 6" || stylePackId === "Seal") {
-      fontFile = "UtmThuphapThienAn.ttf";
-      fontName = "UTM ThuPhap Thien An";
-    }
+    // Authentic UTM Thư Pháp Thiên Ân is the master font
+    const fontFile = "UtmThuphapThienAn.ttf";
+    const fontName = "UTM ThuPhap Thien An";
 
     const base64Data = getBase64Font(fontFile);
     const fontFaceBlock = base64Data
@@ -78,7 +61,7 @@ export class VietnameseThuPhapSynthesizer {
     const pressure = variationType === "02_BOLD" ? 1.45 : variationType === "05_MINIMAL" ? 0.85 : 1.15;
     const energy = variationType === "04_EXPRESSIVE" ? 1.5 : variationType === "03_DRY_BRUSH" ? 1.25 : 1.0;
     const dryBrush = variationType === "03_DRY_BRUSH" ? 0.65 : 0.2;
-    const hasSeal = variationType === "06_SIGNATURE" || variationType === "01_CONTROLLED" || variationType === "04_EXPRESSIVE" || stylePackId === "Thi Bút 6";
+    const hasSeal = variationType === "06_SIGNATURE" || variationType === "01_CONTROLLED" || variationType === "04_EXPRESSIVE" || stylePackId === "Thi Bút 2" || stylePackId === "Thi Bút 6" || stylePackId === "Seal";
 
     const width = isVertical ? 800 : Math.max(1200, trimmed.length * 180 + 360);
     const height = isVertical ? Math.max(1200, words.length * 450 + 300) : 720;

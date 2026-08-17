@@ -54,13 +54,9 @@ interface Candidate {
 
 const MODES: Mode[] = ["NAME", "QUOTE", "STORY"];
 const STYLE_PACKS = [
-  // 🇻🇳 Vietnamese Thư Pháp Suite
+  // 🇻🇳 Vietnamese Thư Pháp Suite (UTM Master Calligraphy)
   { id: "Thi Bút 1", label: "Thi Bút 1", desc: "Thiên Ân — Authentic Master Thư Pháp (UTM)", category: "VIETNAMESE_THU_PHAP" },
-  { id: "Thi Bút 2", label: "Thi Bút 2", desc: "Long Vũ — Grand Dragon Swash (Great Vibes)", category: "VIETNAMESE_THU_PHAP" },
-  { id: "Thi Bút 3", label: "Thi Bút 3", desc: "Phi Bạch — Raw Dry-Brush (Kaushan)", category: "VIETNAMESE_THU_PHAP" },
-  { id: "Thi Bút 4", label: "Thi Bút 4", desc: "Mực Nho — Heavy Sumi Ink (Caveat Brush)", category: "VIETNAMESE_THU_PHAP" },
-  { id: "Thi Bút 5", label: "Thi Bút 5", desc: "Phượng Vũ — Phoenix Dancing Swirl (Arizonia)", category: "VIETNAMESE_THU_PHAP" },
-  { id: "Thi Bút 6", label: "Thi Bút 6", desc: "Ấn Triện — Imperial Cinnabar Seal (UTM + Triện Son)", category: "VIETNAMESE_THU_PHAP" },
+  { id: "Thi Bút 2", label: "Thi Bút 2", desc: "Ấn Triện — Imperial Cinnabar Seal (UTM + Triện Son)", category: "VIETNAMESE_THU_PHAP" },
 
   // 🇯🇵 Japanese Shodō
   { id: "Japanese 1", label: "Japanese 1", desc: "Bold Dry-Brush Shodō (Yuji Boku)", category: "JAPANESE_SHODO" },
