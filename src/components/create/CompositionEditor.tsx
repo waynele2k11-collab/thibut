@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ImagePlus, RotateCw, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
 
@@ -8,6 +8,48 @@ interface CompositionEditorProps {
   artworkUrl: string;
   onContinue: (compositionData: any) => void;
   onBack: () => void;
+}
+
+function recolorSvg(svgUrl: string, targetColor: "black" | "ivory" | "vermilion" | "gold"): string {
+  if (!svgUrl) return svgUrl;
+
+  const colorMap = {
+    black: "#0B0B0B",
+    ivory: "#F6F1E7",
+    vermilion: "#B3261E",
+    gold: "#C5A059",
+  };
+  const targetHex = colorMap[targetColor] || "#0B0B0B";
+
+  if (svgUrl.startsWith("data:image/svg+xml")) {
+    const isBase64 = svgUrl.includes(";base64,");
+    if (isBase64) {
+      try {
+        const base64Content = svgUrl.split(";base64,")[1];
+        let svgString = typeof window !== "undefined" ? atob(base64Content) : Buffer.from(base64Content, "base64").toString("utf-8");
+        svgString = svgString
+          .replace(/fill="#[0-9a-fA-F]{6}"/gi, `fill="${targetHex}"`)
+          .replace(/stroke="#[0-9a-fA-F]{6}"/gi, `stroke="${targetHex}"`);
+        const encoded = typeof window !== "undefined" ? btoa(svgString) : Buffer.from(svgString).toString("base64");
+        return `data:image/svg+xml;base64,${encoded}`;
+      } catch {
+        return svgUrl;
+      }
+    } else {
+      const encodedHex = encodeURIComponent(targetHex);
+      let res = svgUrl
+        .replaceAll("#0B0B0B", targetHex)
+        .replaceAll("#0b0b0b", targetHex)
+        .replaceAll("#111111", targetHex)
+        .replaceAll("%230B0B0B", encodedHex)
+        .replaceAll("%230b0b0b", encodedHex)
+        .replaceAll("%23111111", encodedHex);
+
+      return res;
+    }
+  }
+
+  return svgUrl;
 }
 
 export function CompositionEditor({ artworkUrl, onContinue, onBack }: CompositionEditorProps) {
@@ -37,8 +79,12 @@ export function CompositionEditor({ artworkUrl, onContinue, onBack }: Compositio
   // Layer State
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
-  const [color, setColor] = useState<"black" | "ivory" | "vermilion">("black");
+  const [color, setColor] = useState<"black" | "ivory" | "vermilion" | "gold">("black");
   const [resetKey, setResetKey] = useState(0);
+
+  const recoloredArtwork = useMemo(() => {
+    return recolorSvg(artworkUrl, color);
+  }, [artworkUrl, color]);
 
   const resetArtwork = () => {
     setScale(1);
@@ -53,54 +99,51 @@ export function CompositionEditor({ artworkUrl, onContinue, onBack }: Compositio
     : bgMode === "photo" ? bgImage : null;
 
   const handleUploadBg = () => {
-    // For V1 MVP, use a local placeholder image instead of S3 upload
-    setBgImage("/mockups/model-male.jpg");
+    setBgMode("photo");
   };
 
   const clearBg = () => {
     setBgImage(null);
     setGeneratedBg(null);
+    setBgMode("none");
   };
 
-  // For JPEGs with white backgrounds and black text:
-  // Black: mix-blend-multiply makes white transparent.
-  // Color/Ivory: invert turns white background to black, and text to color. mix-blend-screen makes black transparent.
-  const getColorStyle = (): React.CSSProperties => {
-    if (color === "ivory") return { 
-      filter: "invert(95%) sepia(10%) saturate(100%) hue-rotate(330deg) brightness(100%) contrast(100%)",
-      mixBlendMode: "screen" 
-    };
-    if (color === "vermilion") return { 
-      filter: "invert(30%) sepia(80%) saturate(5000%) hue-rotate(345deg) brightness(90%) contrast(100%)",
-      mixBlendMode: "screen"
-    };
-    return { mixBlendMode: "multiply" }; // black (default)
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      
-      const res = await fetch("/api/uploads/background", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.success) {
-        setBgImage(data.url);
-      } else {
-        alert(data.error || "Upload failed");
+    // 1. Instant client-side preview via FileReader
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const dataUrl = uploadEvent.target?.result as string;
+      if (dataUrl) {
+        setBgImage(dataUrl);
+        setBgMode("photo");
       }
-    } catch (err) {
-      alert("Upload failed");
-    } finally {
-      setIsUploading(false);
-    }
+    };
+    reader.readAsDataURL(file);
+
+    // 2. Asynchronous background upload to server
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    fetch("/api/uploads/background", {
+      method: "POST",
+      body: formData,
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.url) {
+          setBgImage(data.url);
+        }
+      })
+      .catch((err) => {
+        console.warn("Server upload fallback, using local preview:", err);
+      })
+      .finally(() => {
+        setIsUploading(false);
+      });
   };
 
   const handleGenerateBg = async () => {
@@ -175,17 +218,17 @@ export function CompositionEditor({ artworkUrl, onContinue, onBack }: Compositio
             }}
             dragElastic={bgMode === "product" ? 0.2 : 0}
             dragMomentum={false}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing w-[60%] flex items-center justify-center origin-center"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing w-[65%] flex items-center justify-center origin-center"
             style={{
               scale,
               rotate: rotation,
-              ...getColorStyle()
+              filter: color === "ivory" && !displayBg ? "drop-shadow(0px 2px 4px rgba(0,0,0,0.35))" : undefined,
             }}
           >
             <img 
-              src={artworkUrl} 
+              src={recoloredArtwork} 
               alt="Generated Calligraphy" 
-              className="w-full h-auto select-none"
+              className="w-full h-auto select-none pointer-events-none"
               draggable={false}
             />
           </motion.div>
@@ -202,10 +245,10 @@ export function CompositionEditor({ artworkUrl, onContinue, onBack }: Compositio
 
           {/* Mode Toggle */}
           <div className="flex p-1 bg-surface-tint border border-outline-variant mb-4">
-            <button onClick={() => setBgMode("none")} className={`flex-1 text-[10px] uppercase py-1.5 font-medium transition-colors ${bgMode === "none" ? "bg-white shadow-sm" : "text-on-surface-variant"}`}>None</button>
-            <button onClick={() => setBgMode("photo")} className={`flex-1 text-[10px] uppercase py-1.5 font-medium transition-colors ${bgMode === "photo" ? "bg-white shadow-sm" : "text-on-surface-variant"}`}>Upload</button>
-            <button onClick={() => setBgMode("generate")} className={`flex-1 text-[10px] uppercase py-1.5 font-medium transition-colors ${bgMode === "generate" ? "bg-white shadow-sm" : "text-on-surface-variant"}`}>Generate</button>
-            <button onClick={() => setBgMode("product")} className={`flex-1 text-[10px] uppercase py-1.5 font-medium transition-colors ${bgMode === "product" ? "bg-white shadow-sm" : "text-on-surface-variant"}`}>Product</button>
+            <button onClick={() => setBgMode("none")} className={`flex-1 text-[10px] uppercase py-1.5 font-medium transition-colors ${bgMode === "none" ? "bg-white shadow-sm font-bold text-black" : "text-on-surface-variant"}`}>None</button>
+            <button onClick={() => setBgMode("photo")} className={`flex-1 text-[10px] uppercase py-1.5 font-medium transition-colors ${bgMode === "photo" ? "bg-white shadow-sm font-bold text-black" : "text-on-surface-variant"}`}>Upload</button>
+            <button onClick={() => setBgMode("generate")} className={`flex-1 text-[10px] uppercase py-1.5 font-medium transition-colors ${bgMode === "generate" ? "bg-white shadow-sm font-bold text-black" : "text-on-surface-variant"}`}>Generate</button>
+            <button onClick={() => setBgMode("product")} className={`flex-1 text-[10px] uppercase py-1.5 font-medium transition-colors ${bgMode === "product" ? "bg-white shadow-sm font-bold text-black" : "text-on-surface-variant"}`}>Product</button>
           </div>
 
           {bgMode === "product" ? (
@@ -267,12 +310,12 @@ export function CompositionEditor({ artworkUrl, onContinue, onBack }: Compositio
           ) : bgMode === "photo" ? (
             <div>
               {bgImage ? (
-                 <button onClick={clearBg} className="w-full flex items-center justify-center gap-2 border border-outline-variant py-2 hover:bg-surface-tint transition-colors">
-                   <Trash2 className="w-4 h-4" /> Remove Background
+                 <button onClick={clearBg} className="w-full flex items-center justify-center gap-2 border border-outline-variant py-2 hover:bg-surface-tint transition-colors text-xs font-label-caps uppercase">
+                   <Trash2 className="w-4 h-4 text-[#B3261E]" /> Remove Background
                  </button>
               ) : (
-                <label className="w-full flex items-center justify-center gap-2 border border-outline-variant py-2 bg-black text-white hover:bg-black/80 transition-colors cursor-pointer disabled:opacity-50">
-                   {isUploading ? "Uploading..." : <><ImagePlus className="w-4 h-4" /> Upload Photo</>}
+                <label className="w-full flex items-center justify-center gap-2 border border-outline-variant py-2.5 bg-black text-white hover:bg-black/80 transition-colors cursor-pointer text-xs font-label-caps uppercase tracking-wider">
+                   {isUploading ? "Processing Image..." : <><ImagePlus className="w-4 h-4" /> Upload Photo</>}
                    <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
                 </label>
               )}
@@ -301,11 +344,31 @@ export function CompositionEditor({ artworkUrl, onContinue, onBack }: Compositio
           
           {/* Color */}
           <div className="mb-6">
-            <span className="text-xs uppercase mb-2 block font-medium">Ink Color</span>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs uppercase font-medium">Ink Color</span>
+              <span className="text-xs font-mono capitalize text-on-surface-variant">{color}</span>
+            </div>
             <div className="flex gap-3">
-              <button onClick={() => setColor("black")} className={`w-8 h-8 rounded-full bg-black ring-offset-2 transition-all ${color === "black" ? "ring-2 ring-black" : "hover:scale-110"}`} />
-              <button onClick={() => setColor("ivory")} className={`w-8 h-8 rounded-full bg-[#F6F1E7] border border-outline ring-offset-2 transition-all ${color === "ivory" ? "ring-2 ring-black" : "hover:scale-110"}`} />
-              <button onClick={() => setColor("vermilion")} className={`w-8 h-8 rounded-full bg-[#cc2222] ring-offset-2 transition-all ${color === "vermilion" ? "ring-2 ring-black" : "hover:scale-110"}`} />
+              <button 
+                onClick={() => setColor("black")} 
+                title="Sumi Black (#0B0B0B)"
+                className={`w-8 h-8 rounded-full bg-[#0B0B0B] ring-offset-2 transition-all ${color === "black" ? "ring-2 ring-black scale-105" : "hover:scale-110 opacity-70"}`} 
+              />
+              <button 
+                onClick={() => setColor("vermilion")} 
+                title="Cinnabar Red (#B3261E)"
+                className={`w-8 h-8 rounded-full bg-[#B3261E] ring-offset-2 transition-all ${color === "vermilion" ? "ring-2 ring-[#B3261E] scale-105" : "hover:scale-110 opacity-70"}`} 
+              />
+              <button 
+                onClick={() => setColor("ivory")} 
+                title="Rice Paper Ivory (#F6F1E7)"
+                className={`w-8 h-8 rounded-full bg-[#F6F1E7] border border-outline ring-offset-2 transition-all ${color === "ivory" ? "ring-2 ring-black scale-105" : "hover:scale-110 opacity-70"}`} 
+              />
+              <button 
+                onClick={() => setColor("gold")} 
+                title="Imperial Gold (#C5A059)"
+                className={`w-8 h-8 rounded-full bg-[#C5A059] ring-offset-2 transition-all ${color === "gold" ? "ring-2 ring-[#C5A059] scale-105" : "hover:scale-110 opacity-70"}`} 
+              />
             </div>
           </div>
 
@@ -352,6 +415,7 @@ export function CompositionEditor({ artworkUrl, onContinue, onBack }: Compositio
               scale, 
               rotation, 
               color, 
+              recoloredArtworkUrl: recoloredArtwork,
               bgImage: displayBg,
               productMode: bgMode,
               selectedProduct: bgMode === "product" ? selectedProduct : null 

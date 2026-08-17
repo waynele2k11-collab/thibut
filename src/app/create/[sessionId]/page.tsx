@@ -701,14 +701,27 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
         {step === 6 && selectedCandidate && (
           <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 w-full">
             {/* Preview */}
-            <div className="border border-surface-variant bg-surface-container-lowest p-8">
-              <img 
-                src={selectedCandidate.imageUrl} 
-                alt="Your design" 
-                className="w-full object-contain max-h-96 pointer-events-none select-none" 
-                onContextMenu={(e) => e.preventDefault()} 
-                draggable={false} 
-              />
+            <div className="border border-surface-variant bg-surface-container-lowest p-8 relative overflow-hidden rounded-lg">
+              <div className="relative w-full max-h-96 min-h-[280px] flex items-center justify-center bg-white/60 overflow-hidden rounded">
+                {compositionData?.bgImage && (
+                  <img
+                    src={compositionData.bgImage}
+                    alt="Custom Background"
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                  />
+                )}
+                <img 
+                  src={compositionData?.recoloredArtworkUrl || selectedCandidate.imageUrl} 
+                  alt="Your design" 
+                  className="max-h-96 w-auto object-contain pointer-events-none select-none z-10" 
+                  style={{
+                    transform: compositionData ? `scale(${compositionData.scale || 1}) rotate(${compositionData.rotation || 0}deg)` : undefined,
+                    filter: compositionData?.color === "ivory" && !compositionData?.bgImage ? "drop-shadow(0px 2px 4px rgba(0,0,0,0.35))" : undefined,
+                  }}
+                  onContextMenu={(e) => e.preventDefault()} 
+                  draggable={false} 
+                />
+              </div>
               <div className="mt-4 border-t border-surface-variant pt-4">
                 <p className="font-label-caps text-label-caps text-on-surface-variant uppercase">Your Interpretation</p>
                 {selectedInterpretation && (
