@@ -44,24 +44,24 @@ export class VietnameseThuPhapSynthesizer {
     const words = trimmed.split(/\s+/);
 
     // Font mapping per Thư Pháp style
-    let fontFile = "GreatVibes-Regular.ttf";
-    let fontName = "Great Vibes";
+    let fontFile = "UtmThuphapThienAn.ttf";
+    let fontName = "UTM ThuPhap Thien An";
 
     if (stylePackId === "Thi Bút 2") {
+      fontFile = "GreatVibes-Regular.ttf";
+      fontName = "Great Vibes";
+    } else if (stylePackId === "Thi Bút 3") {
       fontFile = "KaushanScript-Regular.ttf";
       fontName = "Kaushan Script";
-    } else if (stylePackId === "Thi Bút 3") {
+    } else if (stylePackId === "Thi Bút 4") {
       fontFile = "CaveatBrush-Regular.ttf";
       fontName = "Caveat Brush";
-    } else if (stylePackId === "Thi Bút 4") {
+    } else if (stylePackId === "Thi Bút 5") {
       fontFile = "Arizonia-Regular.ttf";
       fontName = "Arizonia";
-    } else if (stylePackId === "Thi Bút 5" || stylePackId === "Classic") {
-      fontFile = "AlexBrush-Regular.ttf";
-      fontName = "Alex Brush";
     } else if (stylePackId === "Thi Bút 6" || stylePackId === "Seal") {
-      fontFile = "Allura-Regular.ttf";
-      fontName = "Allura";
+      fontFile = "UtmThuphapThienAn.ttf";
+      fontName = "UTM ThuPhap Thien An";
     }
 
     const base64Data = getBase64Font(fontFile);
