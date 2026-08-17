@@ -1,13 +1,17 @@
 {
   "utm-thuphap-thien-an": true,
   "yuji-boku": true,
+  "yuji-syuku": true,
+  "yuji-mai": true,
   "long-cang": true,
-  "nanum-brush-script": true,
   "liu-jian-mao-cao": true,
+  "ma-shan-zheng": true,
+  "zhi-mang-xing": true,
+  "nanum-brush-script": true,
+  "east-sea-dokdo": true,
   "great-vibes": false,
   "kaushan-script": false,
   "caveat-brush": false,
   "alex-brush": false,
-  "yuji-mai": true,
-  "east-sea-dokdo": true
+  "arizonia": false
 }

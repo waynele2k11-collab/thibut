@@ -622,33 +622,27 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {activeFontList.map((pack) => {
-                  const isMatchingTradition = pack.category === culturalStyle;
-                  const isSelected = stylePack === pack.id;
+                {activeFontList
+                  .filter((pack) => pack.category === culturalStyle)
+                  .map((pack) => {
+                    const isSelected = stylePack === pack.id;
 
-                  return (
-                    <button
-                      key={pack.id}
-                      onClick={() => setStylePack(pack.id)}
-                      className={`relative p-5 border rounded-lg flex flex-col items-start text-left transition-all ${
-                        isSelected
-                          ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
-                          : isMatchingTradition
-                          ? "border-outline-variant bg-surface-container-lowest hover:border-primary"
-                          : "border-outline-variant/60 bg-surface-container-lowest/60 opacity-80 hover:opacity-100 hover:border-primary"
-                      }`}
-                    >
-                      {isSelected && <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-primary" />}
-                      <span className="font-serif font-bold text-on-background text-base">{pack.label}</span>
-                      <span className="font-body-md text-on-surface-variant text-xs mt-1 leading-snug">{pack.desc}</span>
-                      {isMatchingTradition && (
-                        <span className="mt-3 px-2 py-0.5 bg-surface-variant text-on-surface-variant text-[10px] font-label-caps uppercase rounded">
-                          Recommended
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={pack.id}
+                        onClick={() => setStylePack(pack.id)}
+                        className={`relative p-5 border rounded-lg flex flex-col items-start text-left transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
+                            : "border-outline-variant bg-surface-container-lowest hover:border-primary"
+                        }`}
+                      >
+                        {isSelected && <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-primary" />}
+                        <span className="font-serif font-bold text-on-background text-base">{pack.label}</span>
+                        <span className="font-body-md text-on-surface-variant text-xs mt-1 leading-snug">{pack.desc}</span>
+                      </button>
+                    );
+                  })}
               </div>
             </div>
 
