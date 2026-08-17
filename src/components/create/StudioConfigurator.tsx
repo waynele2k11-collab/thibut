@@ -398,40 +398,40 @@ export function StudioConfigurator({
   }, [activeFonts, state.tradition]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pb-16">
+    <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start pb-16">
       
       {/* ── LEFT COLUMN: Live Artwork Stage & Variation Presets (7 Cols) ─────── */}
-      <div className="lg:col-span-7 flex flex-col gap-6 sticky top-6">
+      <div className="lg:col-span-7 flex flex-col gap-5 static lg:sticky lg:top-24 z-10">
         
         {/* Main Artwork Stage */}
-        <div className="border border-surface-variant bg-surface-container-lowest p-6 rounded-2xl shadow-sm flex flex-col gap-5">
+        <div className="border border-surface-variant bg-surface-container-lowest p-4 sm:p-6 rounded-2xl shadow-sm flex flex-col gap-4 sm:gap-5">
           
           {/* Stage Top Bar */}
           <div className="flex items-center justify-between pb-3 border-b border-surface-variant text-xs">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-on-background flex items-center gap-1.5 font-label-caps uppercase">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="font-bold text-on-background flex items-center gap-1 font-label-caps uppercase text-[11px] sm:text-xs">
                 {TRADITIONS.find((t) => t.id === state.tradition)?.flag} {TRADITIONS.find((t) => t.id === state.tradition)?.label}
               </span>
-              <span className="text-on-surface-variant">•</span>
-              <span className="px-2 py-0.5 bg-[#F4EFE6] border border-[#E5E0D8] text-[#111111] rounded text-[11px] font-medium">
+              <span className="text-on-surface-variant text-[10px] hidden sm:inline">•</span>
+              <span className="px-2 py-0.5 bg-[#F4EFE6] border border-[#E5E0D8] text-[#111111] rounded text-[10px] sm:text-[11px] font-medium">
                 {TREATMENTS.find((t) => t.id === state.treatment)?.label}
               </span>
             </div>
 
             {isRendering && (
-              <span className="text-xs text-[#B3261E] font-medium flex items-center gap-1.5 animate-pulse font-mono">
-                <Sparkles className="w-3.5 h-3.5" /> Rendering Brush...
+              <span className="text-[11px] text-[#B3261E] font-medium flex items-center gap-1 animate-pulse font-mono flex-shrink-0">
+                <Sparkles className="w-3 h-3" /> Rendering...
               </span>
             )}
           </div>
 
           {/* SVG Canvas Box */}
-          <div className="relative w-full aspect-[16/10] min-h-[340px] flex items-center justify-center bg-[#FAF8F5] border border-[#EBE6DC] rounded-xl overflow-hidden shadow-inner group">
+          <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] min-h-[240px] sm:min-h-[340px] flex items-center justify-center bg-[#FAF8F5] border border-[#EBE6DC] rounded-xl overflow-hidden shadow-inner group">
             {displayArtworkUrl ? (
               <img
                 src={displayArtworkUrl}
                 alt={state.interpretation.text}
-                className="max-h-[85%] max-w-[85%] object-contain select-none pointer-events-none transition-transform duration-200"
+                className="max-h-[88%] max-w-[88%] object-contain select-none pointer-events-none transition-transform duration-200"
                 style={{
                   transform: `scale(${state.advanced.scale}) rotate(${state.advanced.rotation}deg)`,
                   filter: state.inkColor === "ivory" ? "drop-shadow(0px 2px 5px rgba(0,0,0,0.4))" : undefined,
@@ -440,8 +440,8 @@ export function StudioConfigurator({
                 draggable={false}
               />
             ) : (
-              <div className="flex flex-col items-center gap-2 text-on-surface-variant">
-                <Feather className="w-8 h-8 opacity-40 animate-bounce" />
+              <div className="flex flex-col items-center gap-2 text-on-surface-variant p-4 text-center">
+                <Feather className="w-7 h-7 opacity-40 animate-bounce" />
                 <span className="text-xs font-mono">Synthesizing calligraphy brush strokes...</span>
               </div>
             )}
@@ -449,10 +449,10 @@ export function StudioConfigurator({
 
           {/* ── 01–06 Variation Preset Quick-Pills (Prominent) ───────────────── */}
           <div>
-            <span className="text-[11px] font-label-caps uppercase text-on-surface-variant font-bold tracking-wider block mb-2">
+            <span className="text-[10px] sm:text-[11px] font-label-caps uppercase text-on-surface-variant font-bold tracking-wider block mb-2">
               Variation Presets (Click to Experiment)
             </span>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2">
               {VARIATION_PILLS.map((pill) => {
                 const isActive = state.variationIndex === pill.id;
                 return (
@@ -460,14 +460,16 @@ export function StudioConfigurator({
                     key={pill.id}
                     onClick={() => handleSelectVariation(pill.id)}
                     title={pill.desc}
-                    className={`py-2 px-1.5 rounded-lg text-center transition-all flex flex-col items-center justify-center border ${
+                    className={`py-2 px-1 rounded-lg text-center transition-all flex flex-col items-center justify-center border ${
                       isActive
                         ? "bg-black text-white border-black font-bold shadow-md ring-2 ring-black/20"
                         : "bg-white border-outline-variant hover:border-black/50 text-on-background"
                     }`}
                   >
-                    <span className="text-xs font-mono font-bold block">{pill.short}</span>
-                    <span className="text-[10px] truncate max-w-full font-medium">{pill.label.replace(/^\d+\s*/, "")}</span>
+                    <span className="text-[11px] font-mono font-bold block">{pill.short}</span>
+                    <span className="text-[9px] sm:text-[10px] truncate max-w-full font-medium block">
+                      {pill.label.replace(/^\d+\s*/, "")}
+                    </span>
                   </button>
                 );
               })}

@@ -156,10 +156,10 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
   return (
     <div className="min-h-screen bg-background text-on-background flex flex-col font-body-md antialiased">
       {/* Studio Header */}
-      <header className="border-b border-surface-variant bg-surface-container-lowest/80 backdrop-blur sticky top-0 z-30 px-margin-mobile md:px-margin-desktop py-4">
+      <header className="border-b border-surface-variant bg-surface-container-lowest/80 backdrop-blur sticky top-0 z-30 px-margin-mobile md:px-margin-desktop py-3 sm:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="font-serif font-black text-xl tracking-tight text-on-background">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link href="/" className="font-serif font-black text-lg sm:text-xl tracking-tight text-on-background">
               Thi Bút
             </Link>
             <span className="text-on-surface-variant font-mono text-xs hidden sm:inline">
@@ -168,18 +168,19 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
           </div>
 
           {/* Breadcrumb Navigation */}
-          <div className="flex items-center gap-2 text-xs font-label-caps uppercase">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-label-caps uppercase">
             <button 
               onClick={() => setCurrentStage("studio")}
-              className={`px-3 py-1.5 rounded-lg transition-colors font-bold ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors font-bold ${
                 currentStage === "studio" 
                   ? "bg-black text-white" 
                   : "text-on-surface-variant hover:text-black"
               }`}
             >
-              1. Studio Artwork
+              <span className="hidden sm:inline">1. Studio Artwork</span>
+              <span className="sm:hidden">1. Artwork</span>
             </button>
-            <span className="text-outline-variant">→</span>
+            <span className="text-outline-variant text-[10px]">→</span>
             <button 
               onClick={() => {
                 if (studioState && activeCandidate) {
@@ -187,13 +188,14 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
                 }
               }}
               disabled={!studioState}
-              className={`px-3 py-1.5 rounded-lg transition-colors font-bold ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors font-bold ${
                 currentStage === "product" 
                   ? "bg-black text-white" 
                   : "text-on-surface-variant hover:text-black disabled:opacity-40"
               }`}
             >
-              2. Merchandise & Size
+              <span className="hidden sm:inline">2. Merchandise & Size</span>
+              <span className="sm:hidden">2. Products</span>
             </button>
           </div>
         </div>
