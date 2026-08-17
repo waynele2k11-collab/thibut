@@ -10,10 +10,27 @@ import {
 import { StructureGuideGenerator } from "../StructureGuideGenerator";
 import { CalligraphyValidationService } from "../CalligraphyValidationService";
 
+import fs from "fs";
+import path from "path";
+
+let cachedAlexBrushBase64 = "";
+function getAlexBrushBase64(): string {
+  if (cachedAlexBrushBase64) return cachedAlexBrushBase64;
+  try {
+    const fontPath = path.join(process.cwd(), "public", "fonts", "AlexBrush-Regular.ttf");
+    if (fs.existsSync(fontPath)) {
+      cachedAlexBrushBase64 = fs.readFileSync(fontPath).toString("base64");
+    }
+  } catch (e) {
+    console.warn("Could not read AlexBrush-Regular.ttf:", e);
+  }
+  return cachedAlexBrushBase64;
+}
+
 export class DeterministicBrushProvider implements CalligraphyRendererProvider {
   public id = "deterministic-brush-v1";
   public name = "Thi Bút Deterministic Brush Engine";
-  public version = "1.0.0-poc";
+  public version = "1.2.0-thuphap-master";
 
   private variationConfigs: VariationStrategyConfig[] = [
     {
@@ -200,9 +217,19 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
     const turbulenceFreq = (0.035 + config.dryBrushIntensity * 0.09).toFixed(3);
     const displacementScale = (config.dryBrushIntensity * 16).toFixed(1);
 
+    const alexBrushBase64 = getAlexBrushBase64();
+    const fontFaceBlock = alexBrushBase64
+      ? `@font-face {
+          font-family: 'Alex Brush';
+          src: url('data:font/ttf;charset=utf-8;base64,${alexBrushBase64}') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+        }`
+      : `@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&amp;family=Dancing+Script:wght@700&amp;family=Long+Cang&amp;family=Yuji+Boku&amp;family=Nanum+Brush+Script&amp;display=swap');`;
+
     const filterDef = `
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&amp;family=Dancing+Script:wght@700&amp;family=Long+Cang&amp;family=Yuji+Boku&amp;family=Nanum+Brush+Script&amp;display=swap');
+        ${fontFaceBlock}
         .thu-phap-text {
           font-family: ${fontFamily};
           font-weight: 700;

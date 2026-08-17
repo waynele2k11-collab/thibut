@@ -44,10 +44,12 @@ export class CalligraphyService {
     const effectiveStylePackId = compatibility.recommendedStylePackId;
 
     // 3. Cache Lookup (TB-CALLI-010)
+    const RENDERER_VERSION = "V2_THUPHAP";
+
     const cachedDesign = await DesignCacheService.findReusableDesign({
       phraseKnowledgeId,
       stylePackId: effectiveStylePackId,
-      rendererVersion: "V1",
+      rendererVersion: RENDERER_VERSION,
     });
 
     if (cachedDesign && cachedDesign.variations && cachedDesign.variations.length >= variationCount) {
@@ -109,10 +111,10 @@ export class CalligraphyService {
       await DesignCacheService.storeRenderedDesign({
         phraseKnowledgeId,
         stylePackId: effectiveStylePackId,
-        rendererVersion: "V1",
+        rendererVersion: RENDERER_VERSION,
         variations: approvedCandidates.map((c, idx) => ({
           variationIndex: idx + 1,
-          variationNote: `${c.variationType}: ${c.variationName}`,
+          variationNote: c.variationName,
           renderedText: authoritativeText,
           assetId: c.previewAssetUrl,
           provider: c.provider,
