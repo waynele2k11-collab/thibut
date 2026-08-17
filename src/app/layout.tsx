@@ -5,12 +5,15 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AntiScrapeProtection } from "@/components/security/AntiScrapeProtection";
 import {
+  fontVnAlexBrush,
   fontVnDancingScript,
   fontVnCaveat,
+  fontJpYujiBoku,
   fontJpYujiSyuku,
   fontJpYujiMai,
-  fontKrEastSeaDokdo,
   fontKrNanumBrush,
+  fontKrEastSeaDokdo,
+  fontCnLongCang,
   fontCnMaShanZheng,
   fontCnZhiMangXing,
 } from "@/fonts";
@@ -38,7 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${fontVnDancingScript.variable} ${fontVnCaveat.variable} ${fontJpYujiSyuku.variable} ${fontJpYujiMai.variable} ${fontKrEastSeaDokdo.variable} ${fontKrNanumBrush.variable} ${fontCnMaShanZheng.variable} ${fontCnZhiMangXing.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fontVnAlexBrush.variable} ${fontVnDancingScript.variable} ${fontVnCaveat.variable} ${fontJpYujiBoku.variable} ${fontJpYujiSyuku.variable} ${fontJpYujiMai.variable} ${fontKrNanumBrush.variable} ${fontKrEastSeaDokdo.variable} ${fontCnLongCang.variable} ${fontCnMaShanZheng.variable} ${fontCnZhiMangXing.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col selection:bg-secondary/30">
         <AntiScrapeProtection />

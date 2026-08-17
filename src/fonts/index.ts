@@ -1,17 +1,27 @@
 import { 
   Dancing_Script, 
   Caveat, 
+  Alex_Brush,
+  Yuji_Boku,
   Yuji_Syuku, 
   Yuji_Mai, 
   East_Sea_Dokdo, 
   Nanum_Brush_Script, 
+  Long_Cang,
   Ma_Shan_Zheng, 
   Zhi_Mang_Xing 
 } from "next/font/google";
 
-// 🇻🇳 Vietnamese (Thư Pháp Alternatives)
+// 🇻🇳 Vietnamese / Latin (Thư Pháp & Cursive Brush)
+export const fontVnAlexBrush = Alex_Brush({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400"],
+  variable: "--font-vn-alex",
+  display: "swap",
+});
+
 export const fontVnDancingScript = Dancing_Script({
-  subsets: ["vietnamese"],
+  subsets: ["latin", "vietnamese"],
   weight: ["400", "700"],
   variable: "--font-vn-dancing",
   display: "swap",
@@ -24,7 +34,14 @@ export const fontVnCaveat = Caveat({
   display: "swap",
 });
 
-// 🇯🇵 Japanese (Shodo / Brush Calligraphy)
+// 🇯🇵 Japanese (Shodō / Dry Brush & Classical Calligraphy)
+export const fontJpYujiBoku = Yuji_Boku({
+  weight: "400",
+  variable: "--font-jp-yuji-boku",
+  display: "swap",
+  preload: false,
+});
+
 export const fontJpYujiSyuku = Yuji_Syuku({
   weight: "400",
   variable: "--font-jp-yuji-syuku",
@@ -39,14 +56,7 @@ export const fontJpYujiMai = Yuji_Mai({
   preload: false,
 });
 
-// 🇰🇷 Korean (Seoye / Brush Script)
-export const fontKrEastSeaDokdo = East_Sea_Dokdo({
-  weight: "400",
-  variable: "--font-kr-dokdo",
-  display: "swap",
-  preload: false,
-});
-
+// 🇰🇷 Korean (Seoye / Hangul Brush Script)
 export const fontKrNanumBrush = Nanum_Brush_Script({
   weight: "400",
   variable: "--font-kr-nanum",
@@ -54,7 +64,21 @@ export const fontKrNanumBrush = Nanum_Brush_Script({
   preload: false,
 });
 
-// 🇨🇳 Chinese (Shufa / Brush Calligraphy)
+export const fontKrEastSeaDokdo = East_Sea_Dokdo({
+  weight: "400",
+  variable: "--font-kr-dokdo",
+  display: "swap",
+  preload: false,
+});
+
+// 🇨🇳 Chinese (Shūfǎ / Cursive & Standard Brush Calligraphy)
+export const fontCnLongCang = Long_Cang({
+  weight: "400",
+  variable: "--font-cn-longcang",
+  display: "swap",
+  preload: false,
+});
+
 export const fontCnMaShanZheng = Ma_Shan_Zheng({
   weight: "400",
   variable: "--font-cn-mashan",
@@ -68,3 +92,4 @@ export const fontCnZhiMangXing = Zhi_Mang_Xing({
   display: "swap",
   preload: false,
 });
+

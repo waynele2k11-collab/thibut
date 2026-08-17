@@ -24,17 +24,17 @@ export class StructureGuideGenerator {
     const charCount = chars.length;
 
     // Font selection based on detected script family
-    let fontFamily = "'Playfair Display', serif";
+    let fontFamily = "'Alex Brush', 'Dancing Script', cursive";
     if (script === "HAN") {
-      fontFamily = "'Ma Shan Zheng', 'Noto Serif SC', serif";
+      fontFamily = "'Long Cang', 'Ma Shan Zheng', cursive";
     } else if (script === "JAPANESE_MIXED") {
-      fontFamily = "'Yuji Syuku', 'Noto Serif JP', serif";
+      fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
     } else if (script === "KOREAN_HANGUL") {
-      fontFamily = "'Nanum Brush Script', 'Noto Serif KR', cursive";
+      fontFamily = "'Nanum Brush Script', 'East Sea Dokdo', cursive";
     } else if (script === "VIETNAMESE_LATIN") {
-      fontFamily = "'Dancing Script', 'Caveat', cursive";
+      fontFamily = "'Alex Brush', 'Dancing Script', cursive";
     } else {
-      fontFamily = "'Playfair Display', 'Dancing Script', serif";
+      fontFamily = "'Alex Brush', 'Dancing Script', cursive";
     }
 
     const width = isVertical ? 300 : Math.max(600, charCount * 120 + 100);
@@ -55,7 +55,7 @@ export class StructureGuideGenerator {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
       <defs>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&amp;family=Caveat:wght@700&amp;family=Ma+Shan+Zheng&amp;family=Yuji+Syuku&amp;family=Nanum+Brush+Script&amp;display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&amp;family=Dancing+Script:wght@700&amp;family=Long+Cang&amp;family=Yuji+Boku&amp;family=Nanum+Brush+Script&amp;display=swap');
         </style>
       </defs>
       <rect width="100%" height="100%" fill="#ffffff" />

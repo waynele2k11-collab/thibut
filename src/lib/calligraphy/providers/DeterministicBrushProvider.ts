@@ -177,17 +177,17 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
     const chars = Array.from(text.trim());
     const charCount = chars.length;
 
-    let fontFamily = "'Playfair Display', serif";
+    let fontFamily = "'Alex Brush', 'Dancing Script', cursive";
     if (script === "HAN") {
-      fontFamily = "'Ma Shan Zheng', 'Noto Serif SC', serif";
+      fontFamily = "'Long Cang', 'Ma Shan Zheng', cursive";
     } else if (script === "JAPANESE_MIXED") {
-      fontFamily = "'Yuji Syuku', 'Noto Serif JP', serif";
+      fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
     } else if (script === "KOREAN_HANGUL") {
-      fontFamily = "'Nanum Brush Script', 'Noto Serif KR', cursive";
+      fontFamily = "'Nanum Brush Script', 'East Sea Dokdo', cursive";
     } else if (script === "VIETNAMESE_LATIN" || stylePackId === "Classic" || stylePackId === "Thi Bút Classic" || stylePackId === "Street") {
-      fontFamily = "'Dancing Script', 'Caveat', cursive";
+      fontFamily = "'Alex Brush', 'Dancing Script', cursive";
     } else {
-      fontFamily = "'Dancing Script', 'Caveat', cursive";
+      fontFamily = "'Alex Brush', 'Dancing Script', cursive";
     }
 
     const width = isVertical ? 360 : Math.max(700, charCount * 130 + 160);
@@ -201,7 +201,7 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
 
     const filterDef = `
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&amp;family=Caveat:wght@700&amp;family=Ma+Shan+Zheng&amp;family=Yuji+Syuku&amp;family=Nanum+Brush+Script&amp;display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&amp;family=Dancing+Script:wght@700&amp;family=Long+Cang&amp;family=Yuji+Boku&amp;family=Nanum+Brush+Script&amp;display=swap');
       </style>
       <filter id="brushFilter_${seed}" x="-20%" y="-20%" width="140%" height="140%">
         <feTurbulence type="fractalNoise" baseFrequency="${turbulenceFreq}" numOctaves="4" result="noise" />
