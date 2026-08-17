@@ -9,6 +9,7 @@ import {
 } from "../types";
 import { StructureGuideGenerator } from "../StructureGuideGenerator";
 import { CalligraphyValidationService } from "../CalligraphyValidationService";
+import { VietnameseThuPhapSynthesizer } from "../VietnameseThuPhapSynthesizer";
 
 import fs from "fs";
 import path from "path";
@@ -194,66 +195,53 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
     const chars = Array.from(text.trim());
     const charCount = chars.length;
 
-    let fontFamily = "'Alex Brush', 'Dancing Script', cursive";
-    let isThuPhap = true;
+    const isThuPhap = 
+      stylePackId.startsWith("Thi Bút") ||
+      stylePackId === "Classic" ||
+      stylePackId === "Street" ||
+      stylePackId === "Seal" ||
+      script === "VIETNAMESE_LATIN" ||
+      script === "ENGLISH_LATIN";
 
-    if (stylePackId === "Thi Bút 1" || stylePackId === "Thi Bút Classic" || stylePackId === "Classic") {
-      fontFamily = "'Alex Brush', 'Dancing Script', cursive";
-      isThuPhap = true;
-    } else if (stylePackId === "Thi Bút 2") {
-      fontFamily = "'Dancing Script', cursive";
-      isThuPhap = true;
-    } else if (stylePackId === "Thi Bút 3" || stylePackId === "Street") {
-      fontFamily = "'Caveat', cursive";
-      isThuPhap = true;
-    } else if (stylePackId === "Thi Bút 4" || stylePackId === "Seal") {
-      fontFamily = "'Alex Brush', cursive";
-      isThuPhap = true;
-    } else if (stylePackId === "Japanese 1" || stylePackId === "Shodō") {
+    if (isThuPhap) {
+      return VietnameseThuPhapSynthesizer.generate({
+        text,
+        variationType: config.type,
+        seed,
+        isVertical,
+      });
+    }
+
+    let fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
+    if (stylePackId === "Japanese 1" || stylePackId === "Shodō") {
       fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
-      isThuPhap = false;
     } else if (stylePackId === "Japanese 2") {
       fontFamily = "'Yuji Syuku', serif";
-      isThuPhap = false;
     } else if (stylePackId === "Japanese 3") {
       fontFamily = "'Yuji Mai', cursive";
-      isThuPhap = false;
     } else if (stylePackId === "Chinese 1" || stylePackId === "Ink") {
       fontFamily = "'Long Cang', 'Ma Shan Zheng', cursive";
-      isThuPhap = false;
     } else if (stylePackId === "Chinese 2") {
       fontFamily = "'Ma Shan Zheng', cursive";
-      isThuPhap = false;
     } else if (stylePackId === "Chinese 3") {
       fontFamily = "'Zhi Mang Xing', cursive";
-      isThuPhap = false;
     } else if (stylePackId === "Korean 1" || stylePackId === "Zen") {
       fontFamily = "'Nanum Brush Script', cursive";
-      isThuPhap = false;
     } else if (stylePackId === "Korean 2") {
       fontFamily = "'East Sea Dokdo', cursive";
-      isThuPhap = false;
     } else {
       if (script === "HAN") {
         fontFamily = "'Long Cang', 'Ma Shan Zheng', cursive";
-        isThuPhap = false;
       } else if (script === "JAPANESE_MIXED") {
         fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
-        isThuPhap = false;
       } else if (script === "KOREAN_HANGUL") {
         fontFamily = "'Nanum Brush Script', 'East Sea Dokdo', cursive";
-        isThuPhap = false;
-      } else {
-        fontFamily = "'Alex Brush', 'Dancing Script', cursive";
-        isThuPhap = true;
       }
     }
 
-    // Dynamic canvas dimensions sized for prominent artwork presence
     const width = isVertical ? 480 : Math.max(800, charCount * 140 + 240);
     const height = isVertical ? Math.max(800, charCount * 220 + 200) : 560;
 
-    // Scale and stroke modulation
     const fontSize = Math.floor((isVertical ? 150 : 160) * config.pressureMultiplier);
     const strokeWidth = (3.5 * config.pressureMultiplier).toFixed(1);
     const turbulenceFreq = (0.035 + config.dryBrushIntensity * 0.09).toFixed(3);
