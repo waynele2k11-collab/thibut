@@ -13,7 +13,8 @@ import {
   Settings,
   ShieldAlert,
   CreditCard,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Type
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -30,6 +31,7 @@ export function AdminSidebar() {
 
   const navItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { name: "Fonts", href: "/admin/fonts", icon: Type },
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Sellers", href: "/admin/sellers", icon: UserSquare2 },
     { name: "Art", href: "/admin/art", icon: Palette },

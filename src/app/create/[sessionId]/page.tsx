@@ -127,6 +127,34 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
   // Step 3 state
   const [stylePack, setStylePack] = useState("Thi Bút 1");
   const [composition, setComposition] = useState("Centered");
+  const [activeFontList, setActiveFontList] = useState<typeof STYLE_PACKS>(STYLE_PACKS);
+
+  // Load dynamically enabled fonts from Font Registry
+  useEffect(() => {
+    fetch("/api/fonts/active")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.fonts) && data.fonts.length > 0) {
+          const dynamicPacks = data.fonts.map((f: any) => ({
+            id: f.id === "utm-thuphap-thien-an" ? "Thi Bút 1" : f.name,
+            label: f.name,
+            desc: f.description,
+            category: f.category,
+          }));
+          // Add default seal style
+          dynamicPacks.push({
+            id: "Thi Bút 2",
+            label: "Thi Bút 2",
+            desc: "Ấn Triện — Imperial Cinnabar Seal (UTM + Triện Son)",
+            category: "VIETNAMESE_THU_PHAP",
+          });
+          setActiveFontList(dynamicPacks);
+        }
+      })
+      .catch(() => {
+        // use static fallback
+      });
+  }, []);
 
   useEffect(() => {
     if (culturalStyle === "VIETNAMESE_THU_PHAP") setStylePack("Thi Bút 1");
@@ -478,7 +506,7 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {STYLE_PACKS.map((pack) => {
+                {activeFontList.map((pack) => {
                   const isMatchingTradition = pack.category === culturalStyle;
                   const isSelected = stylePack === pack.id;
 
