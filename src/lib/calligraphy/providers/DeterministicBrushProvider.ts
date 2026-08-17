@@ -177,6 +177,8 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
     const chars = Array.from(text.trim());
     const charCount = chars.length;
 
+    const isThuPhap = script === "VIETNAMESE_LATIN" || script === "ENGLISH_LATIN" || stylePackId === "Classic" || stylePackId === "Thi Bút Classic";
+
     let fontFamily = "'Alex Brush', 'Dancing Script', cursive";
     if (script === "HAN") {
       fontFamily = "'Long Cang', 'Ma Shan Zheng', cursive";
@@ -184,57 +186,103 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
       fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
     } else if (script === "KOREAN_HANGUL") {
       fontFamily = "'Nanum Brush Script', 'East Sea Dokdo', cursive";
-    } else if (script === "VIETNAMESE_LATIN" || stylePackId === "Classic" || stylePackId === "Thi Bút Classic" || stylePackId === "Street") {
-      fontFamily = "'Alex Brush', 'Dancing Script', cursive";
     } else {
       fontFamily = "'Alex Brush', 'Dancing Script', cursive";
     }
 
-    const width = isVertical ? 360 : Math.max(700, charCount * 130 + 160);
-    const height = isVertical ? Math.max(640, charCount * 180 + 160) : 460;
+    // Dynamic canvas dimensions sized for prominent artwork presence
+    const width = isVertical ? 480 : Math.max(800, charCount * 140 + 240);
+    const height = isVertical ? Math.max(800, charCount * 220 + 200) : 560;
 
-    // Filter effects based on variation config
-    const strokeWidth = (4 * config.pressureMultiplier).toFixed(1);
-    const fontSize = Math.floor(100 * config.pressureMultiplier);
-    const turbulenceFreq = (0.04 + config.dryBrushIntensity * 0.08).toFixed(3);
-    const displacementScale = (config.dryBrushIntensity * 12).toFixed(1);
+    // Scale and stroke modulation
+    const fontSize = Math.floor((isVertical ? 150 : 160) * config.pressureMultiplier);
+    const strokeWidth = (3.5 * config.pressureMultiplier).toFixed(1);
+    const turbulenceFreq = (0.035 + config.dryBrushIntensity * 0.09).toFixed(3);
+    const displacementScale = (config.dryBrushIntensity * 16).toFixed(1);
 
     const filterDef = `
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&amp;family=Dancing+Script:wght@700&amp;family=Long+Cang&amp;family=Yuji+Boku&amp;family=Nanum+Brush+Script&amp;display=swap');
+        .thu-phap-text {
+          font-family: ${fontFamily};
+          font-weight: 700;
+          letter-spacing: ${isThuPhap ? "0.05em" : "0.02em"};
+        }
       </style>
-      <filter id="brushFilter_${seed}" x="-20%" y="-20%" width="140%" height="140%">
+      <filter id="brushFilter_${seed}" x="-25%" y="-25%" width="150%" height="150%">
         <feTurbulence type="fractalNoise" baseFrequency="${turbulenceFreq}" numOctaves="4" result="noise" />
         <feDisplacementMap in="SourceGraphic" in2="noise" scale="${displacementScale}" xChannelSelector="R" yChannelSelector="G" result="rough" />
-        ${config.inkBleed > 0.1 ? `<feGaussianBlur in="rough" stdDeviation="${(config.inkBleed * 1.5).toFixed(1)}" result="bleed" />
+        ${config.inkBleed > 0.1 ? `<feGaussianBlur in="rough" stdDeviation="${(config.inkBleed * 1.8).toFixed(1)}" result="bleed" />
         <feMerge>
           <feMergeNode in="bleed" />
           <feMergeNode in="rough" />
         </feMerge>` : `<feMerge><feMergeNode in="rough" /></feMerge>`}
       </filter>
+      <filter id="swashFilter_${seed}" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G" result="roughSwash" />
+      </filter>
     `;
 
     let glyphElements = "";
+    let decorativeSwash = "";
+
     if (isVertical) {
-      const stepY = (height - 180) / Math.max(charCount, 1);
+      const stepY = (height - 220) / Math.max(charCount, 1);
       chars.forEach((char, i) => {
-        const y = 110 + i * stepY;
-        glyphElements += `<text x="50%" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="${fontFamily}" font-size="${fontSize}" font-weight="700" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${strokeWidth}" filter="url(#brushFilter_${seed})">${char}</text>`;
+        const y = 130 + i * stepY;
+        glyphElements += `<text x="50%" y="${y}" text-anchor="middle" dominant-baseline="central" class="thu-phap-text" font-size="${fontSize}" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${strokeWidth}" filter="url(#brushFilter_${seed})">${char}</text>`;
       });
     } else {
-      glyphElements = `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-family="${fontFamily}" font-size="${fontSize}" font-weight="700" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${strokeWidth}" filter="url(#brushFilter_${seed})">${text}</text>`;
+      const textY = isThuPhap ? height / 2 - 20 : height / 2;
+      glyphElements = `<text x="50%" y="${textY}" text-anchor="middle" dominant-baseline="central" class="thu-phap-text" font-size="${fontSize}" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${strokeWidth}" filter="url(#brushFilter_${seed})">${text}</text>`;
+
+      // Vietnamese Thư Pháp Sweeping Brush Tail / Underline Swash (Nét Liệng Thư Pháp)
+      if (isThuPhap && config.type !== "05_MINIMAL") {
+        const startX = width * 0.18;
+        const endX = width * 0.82;
+        const swashY = textY + fontSize * 0.52;
+        const ctrlX1 = width * 0.35;
+        const ctrlY1 = swashY + 38 * config.energyFactor;
+        const ctrlX2 = width * 0.65;
+        const ctrlY2 = swashY - 18 * config.energyFactor;
+
+        decorativeSwash = `
+          <g id="thu-phap-swash" filter="url(#swashFilter_${seed})">
+            <!-- Dynamic Sweeping Brush Underline -->
+            <path d="M ${startX} ${swashY} C ${ctrlX1} ${ctrlY1}, ${ctrlX2} ${ctrlY2}, ${endX} ${swashY + 12}" 
+                  fill="none" 
+                  stroke="#0B0B0B" 
+                  stroke-width="${Math.max(4, 7 * config.pressureMultiplier)}" 
+                  stroke-linecap="round" />
+            <!-- Secondary energetic brush trail -->
+            <path d="M ${startX + 30} ${swashY + 6} C ${ctrlX1 + 20} ${ctrlY1 + 10}, ${ctrlX2} ${ctrlY2 + 5}, ${endX - 40} ${swashY + 10}" 
+                  fill="none" 
+                  stroke="#0B0B0B" 
+                  stroke-width="${Math.max(2, 3 * config.pressureMultiplier)}" 
+                  stroke-linecap="round" 
+                  opacity="0.75" />
+            <!-- Ink Splatter Particles (Mực nho) -->
+            ${config.energyFactor > 1.0 ? `
+              <circle cx="${endX - 15}" cy="${swashY - 10}" r="2.5" fill="#0B0B0B" />
+              <circle cx="${endX + 8}" cy="${swashY + 18}" r="1.8" fill="#0B0B0B" />
+              <circle cx="${startX + 10}" cy="${swashY - 8}" r="2.0" fill="#0B0B0B" />
+            ` : ""}
+          </g>
+        `;
+      }
     }
 
-    // Seal Stamp (for Signature variation or Seal style)
+    // Seal Stamp (Triện son / Red Cinnabar Seal)
     let sealSvg = "";
-    if (config.includeSeal || stylePackId === "Seal") {
-      const sealX = width - 90;
-      const sealY = height - 90;
+    if (config.includeSeal || stylePackId === "Seal" || config.type === "06_SIGNATURE") {
+      const sealX = width - 110;
+      const sealY = height - 110;
       sealSvg = `
         <g id="cinnabar-seal" transform="translate(${sealX}, ${sealY})">
-          <rect width="54" height="54" rx="4" fill="#B3261E" />
-          <rect x="3" y="3" width="48" height="48" rx="2" fill="none" stroke="#F6F1E7" stroke-width="2" />
-          <text x="27" y="32" text-anchor="middle" dominant-baseline="central" font-family="serif" font-size="22" font-weight="bold" fill="#F6F1E7">筆</text>
+          <rect width="60" height="60" rx="6" fill="#B3261E" />
+          <rect x="4" y="4" width="52" height="52" rx="3" fill="none" stroke="#F6F1E7" stroke-width="2" />
+          <text x="30" y="36" text-anchor="middle" dominant-baseline="central" font-family="serif" font-size="24" font-weight="bold" fill="#F6F1E7">詩筆</text>
         </g>
       `;
     }
@@ -245,6 +293,7 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
       </defs>
       <g id="calligraphy-art" class="protected-media">
         ${glyphElements}
+        ${decorativeSwash}
         ${sealSvg}
       </g>
     </svg>`;
