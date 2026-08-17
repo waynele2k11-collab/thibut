@@ -13,6 +13,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    // Security Validation: File Size limit (10MB)
+    const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+      return NextResponse.json({ error: "File exceeds 10MB size limit" }, { status: 400 });
+    }
+
+    // Security Validation: Allowed image MIME types
+    const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, WEBP, and AVIF images are allowed." }, { status: 400 });
+    }
+
     // Upload to Vercel Blob
     const result = await UploadService.uploadBackgroundImage(file, file.name);
 

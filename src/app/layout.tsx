@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { AntiScrapeProtection } from "@/components/security/AntiScrapeProtection";
 import {
   fontVnDancingScript,
   fontVnCaveat,
@@ -40,6 +41,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${fontVnDancingScript.variable} ${fontVnCaveat.variable} ${fontJpYujiSyuku.variable} ${fontJpYujiMai.variable} ${fontKrEastSeaDokdo.variable} ${fontKrNanumBrush.variable} ${fontCnMaShanZheng.variable} ${fontCnZhiMangXing.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col selection:bg-secondary/30">
+        <AntiScrapeProtection />
         <Header />
         <div className="flex-1 flex flex-col">
           {children}
