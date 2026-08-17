@@ -283,6 +283,7 @@ export function StudioConfigurator({
   const [isAnalyzingMeaning, setIsAnalyzingMeaning] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [traditionDropdownOpen, setTraditionDropdownOpen] = useState(false);
+  const [fontDropdownOpen, setFontDropdownOpen] = useState(false);
 
   // Active Fonts loaded from registry
   const [activeFonts, setActiveFonts] = useState<any[]>([]);
@@ -760,76 +761,106 @@ export function StudioConfigurator({
           </div>
         </div>
 
-        {/* ── SECTION 2: CHOOSE YOUR FONT STYLE (With Live Font Previews) ───── */}
+        {/* ── SECTION 2: CHOOSE YOUR FONT STYLE (Dropdown with All Available Fonts) ───── */}
         <div className="flex flex-col gap-4 pb-5 border-b border-[#EBE6DC]">
           <div className="flex items-center justify-between">
             <span className="text-xs font-label-caps uppercase text-[#111111] font-bold tracking-wider flex items-center gap-1.5">
-              <Type className="w-3.5 h-3.5" /> 2. Font Style Options ({currentTraditionFonts.length})
+              <Type className="w-3.5 h-3.5" /> 2. Font Style Options ({currentTraditionFonts.length} Available)
             </span>
             <span className="text-[11px] font-mono text-[#888580]">
-              {activeTraditionObj.label.split(" ")[0]} Scripts
+              {activeTraditionObj.label.split(" ")[0]} Typography
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {currentTraditionFonts.map((font) => {
-              const isSelected = state.fontId === font.id;
-              // Generate live micro-preview in this exact font
-              const sampleWord = (state.inputText || "Thi Bút").split(/\s+/)[0] || "Thi";
-              const fontMicroPreviewSvg = generateInstantSvgUri({
-                text: sampleWord,
-                tradition: state.tradition,
-                strokePreset: state.strokePreset,
-                variationType: "01_CONTROLLED",
-                fontId: font.id,
-                layout: "HORIZONTAL",
-                inkColor: isSelected ? "#111111" : "#444444",
-                hasSeal: false,
-              });
-
-              return (
-                <button
-                  key={font.id}
-                  onClick={() => setState((prev) => ({ ...prev, fontId: font.id }))}
-                  className={`p-3 rounded-xl text-left border transition-all relative overflow-hidden flex flex-col justify-between min-h-[96px] ${
-                    isSelected
-                      ? "border-black bg-[#F4EFE6] ring-1 ring-black shadow-sm scale-[1.01]"
-                      : "border-[#E0DBD1] hover:border-black/50 bg-[#FAF8F5]"
-                  }`}
-                >
-                  <div className="flex items-start justify-between w-full">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-xs text-[#111111] truncate max-w-[170px]">
-                        {font.name}
-                      </span>
-                      <span className="text-[10px] text-[#66635D] truncate max-w-[170px]">
-                        {font.desc}
-                      </span>
-                    </div>
-                    {isSelected ? (
-                      <CheckCircle2 className="w-4 h-4 text-[#B3261E] flex-shrink-0" />
-                    ) : (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-[#EAE5DC] text-[#66635D] rounded font-mono font-semibold">
-                        {font.badge}
-                      </span>
-                    )}
+          {/* Font Style Dropdown Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setFontDropdownOpen(!fontDropdownOpen)}
+              className="w-full px-4 py-3.5 border-2 border-[#E0DBD1] rounded-xl text-xs font-semibold text-[#111111] bg-white hover:border-black flex items-center justify-between transition-all shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-lg bg-[#F4EFE6] border border-[#E5E0D8] flex items-center justify-center font-serif font-bold text-xs text-[#111111]">
+                  Aa
+                </div>
+                <div className="flex flex-col text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-[#111111]">
+                      {currentTraditionFonts.find((f) => f.id === state.fontId)?.name || currentTraditionFonts[0]?.name}
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 bg-[#EAE5DC] text-[#66635D] rounded font-mono font-semibold">
+                      {currentTraditionFonts.find((f) => f.id === state.fontId)?.badge || "Verified"}
+                    </span>
                   </div>
+                  <span className="text-[11px] text-[#66635D] truncate max-w-[240px]">
+                    {currentTraditionFonts.find((f) => f.id === state.fontId)?.desc || "Master calligraphy typeface"}
+                  </span>
+                </div>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-[#888580] transition-transform ${fontDropdownOpen ? "rotate-180" : ""}`} />
+            </button>
 
-                  {/* Micro Font Artwork Preview */}
-                  <div className="w-full h-8 mt-2 flex items-center justify-start overflow-hidden opacity-90">
-                    <img
-                      src={fontMicroPreviewSvg}
-                      alt={font.name}
-                      className="h-full object-contain pointer-events-none select-none"
-                    />
-                  </div>
-                </button>
-              );
-            })}
+            {/* Dropdown Menu Listing ALL Available Fonts for the Language */}
+            {fontDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#D8D2C5] rounded-xl shadow-xl z-30 p-2 flex flex-col gap-1.5 max-h-[360px] overflow-y-auto">
+                {currentTraditionFonts.map((font) => {
+                  const isSelected = state.fontId === font.id;
+                  const sampleWord = (state.inputText || "Thi Bút").split(/\s+/)[0] || "Thi";
+                  const fontMicroPreviewSvg = generateInstantSvgUri({
+                    text: sampleWord,
+                    tradition: state.tradition,
+                    strokePreset: state.strokePreset,
+                    variationType: "01_CONTROLLED",
+                    fontId: font.id,
+                    layout: "HORIZONTAL",
+                    inkColor: isSelected ? "#111111" : "#444444",
+                    hasSeal: false,
+                  });
+
+                  return (
+                    <button
+                      key={font.id}
+                      onClick={() => {
+                        setState((prev) => ({ ...prev, fontId: font.id }));
+                        setFontDropdownOpen(false);
+                      }}
+                      className={`w-full p-2.5 rounded-lg text-left transition-all flex items-center justify-between border ${
+                        isSelected 
+                          ? "bg-[#F4EFE6] border-black font-bold text-black shadow-sm" 
+                          : "border-transparent hover:bg-[#FAF8F5] text-[#333333]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Live Micro Font Artwork Preview */}
+                        <div className="w-16 h-8 flex items-center justify-center overflow-hidden bg-white/80 border border-[#E5E0D8] rounded px-1 flex-shrink-0">
+                          <img
+                            src={fontMicroPreviewSvg}
+                            alt={font.name}
+                            className="max-h-full object-contain pointer-events-none select-none"
+                          />
+                        </div>
+
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-xs text-[#111111]">{font.name}</span>
+                            <span className="text-[9px] px-1 py-0.2 bg-[#EAE5DC] text-[#66635D] rounded font-mono">
+                              {font.badge}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-[#66635D]">{font.desc}</span>
+                        </div>
+                      </div>
+
+                      {isSelected && <Check className="w-4 h-4 text-[#B3261E] flex-shrink-0 ml-2" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Stroke Style Presets Chips */}
-          <div className="pt-2">
+          <div className="pt-1">
             <label className="text-[11px] font-label-caps uppercase text-[#66635D] block mb-1.5 font-bold">
               Brush Pressure & Stroke Weight
             </label>

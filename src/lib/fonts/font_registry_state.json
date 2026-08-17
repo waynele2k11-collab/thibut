@@ -1,5 +1,10 @@
 {
   "utm-thuphap-thien-an": true,
+  "arizonia": true,
+  "great-vibes": true,
+  "kaushan-script": true,
+  "caveat-brush": true,
+  "alex-brush": true,
   "yuji-boku": true,
   "yuji-syuku": true,
   "yuji-mai": true,
@@ -8,10 +13,5 @@
   "ma-shan-zheng": true,
   "zhi-mang-xing": true,
   "nanum-brush-script": true,
-  "east-sea-dokdo": true,
-  "great-vibes": false,
-  "kaushan-script": false,
-  "caveat-brush": false,
-  "alex-brush": false,
-  "arizonia": false
+  "east-sea-dokdo": true
 }
