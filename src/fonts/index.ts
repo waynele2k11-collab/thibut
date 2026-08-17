@@ -2,6 +2,12 @@ import {
   Dancing_Script, 
   Caveat, 
   Alex_Brush,
+  Great_Vibes,
+  Kaushan_Script,
+  Caveat_Brush,
+  Arizonia,
+  Allura,
+  Sedgwick_Ave_Display,
   Yuji_Boku,
   Yuji_Syuku, 
   Yuji_Mai, 
@@ -12,7 +18,42 @@ import {
   Zhi_Mang_Xing 
 } from "next/font/google";
 
-// 🇻🇳 Vietnamese / Latin (Thư Pháp & Cursive Brush)
+// 🇻🇳 Vietnamese / Latin Thư Pháp Suite
+export const fontVnGreatVibes = Great_Vibes({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400"],
+  variable: "--font-vn-greatvibes",
+  display: "swap",
+});
+
+export const fontVnKaushan = Kaushan_Script({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400"],
+  variable: "--font-vn-kaushan",
+  display: "swap",
+});
+
+export const fontVnCaveatBrush = Caveat_Brush({
+  subsets: ["latin-ext"],
+  weight: ["400"],
+  variable: "--font-vn-caveatbrush",
+  display: "swap",
+});
+
+export const fontVnArizonia = Arizonia({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400"],
+  variable: "--font-vn-arizonia",
+  display: "swap",
+});
+
+export const fontVnAllura = Allura({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400"],
+  variable: "--font-vn-allura",
+  display: "swap",
+});
+
 export const fontVnAlexBrush = Alex_Brush({
   subsets: ["latin", "vietnamese"],
   weight: ["400"],

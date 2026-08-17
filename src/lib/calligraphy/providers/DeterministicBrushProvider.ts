@@ -209,6 +209,7 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
         variationType: config.type,
         seed,
         isVertical,
+        stylePackId,
       });
     }
 

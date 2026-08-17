@@ -16,46 +16,69 @@ export interface ThuPhapRenderOptions {
   variationType: "01_CONTROLLED" | "02_BOLD" | "03_DRY_BRUSH" | "04_EXPRESSIVE" | "05_MINIMAL" | "06_SIGNATURE";
   seed: number;
   isVertical?: boolean;
+  stylePackId?: string;
 }
 
 import fs from "fs";
 import path from "path";
 
-let cachedAlexBrushBase64 = "";
-function getAlexBrushBase64(): string {
-  if (cachedAlexBrushBase64) return cachedAlexBrushBase64;
+const FONT_CACHE: Record<string, string> = {};
+
+function getBase64Font(fileName: string): string {
+  if (FONT_CACHE[fileName]) return FONT_CACHE[fileName];
   try {
-    const fontPath = path.join(process.cwd(), "public", "fonts", "AlexBrush-Regular.ttf");
+    const fontPath = path.join(process.cwd(), "public", "fonts", fileName);
     if (fs.existsSync(fontPath)) {
-      cachedAlexBrushBase64 = fs.readFileSync(fontPath).toString("base64");
+      FONT_CACHE[fileName] = fs.readFileSync(fontPath).toString("base64");
     }
   } catch (e) {
-    console.warn("Could not read AlexBrush-Regular.ttf:", e);
+    console.warn(`Could not read font ${fileName}:`, e);
   }
-  return cachedAlexBrushBase64;
+  return FONT_CACHE[fileName] || "";
 }
 
 export class VietnameseThuPhapSynthesizer {
   public static generate(options: ThuPhapRenderOptions): string {
-    const { text, variationType, seed, isVertical = false } = options;
+    const { text, variationType, seed, isVertical = false, stylePackId = "Thi Bút 1" } = options;
     const trimmed = text.trim();
     const words = trimmed.split(/\s+/);
-    
-    const alexBrushBase64 = getAlexBrushBase64();
-    const fontFaceBlock = alexBrushBase64
+
+    // Font mapping per Thư Pháp style
+    let fontFile = "GreatVibes-Regular.ttf";
+    let fontName = "Great Vibes";
+
+    if (stylePackId === "Thi Bút 2") {
+      fontFile = "KaushanScript-Regular.ttf";
+      fontName = "Kaushan Script";
+    } else if (stylePackId === "Thi Bút 3") {
+      fontFile = "CaveatBrush-Regular.ttf";
+      fontName = "Caveat Brush";
+    } else if (stylePackId === "Thi Bút 4") {
+      fontFile = "Arizonia-Regular.ttf";
+      fontName = "Arizonia";
+    } else if (stylePackId === "Thi Bút 5" || stylePackId === "Classic") {
+      fontFile = "AlexBrush-Regular.ttf";
+      fontName = "Alex Brush";
+    } else if (stylePackId === "Thi Bút 6" || stylePackId === "Seal") {
+      fontFile = "Allura-Regular.ttf";
+      fontName = "Allura";
+    }
+
+    const base64Data = getBase64Font(fontFile);
+    const fontFaceBlock = base64Data
       ? `@font-face {
-          font-family: 'Alex Brush';
-          src: url('data:font/ttf;charset=utf-8;base64,${alexBrushBase64}') format('truetype');
+          font-family: '${fontName}';
+          src: url('data:font/ttf;charset=utf-8;base64,${base64Data}') format('truetype');
           font-weight: normal;
           font-style: normal;
         }`
-      : `@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&amp;family=Dancing+Script:wght@700&amp;family=Caveat:wght@700&amp;display=swap');`;
+      : `@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&amp;family=Kaushan+Script&amp;family=Caveat+Brush&amp;family=Arizonia&amp;family=Alex+Brush&amp;family=Allura&amp;display=swap');`;
 
     // Variation strategy parameters
     const pressure = variationType === "02_BOLD" ? 1.45 : variationType === "05_MINIMAL" ? 0.85 : 1.15;
     const energy = variationType === "04_EXPRESSIVE" ? 1.5 : variationType === "03_DRY_BRUSH" ? 1.25 : 1.0;
     const dryBrush = variationType === "03_DRY_BRUSH" ? 0.65 : 0.2;
-    const hasSeal = variationType === "06_SIGNATURE" || variationType === "01_CONTROLLED" || variationType === "04_EXPRESSIVE";
+    const hasSeal = variationType === "06_SIGNATURE" || variationType === "01_CONTROLLED" || variationType === "04_EXPRESSIVE" || stylePackId === "Thi Bút 6";
 
     const width = isVertical ? 500 : Math.max(900, trimmed.length * 150 + 260);
     const height = isVertical ? Math.max(900, words.length * 280 + 260) : 620;
@@ -69,7 +92,7 @@ export class VietnameseThuPhapSynthesizer {
         <style>
           ${fontFaceBlock}
           .thu-phap-master {
-            font-family: 'Alex Brush', 'Dancing Script', cursive;
+            font-family: '${fontName}', 'Great Vibes', 'Alex Brush', cursive;
             font-weight: 700;
           }
         </style>
