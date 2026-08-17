@@ -53,6 +53,11 @@ export class StructureGuideGenerator {
     }
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
+      <defs>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&amp;family=Caveat:wght@700&amp;family=Ma+Shan+Zheng&amp;family=Yuji+Syuku&amp;family=Nanum+Brush+Script&amp;display=swap');
+        </style>
+      </defs>
       <rect width="100%" height="100%" fill="#ffffff" />
       <g id="structure-glyphs">
         ${contentSvg}

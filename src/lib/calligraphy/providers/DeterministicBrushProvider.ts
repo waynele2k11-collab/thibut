@@ -184,10 +184,10 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
       fontFamily = "'Yuji Syuku', 'Noto Serif JP', serif";
     } else if (script === "KOREAN_HANGUL") {
       fontFamily = "'Nanum Brush Script', 'Noto Serif KR', cursive";
-    } else if (script === "VIETNAMESE_LATIN") {
+    } else if (script === "VIETNAMESE_LATIN" || stylePackId === "Classic" || stylePackId === "Thi Bút Classic" || stylePackId === "Street") {
       fontFamily = "'Dancing Script', 'Caveat', cursive";
     } else {
-      fontFamily = "'Playfair Display', 'Dancing Script', serif";
+      fontFamily = "'Dancing Script', 'Caveat', cursive";
     }
 
     const width = isVertical ? 360 : Math.max(700, charCount * 130 + 160);
@@ -200,6 +200,9 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
     const displacementScale = (config.dryBrushIntensity * 12).toFixed(1);
 
     const filterDef = `
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&amp;family=Caveat:wght@700&amp;family=Ma+Shan+Zheng&amp;family=Yuji+Syuku&amp;family=Nanum+Brush+Script&amp;display=swap');
+      </style>
       <filter id="brushFilter_${seed}" x="-20%" y="-20%" width="140%" height="140%">
         <feTurbulence type="fractalNoise" baseFrequency="${turbulenceFreq}" numOctaves="4" result="noise" />
         <feDisplacementMap in="SourceGraphic" in2="noise" scale="${displacementScale}" xChannelSelector="R" yChannelSelector="G" result="rough" />
