@@ -53,64 +53,30 @@ export async function POST(req: NextRequest) {
         confidence: primary.confidence,
       });
 
-      const cachedDesign = await DesignCacheService.findReusableDesign({
+      // ── Controlled Calligraphy Rendering Pipeline (v0.1) ──
+      const { CalligraphyService } = await import("@/lib/calligraphy/CalligraphyService");
+      
+      const renderResult = await CalligraphyService.renderCalligraphy({
         phraseKnowledgeId: phraseKnowledge.id,
+        authoritativeText: primary.text,
+        targetLanguage: primary.language,
         stylePackId: input.stylePack,
-        rendererVersion: "V1",
+        orientationPreference: input.composition === "Vertical" ? "VERTICAL" : "HORIZONTAL",
+        variationCount: 6,
       });
 
-      let candidates: any[] = [];
-      
-      if (cachedDesign && cachedDesign.variations && cachedDesign.variations.length >= 6) {
-        console.log("[generate] CACHE HIT: Found 6 existing variations");
-        candidates = cachedDesign.variations.map((v) => ({
-          id: v.id,
-          index: v.variationIndex,
-          imageUrl: v.assetId,
-          stylePack: input.stylePack,
-          variationNote: v.variationNote,
-          provider: v.provider,
-          seed: v.variationIndex
-        }));
-      } else {
-        console.log("[generate] CACHE MISS: Generating new brush variations");
-        const rawCandidates = await visualAI.generateCalligraphyCandidates({
-          originalText: input.inputText,
-          interpretedText: primary.text,
-          romanization: primary.romanization,
-          meaning: primary.meaning,
-          culturalStyle: input.culturalStyle,
-          textTreatment: input.textTreatment,
-          stylePack: input.stylePack,
-          targetLanguage: primary.language,
-          creatorArtworkUrl: input.creatorArtworkUrl,
-          variationSeed: 1000,
-        });
-
-        const newDesign = await DesignCacheService.storeRenderedDesign({
-          phraseKnowledgeId: phraseKnowledge.id,
-          stylePackId: input.stylePack,
-          rendererVersion: "V1",
-          variations: rawCandidates.map((c: any, i: number) => ({
-            variationIndex: i + 1,
-            assetId: c.imageUrl,
-            variationNote: c.variationNote,
-            provider: c.provider,
-            renderedText: input.inputText,
-            status: "READY"
-          }))
-        });
-
-        candidates = newDesign.variations.map((v: any) => ({
-          id: v.id,
-          index: v.variationIndex,
-          imageUrl: v.assetId,
-          stylePack: input.stylePack,
-          variationNote: v.variationNote,
-          provider: v.provider,
-          seed: v.variationIndex
-        }));
-      }
+      const candidates = renderResult.candidates.map((c, i) => ({
+        id: c.id,
+        index: i + 1,
+        imageUrl: c.previewAssetUrl,
+        stylePack: c.stylePackId,
+        variationType: c.variationType,
+        variationName: c.variationName,
+        variationNote: c.variationNote,
+        provider: c.provider,
+        seed: c.seed,
+        validationStatus: c.validationStatus,
+      }));
 
       const session = await prisma.personalizationSession.findFirst({
         where: { inputText: input.inputText },
@@ -126,7 +92,12 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      return NextResponse.json({ candidates, message: "Candidates generated synchronously" });
+      return NextResponse.json({
+        candidates,
+        cacheHit: renderResult.cacheHit,
+        durationMs: renderResult.durationMs,
+        message: "Candidates generated via Controlled Calligraphy Renderer",
+      });
     }
 
     return NextResponse.json({ message: "Generation job queued successfully" });

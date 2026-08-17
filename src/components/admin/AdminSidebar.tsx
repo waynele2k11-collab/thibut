@@ -34,6 +34,7 @@ export function AdminSidebar() {
     { name: "Sellers", href: "/admin/sellers", icon: UserSquare2 },
     { name: "Art", href: "/admin/art", icon: Palette },
     { name: "Presets", href: "/admin/background-presets", icon: ImageIcon },
+    { name: "Calligraphy", href: "/admin/ai/calligraphy", icon: Palette },
     { name: "Knowledge", href: "/admin/knowledge", icon: BookOpen },
     { name: "Gallery", href: "/admin/gallery", icon: Store },
     { name: "Orders", href: "/admin/orders", icon: CreditCard },

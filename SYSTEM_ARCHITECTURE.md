@@ -467,12 +467,75 @@ model WebhookEvent {
 
   @@unique([provider, externalEventId])
 }
-10. TECHNICAL CONVENTIONS & BOUNDARIES10.1 Money & Database StorageMoney: Store as BIGINT (amountMinor) + currency (VARCHAR 3). Example: $19.99 = 1999 USD.  Soft Deletes: Use archivedAt or status. Never hard-delete financial or legal records.  Print-Master Generation: Generated at 4500x5400 px @ 300 DPI transparent PNG from DesignVersion + PersonalizationVersion + ProductVariant + PrintArea via background worker jobs.  10.2 Next.js Project StructurePlaintextapp/
+
+10. TECHNICAL CONVENTIONS & BOUNDARIES
+10.1 Money & Database Storage
+Money: Store as BIGINT (amountMinor) + currency (VARCHAR 3). Example: $19.99 = 1999 USD.  
+Soft Deletes: Use archivedAt or status. Never hard-delete financial or legal records.  
+Print-Master Generation: Generated at 4500x5400 px @ 300 DPI transparent PNG from DesignVersion + PersonalizationVersion + ProductVariant + PrintArea via background worker jobs.  
+
+10.2 Next.js Project Structure
+app/
 ├── (marketing)/       # Marketplace & Creator Landing
 ├── create/            # Personalization Lab ([sessionId])
 ├── studio/            # Creator Studio (Designs, Earnings, Licensing)
 ├── account/ | cart/ | checkout/ | orders/
 └── api/               # API Boundary routes & Webhooks
-11. AI DEVELOPMENT AGENT RULESWhen executing tasks on this repository, the AI Agent MUST follow these rules:Determine bounded context ownership before adding features.  Extend existing entities (Design, CreatorEarning, Ledger). Do NOT invent duplicate parallel concepts like ArtworkListing or SellerPayment.  Ensure all checkout transactions produce immutable snapshots (DesignVersion, LicenseGrant, OrderItemSnapshot).  Keep provider implementation behind abstractions (AIProvider, FulfillmentProvider).  Ensure every external webhook route logs to WebhookEvent and enforces idempotency.  
+11. AI DEVELOPMENT AGENT RULES
+When executing tasks on this repository, the AI Agent MUST follow these rules:
+1. Determine bounded context ownership before adding features.
+2. Extend existing entities (Design, CreatorEarning, Ledger). Do NOT invent duplicate parallel concepts like ArtworkListing or SellerPayment.
+3. Ensure all checkout transactions produce immutable snapshots (DesignVersion, LicenseGrant, OrderItemSnapshot).
+4. Keep provider implementation behind abstractions (AIProvider, FulfillmentProvider).
+5. Ensure every external webhook route logs to WebhookEvent and enforces idempotency.
+
 ---
+
+# PART 3: CONTROLLED CALLIGRAPHY RENDERER SUBSYSTEM
+
+## 12. CONTROLLED CALLIGRAPHY RENDERER ARCHITECTURE & INVARIANTS
+
+### 12.1 The Three Independent Responsibilities
+Thi Bút enforces strict architectural separation across three distinct product boundaries:
+1. **CULTURAL INTELLIGENCE**: *What should the text say?* (Authoritative linguistic rendering, transliteration, semantic interpretation).
+2. **CALLIGRAPHY RENDERING**: *How should the strokes look?* (Stroke dynamics, ink mass, pressure, dry-brush edge texture, artistic energy).
+3. **COMPOSITION**: *Where should the artwork appear?* (Position, scale, rotation, color tinting, background texture, product canvas).
+
+The Calligraphy Renderer receives ONLY:
+`Authoritative Text + StylePack + Variation Seed`
+It MUST NEVER decide what words mean or alter character definitions.
+
+### 12.2 Structural Input & Rendering Pipeline
+```
+VALIDATED TEXT (PhraseKnowledge)
+        ↓
+SCRIPT DETECTION (Han, Japanese Mixed, Korean Hangul, Vietnamese Latin, English Latin)
+        ↓
+DETERMINISTIC GLYPH & SKELETON GENERATOR
+        ↓
+CONTROLLED CALLIGRAPHY RENDERER (CalligraphyRendererProvider)
+        ↓
+6 GENUINE BRUSH VARIATIONS (Controlled, Bold, Dry Brush, Expressive, Minimal, Signature)
+        ↓
+AUTOMATED VALIDATION (CalligraphyValidationService)
+        ↓
+HUMAN REVIEW GATE & BENCHMARK SUITE
+        ↓
+APPROVED ARTWORK ASSET (Transparent PNG / SVG)
+```
+
+### 12.3 Critical Calligraphy Invariants
+- **TB-CALLI-001**: Validated linguistic text (`PhraseKnowledge.renderedText`) is strictly authoritative.
+- **TB-CALLI-002**: The calligraphy model/engine may alter strokes and texture, NEVER characters, diacritics, or meaning.
+- **TB-CALLI-003**: A failed character-integrity or diacritic check MUST NEVER be customer-visible.
+- **TB-CALLI-004**: Calligraphy generation and composition are separate systems.
+- **TB-CALLI-005**: Changing position, scale, rotation, color, background, or product MUST NOT regenerate calligraphy.
+- **TB-CALLI-006**: Unsupported scripts MUST NOT silently fall back to fake typography.
+- **TB-CALLI-007**: Provider-specific technology must remain strictly behind `CalligraphyRendererProvider`.
+- **TB-CALLI-008**: No third-party model (e.g. CalliffusionV2) enters commercial production without verified commercial licensing rights.
+- **TB-CALLI-009**: Artist work cannot be used for style training without explicit applicable rights (`MODEL_TRAINING_ALLOWED = false`).
+- **TB-CALLI-010**: Approved variations are cached by deterministic key (`phraseKnowledgeId + stylePackId + rendererVersion + script`) and reused before new generation.
+
+---
+
 
