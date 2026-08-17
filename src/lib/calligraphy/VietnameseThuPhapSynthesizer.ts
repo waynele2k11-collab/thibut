@@ -43,9 +43,35 @@ export class VietnameseThuPhapSynthesizer {
     const trimmed = text.trim();
     const words = trimmed.split(/\s+/);
 
-    // Authentic UTM Thư Pháp Thiên Ân is the master font
-    const fontFile = "UtmThuphapThienAn.ttf";
-    const fontName = "UTM ThuPhap Thien An";
+    // Resolve font binary and visual style based on selected stylePackId
+    let fontFile = "UtmThuphapThienAn.ttf";
+    let fontName = "UTM ThuPhap Thien An";
+    let defaultHasSeal = false;
+    let customLetterSpacing = "0.02em";
+
+    const lowerId = (stylePackId || "").toLowerCase();
+
+    if (lowerId.includes("arizonia") || lowerId.includes("phượng vũ") || lowerId.includes("phuong vu")) {
+      fontFile = "Arizonia-Regular.ttf";
+      fontName = "Arizonia";
+      customLetterSpacing = "0.05em";
+    } else if (lowerId.includes("great vibes") || lowerId.includes("long vũ") || lowerId.includes("long vu")) {
+      fontFile = "GreatVibes-Regular.ttf";
+      fontName = "Great Vibes";
+      customLetterSpacing = "0.03em";
+    } else if (lowerId.includes("caveat") || lowerId.includes("mực nho") || lowerId.includes("muc nho")) {
+      fontFile = "CaveatBrush-Regular.ttf";
+      fontName = "Caveat Brush";
+      customLetterSpacing = "0.04em";
+    } else if (lowerId.includes("thi bút 2") || lowerId.includes("thi but 2") || lowerId.includes("ấn triện") || lowerId.includes("an trien") || lowerId.includes("seal")) {
+      fontFile = "UtmThuphapThienAn.ttf";
+      fontName = "UTM ThuPhap Thien An";
+      defaultHasSeal = true; // Always includes imperial cinnabar red seal stamp
+    } else {
+      // Default: Thi Bút 1 / UTM Thư Pháp Thiên Ân
+      fontFile = "UtmThuphapThienAn.ttf";
+      fontName = "UTM ThuPhap Thien An";
+    }
 
     const base64Data = getBase64Font(fontFile);
     const fontFaceBlock = base64Data
@@ -55,13 +81,13 @@ export class VietnameseThuPhapSynthesizer {
           font-weight: normal;
           font-style: normal;
         }`
-      : `@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&amp;family=Kaushan+Script&amp;family=Caveat+Brush&amp;family=Arizonia&amp;family=Alex+Brush&amp;family=Allura&amp;display=swap');`;
+      : `@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&amp;family=Caveat+Brush&amp;family=Arizonia&amp;family=Alex+Brush&amp;display=swap');`;
 
     // Variation strategy parameters
-    const pressure = variationType === "02_BOLD" ? 1.45 : variationType === "05_MINIMAL" ? 0.85 : 1.15;
-    const energy = variationType === "04_EXPRESSIVE" ? 1.5 : variationType === "03_DRY_BRUSH" ? 1.25 : 1.0;
-    const dryBrush = variationType === "03_DRY_BRUSH" ? 0.65 : 0.2;
-    const hasSeal = variationType === "06_SIGNATURE" || variationType === "01_CONTROLLED" || variationType === "04_EXPRESSIVE" || stylePackId === "Thi Bút 2" || stylePackId === "Thi Bút 6" || stylePackId === "Seal";
+    const pressure = variationType === "02_BOLD" ? 1.5 : variationType === "05_MINIMAL" ? 0.8 : 1.15;
+    const energy = variationType === "04_EXPRESSIVE" ? 1.6 : variationType === "03_DRY_BRUSH" ? 1.25 : 1.0;
+    const dryBrush = variationType === "03_DRY_BRUSH" ? 0.75 : 0.15;
+    const hasSeal = defaultHasSeal || variationType === "06_SIGNATURE" || variationType === "01_CONTROLLED" || variationType === "04_EXPRESSIVE";
 
     const width = isVertical ? 800 : Math.max(1200, trimmed.length * 180 + 360);
     const height = isVertical ? Math.max(1200, words.length * 450 + 300) : 720;
@@ -77,6 +103,7 @@ export class VietnameseThuPhapSynthesizer {
           .thu-phap-master {
             font-family: '${fontName}', 'Great Vibes', 'Alex Brush', cursive;
             font-weight: 700;
+            letter-spacing: ${customLetterSpacing};
           }
         </style>
         <!-- Sumi ink texture with dry-brush bristle displacement -->
