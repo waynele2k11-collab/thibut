@@ -20,6 +20,8 @@ export interface FontEntry {
   isZipArchive?: boolean;
   zipInternalPath?: string;
   license: string;
+  commercialApproved: boolean;
+  licenseVerifiedAt: string;
   description: string;
   isDownloaded: boolean;
   isActiveOnFrontend: boolean;
@@ -42,6 +44,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     isZipArchive: true,
     zipInternalPath: "UtmThuphapThienAn-VnBz.ttf",
     license: "Free for Personal & Commercial use",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "The gold-standard Vietnamese brush calligraphy typeface with sweeping dragon ascenders.",
   },
   {
@@ -55,6 +59,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / TypeSETIT",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/greatvibes/GreatVibes-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Grand dragon sweeping loop capitals with flowing flourishes.",
   },
   {
@@ -68,6 +74,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / Impallari Type",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/kaushanscript/KaushanScript-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Raw, uninhibited horsehair brush strokes with visible dry bristle texture.",
   },
   {
@@ -81,6 +89,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / Impallari Type",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/caveatbrush/CaveatBrush-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Heavy sumi ink mass with strong pressure and authoritative brush impact.",
   },
   {
@@ -94,6 +104,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / TypeSETIT",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/arizonia/Arizonia-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Delicate dancing phoenix curves inspired by Asian camel-hair brush elegance.",
   },
   {
@@ -107,6 +119,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / TypeSETIT",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/alexbrush/AlexBrush-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Classic poetic Vietnamese Thư Pháp script with clean rhythm.",
   },
 
@@ -122,6 +136,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / Kinuta Font Factory",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/yujiboku/YujiBoku-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Heavy ink-dipped dry brush Shodō with classical sumi weight and broken flying white.",
   },
   {
@@ -135,6 +151,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / Kinuta Font Factory",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/yujisyuku/YujiSyuku-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Classical restrained Kanji brushwork with sharp brush tip transitions.",
   },
   {
@@ -148,6 +166,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / Kinuta Font Factory",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/yujimai/YujiMai-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Flowing Kana and Kanji brush movement with dancing brush cadence.",
   },
 
@@ -158,11 +178,13 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     category: "CHINESE_CALLIGRAPHY",
     categoryLabel: "Chinese Shūfǎ",
     fileName: "LiuJianMaoCao-Regular.ttf",
-    previewText: "詩筆",
+    previewText: "海納百川",
     sourceUrl: "https://fonts.google.com/specimen/Liu+Jian+Mao+Cao",
-    sourceLabel: "Google Fonts / Liu Zheng",
+    sourceLabel: "Google Fonts / Liu Jian",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/liujianmaocao/LiuJianMaoCao-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Expressive cursive grass script (草書) with wild brush energy and dramatic ink pooling.",
   },
   {
@@ -176,6 +198,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / Qiu Yin",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/longcang/LongCang-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Master semi-cursive grass script calligraphy with powerful stroke rhythm.",
   },
   {
@@ -189,6 +213,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / Ma Shan Zheng",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/mashanzheng/MaShanZheng-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Standard regular brush calligraphy (楷書) with authoritative balance.",
   },
   {
@@ -202,6 +228,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / Wei Zhimang",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/zhimangxing/ZhiMangXing-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Running script calligraphy (行書) with swift, connected strokes.",
   },
 
@@ -217,6 +245,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / Naver Corp",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/nanumbrushscript/NanumBrushScript-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Authentic Korean calligraphy brush script with lively Hangul stroke dynamics.",
   },
   {
@@ -230,6 +260,8 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
     sourceLabel: "Google Fonts / Yoon Design",
     downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/eastseadokdo/EastSeaDokdo-Regular.ttf",
     license: "OFL (Open Font License)",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-17",
     description: "Heavy ancient stone-rubbing style Hangul brush script.",
   },
 ];
