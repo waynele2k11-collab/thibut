@@ -72,6 +72,113 @@ const STYLE_PACKS = [
   { id: "Korean 1", label: "Korean 1", desc: "Dynamic Hangul Seoye (Nanum Brush)", category: "KOREAN_BRUSH" },
   { id: "Korean 2", label: "Korean 2", desc: "Bold Ancient Seoye (East Sea Dokdo)", category: "KOREAN_BRUSH" },
 ];
+
+export interface ProductConfig {
+  id: string;
+  name: string;
+  price: number;
+  category: "apparel" | "wall_art" | "merch" | "digital";
+  sizes: string[];
+  colors: { id: string; name: string; hex: string; mockup: string }[];
+  defaultSize: string;
+  defaultColor: string;
+}
+
+export const PRODUCT_CATALOG: Record<string, ProductConfig> = {
+  "Premium Hoodie": {
+    id: "Premium Hoodie",
+    name: "Premium Heavyweight Hoodie",
+    price: 99.00,
+    category: "apparel",
+    sizes: ["S", "M", "L", "XL", "2XL"],
+    colors: [
+      { id: "bone-white", name: "Bone White", hex: "#F6F1E7", mockup: "/mockups/blank_hoodie.jpg" },
+      { id: "pitch-black", name: "Pitch Black", hex: "#111111", mockup: "/mockups/hoodie.jpg" },
+      { id: "heather-grey", name: "Heather Grey", hex: "#A8A8A8", mockup: "/mockups/blank_hoodie.jpg" },
+    ],
+    defaultSize: "L",
+    defaultColor: "Bone White",
+  },
+  "Classic T-Shirt": {
+    id: "Classic T-Shirt",
+    name: "Classic Organic Cotton T-Shirt",
+    price: 45.00,
+    category: "apparel",
+    sizes: ["XS", "S", "M", "L", "XL", "2XL"],
+    colors: [
+      { id: "bone-white", name: "Bone White", hex: "#F6F1E7", mockup: "/mockups/model-male.jpg" },
+      { id: "pitch-black", name: "Pitch Black", hex: "#111111", mockup: "/mockups/model-female.jpg" },
+      { id: "slate-navy", name: "Slate Navy", hex: "#1E293B", mockup: "/mockups/model-male.jpg" },
+    ],
+    defaultSize: "L",
+    defaultColor: "Bone White",
+  },
+  "Fine Art Poster": {
+    id: "Fine Art Poster",
+    name: "Archival Fine Art Poster",
+    price: 25.00,
+    category: "wall_art",
+    sizes: ["12x16 in", "18x24 in", "24x36 in"],
+    colors: [
+      { id: "natural-matte", name: "Natural Matte", hex: "#FAF8F5", mockup: "/mockups/fine-art-poster.jpg" },
+      { id: "gallery-black", name: "Gallery Black", hex: "#111111", mockup: "/mockups/framed_print.jpg" },
+    ],
+    defaultSize: "18x24 in",
+    defaultColor: "Natural Matte",
+  },
+  "Canvas Print": {
+    id: "Canvas Print",
+    name: "Gallery Stretched Canvas",
+    price: 49.00,
+    category: "wall_art",
+    sizes: ["12x16 in", "16x20 in", "18x24 in", "24x36 in"],
+    colors: [
+      { id: "museum-wrap", name: "Museum Wrap", hex: "#F6F1E7", mockup: "/mockups/framed_print.jpg" },
+      { id: "black-frame", name: "Floating Frame", hex: "#111111", mockup: "/mockups/framed_print.jpg" },
+    ],
+    defaultSize: "18x24 in",
+    defaultColor: "Museum Wrap",
+  },
+  "Tote Bag": {
+    id: "Tote Bag",
+    name: "Heavy Cotton Canvas Tote",
+    price: 29.00,
+    category: "merch",
+    sizes: ["Standard (15x16 in)"],
+    colors: [
+      { id: "natural-canvas", name: "Natural Canvas", hex: "#EAE4DA", mockup: "/mockups/model-female.jpg" },
+      { id: "black-canvas", name: "Black Canvas", hex: "#111111", mockup: "/mockups/model-female.jpg" },
+    ],
+    defaultSize: "Standard (15x16 in)",
+    defaultColor: "Natural Canvas",
+  },
+  "Coffee Mug": {
+    id: "Coffee Mug",
+    name: "Artisan Ceramic Mug",
+    price: 19.00,
+    category: "merch",
+    sizes: ["11 oz", "15 oz"],
+    colors: [
+      { id: "glossy-white", name: "Glossy White", hex: "#FFFFFF", mockup: "/mockups/fine-art-poster.jpg" },
+      { id: "matte-black", name: "Matte Black", hex: "#181818", mockup: "/mockups/fine-art-poster.jpg" },
+    ],
+    defaultSize: "15 oz",
+    defaultColor: "Glossy White",
+  },
+  "Digital Download (All 6)": {
+    id: "Digital Download (All 6)",
+    name: "Ultra-HD Vector Master Files",
+    price: 9.99,
+    category: "digital",
+    sizes: ["4500x5400 px @ 300 DPI"],
+    colors: [
+      { id: "vector-svg", name: "Lossless Vector", hex: "#B3261E", mockup: "" },
+    ],
+    defaultSize: "4500x5400 px @ 300 DPI",
+    defaultColor: "Lossless Vector",
+  },
+};
+
 const COMPOSITIONS = [
   { id: "Vertical", label: "Vertical", desc: "Top-to-bottom scroll" },
   { id: "Centered", label: "Centered", desc: "Balanced center" },
@@ -169,7 +276,16 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
 
   // Step 5 state
   const [selectedProduct, setSelectedProduct] = useState("Premium Hoodie");
+  const [selectedSize, setSelectedSize] = useState("L");
+  const [selectedColor, setSelectedColor] = useState("Bone White");
   const [compositionData, setCompositionData] = useState<any>(null);
+
+  const handleSelectProduct = (prodId: string) => {
+    setSelectedProduct(prodId);
+    const cfg = PRODUCT_CATALOG[prodId] || PRODUCT_CATALOG["Premium Hoodie"];
+    setSelectedSize(cfg.defaultSize);
+    setSelectedColor(cfg.defaultColor);
+  };
 
   const searchParams = useSearchParams();
 
@@ -698,113 +814,182 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
         )}
 
         {/* ── STEP 6: Product selector ───────────────────────────────────────── */}
-        {step === 6 && selectedCandidate && (
-          <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 w-full">
-            {/* Preview */}
-            <div className="border border-surface-variant bg-surface-container-lowest p-8 relative overflow-hidden rounded-lg">
-              <div className="relative w-full max-h-96 min-h-[280px] flex items-center justify-center bg-white/60 overflow-hidden rounded">
-                {compositionData?.bgImage && (
-                  <img
-                    src={compositionData.bgImage}
-                    alt="Custom Background"
-                    className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-                  />
-                )}
-                <img 
-                  src={compositionData?.recoloredArtworkUrl || selectedCandidate.imageUrl} 
-                  alt="Your design" 
-                  className="max-h-96 w-auto object-contain pointer-events-none select-none z-10" 
-                  style={{
-                    transform: compositionData ? `scale(${compositionData.scale || 1}) rotate(${compositionData.rotation || 0}deg)` : undefined,
-                    filter: compositionData?.color === "ivory" && !compositionData?.bgImage ? "drop-shadow(0px 2px 4px rgba(0,0,0,0.35))" : undefined,
-                  }}
-                  onContextMenu={(e) => e.preventDefault()} 
-                  draggable={false} 
-                />
-              </div>
-              <div className="mt-4 border-t border-surface-variant pt-4">
-                <p className="font-label-caps text-label-caps text-on-surface-variant uppercase">Your Interpretation</p>
-                {selectedInterpretation && (
-                  <p className="font-headline-sm text-headline-sm text-on-background mt-1" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-                    {selectedInterpretation.text}
-                  </p>
-                )}
-                {selectedInterpretation?.romanization && (
-                  <p className="font-body-md text-body-md text-on-surface-variant">{selectedInterpretation.romanization}</p>
-                )}
-              </div>
-            </div>
+        {step === 6 && selectedCandidate && (() => {
+          const currentConfig = PRODUCT_CATALOG[selectedProduct] || PRODUCT_CATALOG["Premium Hoodie"];
+          const activeMockup = currentConfig.colors.find(c => c.name === selectedColor)?.mockup || currentConfig.colors[0]?.mockup || "/mockups/blank_hoodie.jpg";
+          const previewBackground = compositionData?.bgImage || (selectedProduct !== "Digital Download (All 6)" ? activeMockup : null);
+          const isApparel = currentConfig.category === "apparel";
 
-            {/* Product picker */}
-            <div className="flex flex-col gap-6">
-              <h1 className="font-headline-md text-headline-md text-on-background">
-                {compositionData?.productMode === "product" ? "Your Selected Product" : "Choose Your Product"}
-              </h1>
-              
-              {compositionData?.productMode === "product" ? (
-                <div className="flex flex-col gap-4">
-                  <div className="border border-primary bg-primary/5 p-6 text-left">
-                    <span className="font-body-md text-body-md font-medium text-on-background block">{selectedProduct}</span>
-                    <span className="font-label-caps text-label-caps text-on-surface-variant mt-1 block">
-                      ${{
-                        "Premium Hoodie": 99.00,
-                        "Classic T-Shirt": 45.00,
-                        "Fine Art Poster": 25.00,
-                      }[selectedProduct]?.toFixed(2) || "45.00"}
-                    </span>
-                  </div>
-                  
-                  {/* Mock Size Selector */}
-                  {selectedProduct !== "Fine Art Poster" && (
-                    <div>
-                      <p className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Select Size</p>
-                      <div className="flex gap-2">
-                        {["S", "M", "L", "XL"].map(size => (
-                          <button key={size} className="w-12 h-12 border border-outline-variant hover:border-primary flex items-center justify-center font-label-caps">
-                            {size}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {["Digital Download (All 6)", "Premium Hoodie", "Classic T-Shirt", "Canvas Print", "Tote Bag", "Coffee Mug", "Poster"].map((product) => (
-                    <button 
-                      key={product} 
-                      onClick={() => setSelectedProduct(product)}
-                      className={`border p-4 text-left transition-colors ${
-                        selectedProduct === product 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-outline-variant hover:border-primary'
+          return (
+            <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 w-full items-start">
+              {/* Left: Live Product Mockup Preview */}
+              <div className="flex flex-col gap-4">
+                <div className="border border-surface-variant bg-surface-container-lowest p-6 relative overflow-hidden rounded-xl shadow-sm">
+                  <div className="relative w-full aspect-[4/5] max-h-[440px] flex items-center justify-center bg-[#F6F1E7]/40 overflow-hidden rounded-lg">
+                    {previewBackground && (
+                      <img
+                        src={previewBackground}
+                        alt={`${selectedProduct} in ${selectedColor}`}
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                      />
+                    )}
+                    
+                    {/* Position Calligraphy Artwork Overlay on Product */}
+                    <div 
+                      className={`relative z-10 flex items-center justify-center ${
+                        isApparel ? "w-[48%] mt-[-10%]" : "w-[65%]"
                       }`}
                     >
-                      <span className="font-body-md text-body-md font-medium text-on-background block">{product}</span>
-                      <span className="font-label-caps text-label-caps text-on-surface-variant">
-                        {product === "Digital Download (All 6)" ? "$9.99" : `$${{
-                          "Premium Hoodie": 99.00,
-                          "Classic T-Shirt": 45.00,
-                          "Canvas Print": 49.00,
-                          "Tote Bag": 29.00,
-                          "Coffee Mug": 19.00,
-                          "Poster": 25.00,
-                        }[product]?.toFixed(2) || "45.00"}`}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
+                      <img 
+                        src={compositionData?.recoloredArtworkUrl || selectedCandidate.imageUrl} 
+                        alt="Your Calligraphy Artwork" 
+                        className={`w-full h-auto object-contain pointer-events-none select-none ${
+                          !compositionData?.bgImage && selectedColor === "Bone White" ? "mix-blend-multiply" : ""
+                        }`}
+                        style={{
+                          transform: compositionData ? `scale(${compositionData.scale || 1}) rotate(${compositionData.rotation || 0}deg)` : undefined,
+                          filter: compositionData?.color === "ivory" && !compositionData?.bgImage ? "drop-shadow(0px 2px 4px rgba(0,0,0,0.4))" : undefined,
+                        }}
+                        onContextMenu={(e) => e.preventDefault()} 
+                        draggable={false} 
+                      />
+                    </div>
+                  </div>
 
-              <Link
-                href={`/checkout?candidate=${encodeURIComponent(selectedCandidate.id)}&product=${encodeURIComponent(selectedProduct)}&sessionId=${encodeURIComponent(sessionId)}&text=${encodeURIComponent(inputText || selectedInterpretation?.text || "")}&interpretedText=${encodeURIComponent(selectedInterpretation?.text || inputText || "")}&interpretation=${encodeURIComponent(selectedInterpretation?.type || "Original")}&meaning=${encodeURIComponent(selectedInterpretation?.meaning || "")}&romanization=${encodeURIComponent(selectedInterpretation?.romanization || "")}`}
-                className="w-full bg-primary text-on-primary py-4 font-label-caps text-label-caps uppercase text-center hover:bg-surface-tint transition-colors block mt-4"
-              >
-                Proceed to Checkout →
-              </Link>
+                  {/* Cultural Meaning Badge Below Preview */}
+                  <div className="mt-4 border-t border-surface-variant pt-4 flex items-center justify-between">
+                    <div>
+                      <p className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-wider">Master Phrase</p>
+                      <p className="font-headline-sm text-base font-bold text-on-background mt-0.5">
+                        {selectedInterpretation?.text || inputText}
+                      </p>
+                    </div>
+                    {selectedInterpretation?.meaning && (
+                      <span className="text-xs text-on-surface-variant italic max-w-[200px] text-right truncate">
+                        &ldquo;{selectedInterpretation.meaning}&rdquo;
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Interactive Product Configuration */}
+              <div className="flex flex-col gap-6 bg-white p-6 border border-surface-variant rounded-xl shadow-sm">
+                <div>
+                  <h1 className="font-headline-md text-xl font-bold text-on-background">
+                    Select Product & Specifications
+                  </h1>
+                  <p className="font-body-md text-xs text-on-surface-variant mt-1">
+                    Choose your physical product, garment color, and sizing.
+                  </p>
+                </div>
+
+                {/* Product Grid */}
+                <div>
+                  <span className="font-label-caps text-xs uppercase text-on-surface-variant block mb-2 font-bold tracking-wider">
+                    Product Type
+                  </span>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {Object.values(PRODUCT_CATALOG).map((prod) => (
+                      <button 
+                        key={prod.id} 
+                        onClick={() => handleSelectProduct(prod.id)}
+                        className={`border p-3 rounded-lg text-left transition-all ${
+                          selectedProduct === prod.id 
+                            ? 'border-primary bg-primary/5 ring-1 ring-primary' 
+                            : 'border-outline-variant hover:border-primary/50 bg-surface-container-lowest/50'
+                        }`}
+                      >
+                        <span className="font-body-md text-xs font-bold text-on-background block truncate">{prod.id}</span>
+                        <span className="font-label-caps text-[11px] text-on-surface-variant font-medium">
+                          ${prod.price.toFixed(2)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Color Selector */}
+                {currentConfig.colors.length > 1 && (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-label-caps text-xs uppercase text-on-surface-variant font-bold tracking-wider">
+                        Product Color
+                      </span>
+                      <span className="text-xs font-mono text-on-background font-medium">{selectedColor}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {currentConfig.colors.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => setSelectedColor(c.name)}
+                          title={c.name}
+                          className={`w-9 h-9 rounded-full border border-outline-variant shadow-sm transition-all flex items-center justify-center ${
+                            selectedColor === c.name ? "ring-2 ring-primary scale-105" : "hover:scale-105 opacity-80"
+                          }`}
+                          style={{ backgroundColor: c.hex }}
+                        >
+                          {selectedColor === c.name && (
+                            <span className={`w-2 h-2 rounded-full ${c.hex === "#111111" || c.hex === "#1E293B" ? "bg-white" : "bg-black"}`} />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Size Selector */}
+                {currentConfig.sizes.length > 0 && selectedProduct !== "Digital Download (All 6)" && (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-label-caps text-xs uppercase text-on-surface-variant font-bold tracking-wider">
+                        Select Size
+                      </span>
+                      <span className="text-xs font-mono text-on-background font-medium">{selectedSize}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {currentConfig.sizes.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setSelectedSize(s)}
+                          className={`px-3.5 py-2 border rounded-lg text-xs font-label-caps uppercase transition-all ${
+                            selectedSize === s
+                              ? "bg-black text-white border-black font-bold shadow-sm"
+                              : "border-outline-variant bg-white text-on-background hover:border-primary"
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Price Breakdown Banner */}
+                <div className="p-4 bg-[#F4EFE6] border border-[#E5E0D8] rounded-lg flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-label-caps uppercase text-[#66635D] block">Total Target Price</span>
+                    <span className="text-lg font-bold text-[#111111] font-display-md">
+                      ${currentConfig.price.toFixed(2)}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[#137333] font-semibold bg-[#E6F4EA] px-2 py-1 rounded">
+                    Free Standard Shipping
+                  </span>
+                </div>
+
+                {/* Proceed to Checkout Button */}
+                <Link
+                  href={`/checkout?candidate=${encodeURIComponent(selectedCandidate.id)}&product=${encodeURIComponent(selectedProduct)}&size=${encodeURIComponent(selectedSize)}&color=${encodeURIComponent(selectedColor)}&mockup=${encodeURIComponent(activeMockup)}&sessionId=${encodeURIComponent(sessionId)}&text=${encodeURIComponent(inputText || selectedInterpretation?.text || "")}&interpretedText=${encodeURIComponent(selectedInterpretation?.text || inputText || "")}&interpretation=${encodeURIComponent(selectedInterpretation?.type || "Original")}&meaning=${encodeURIComponent(selectedInterpretation?.meaning || "")}&romanization=${encodeURIComponent(selectedInterpretation?.romanization || "")}`}
+                  className="w-full bg-primary text-on-primary py-4 font-label-caps text-label-caps uppercase text-center hover:bg-surface-tint transition-colors block rounded-lg font-bold shadow-md"
+                >
+                  Proceed to Checkout (${currentConfig.price.toFixed(2)}) →
+                </Link>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
+        {/* End of Step 6 */}
       </div>
     </div>
   );
