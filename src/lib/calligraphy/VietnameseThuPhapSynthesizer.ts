@@ -80,8 +80,8 @@ export class VietnameseThuPhapSynthesizer {
     const dryBrush = variationType === "03_DRY_BRUSH" ? 0.65 : 0.2;
     const hasSeal = variationType === "06_SIGNATURE" || variationType === "01_CONTROLLED" || variationType === "04_EXPRESSIVE" || stylePackId === "Thi Bút 6";
 
-    const width = isVertical ? 500 : Math.max(900, trimmed.length * 150 + 260);
-    const height = isVertical ? Math.max(900, words.length * 280 + 260) : 620;
+    const width = isVertical ? 800 : Math.max(1200, trimmed.length * 180 + 360);
+    const height = isVertical ? Math.max(1200, words.length * 450 + 300) : 720;
 
     // Filters for sumi ink and dry brush bristles
     const filterId = `thuphap_filter_${seed}`;
@@ -115,10 +115,13 @@ export class VietnameseThuPhapSynthesizer {
     let swashElements = "";
 
     if (isVertical) {
-      const stepY = (height - 240) / Math.max(words.length, 1);
+      const stepY = 280;
+      const totalContentHeight = words.length * stepY;
+      const startY = (height - totalContentHeight) / 2 + 100;
+      const wordFontSize = Math.floor(160 * pressure);
+
       words.forEach((word, i) => {
-        const y = 140 + i * stepY;
-        const wordFontSize = Math.floor(160 * pressure);
+        const y = startY + i * stepY;
         textElements += `
           <g transform="translate(${width / 2}, ${y})">
             <!-- Shadow/Bleed layer for ink richness -->
@@ -129,8 +132,8 @@ export class VietnameseThuPhapSynthesizer {
         `;
       });
     } else {
-      const textY = height / 2 - 25;
-      const fontSize = Math.floor(190 * pressure);
+      const textY = height / 2 - 30;
+      const fontSize = Math.floor(180 * pressure);
       textElements = `
         <g transform="translate(${width / 2}, ${textY})">
           <!-- Heavy ink core -->
@@ -188,8 +191,8 @@ export class VietnameseThuPhapSynthesizer {
     // Imperial Red Cinnabar Seal (Ấn Triện Son 詩筆)
     let sealSvg = "";
     if (hasSeal) {
-      const sealX = isVertical ? width - 110 : width - 130;
-      const sealY = isVertical ? height - 120 : height - 130;
+      const sealX = isVertical ? width - 160 : width - 160;
+      const sealY = isVertical ? height - 180 : height - 160;
       sealSvg = `
         <g id="cinnabar-seal-stamp" transform="translate(${sealX}, ${sealY})">
           <rect width="68" height="68" rx="8" fill="#B3261E" />
