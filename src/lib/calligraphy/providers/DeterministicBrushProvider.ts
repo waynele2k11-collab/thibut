@@ -194,17 +194,59 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
     const chars = Array.from(text.trim());
     const charCount = chars.length;
 
-    const isThuPhap = script === "VIETNAMESE_LATIN" || script === "ENGLISH_LATIN" || stylePackId === "Classic" || stylePackId === "Thi Bút Classic";
-
     let fontFamily = "'Alex Brush', 'Dancing Script', cursive";
-    if (script === "HAN") {
-      fontFamily = "'Long Cang', 'Ma Shan Zheng', cursive";
-    } else if (script === "JAPANESE_MIXED") {
-      fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
-    } else if (script === "KOREAN_HANGUL") {
-      fontFamily = "'Nanum Brush Script', 'East Sea Dokdo', cursive";
-    } else {
+    let isThuPhap = true;
+
+    if (stylePackId === "Thi Bút 1" || stylePackId === "Thi Bút Classic" || stylePackId === "Classic") {
       fontFamily = "'Alex Brush', 'Dancing Script', cursive";
+      isThuPhap = true;
+    } else if (stylePackId === "Thi Bút 2") {
+      fontFamily = "'Dancing Script', cursive";
+      isThuPhap = true;
+    } else if (stylePackId === "Thi Bút 3" || stylePackId === "Street") {
+      fontFamily = "'Caveat', cursive";
+      isThuPhap = true;
+    } else if (stylePackId === "Thi Bút 4" || stylePackId === "Seal") {
+      fontFamily = "'Alex Brush', cursive";
+      isThuPhap = true;
+    } else if (stylePackId === "Japanese 1" || stylePackId === "Shodō") {
+      fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
+      isThuPhap = false;
+    } else if (stylePackId === "Japanese 2") {
+      fontFamily = "'Yuji Syuku', serif";
+      isThuPhap = false;
+    } else if (stylePackId === "Japanese 3") {
+      fontFamily = "'Yuji Mai', cursive";
+      isThuPhap = false;
+    } else if (stylePackId === "Chinese 1" || stylePackId === "Ink") {
+      fontFamily = "'Long Cang', 'Ma Shan Zheng', cursive";
+      isThuPhap = false;
+    } else if (stylePackId === "Chinese 2") {
+      fontFamily = "'Ma Shan Zheng', cursive";
+      isThuPhap = false;
+    } else if (stylePackId === "Chinese 3") {
+      fontFamily = "'Zhi Mang Xing', cursive";
+      isThuPhap = false;
+    } else if (stylePackId === "Korean 1" || stylePackId === "Zen") {
+      fontFamily = "'Nanum Brush Script', cursive";
+      isThuPhap = false;
+    } else if (stylePackId === "Korean 2") {
+      fontFamily = "'East Sea Dokdo', cursive";
+      isThuPhap = false;
+    } else {
+      if (script === "HAN") {
+        fontFamily = "'Long Cang', 'Ma Shan Zheng', cursive";
+        isThuPhap = false;
+      } else if (script === "JAPANESE_MIXED") {
+        fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
+        isThuPhap = false;
+      } else if (script === "KOREAN_HANGUL") {
+        fontFamily = "'Nanum Brush Script', 'East Sea Dokdo', cursive";
+        isThuPhap = false;
+      } else {
+        fontFamily = "'Alex Brush', 'Dancing Script', cursive";
+        isThuPhap = true;
+      }
     }
 
     // Dynamic canvas dimensions sized for prominent artwork presence

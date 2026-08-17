@@ -54,15 +54,25 @@ interface Candidate {
 
 const MODES: Mode[] = ["NAME", "QUOTE", "STORY"];
 const STYLE_PACKS = [
-  { id: "Classic", label: "Thi Bút Classic", desc: "Vietnamese poetic brush" },
-  { id: "Shodō", label: "Shodō", desc: "Japanese brush calligraphy" },
-  { id: "Ink", label: "Ink", desc: "Bold expressive strokes" },
-  { id: "Zen", label: "Zen", desc: "Minimal & restrained" },
-  { id: "Seal", label: "Seal", desc: "Red stamp chop style" },
-  { id: "Modern", label: "Modern", desc: "Contemporary Asian type" },
-  { id: "Luxury", label: "Luxury", desc: "Gold-accented elegance" },
-  { id: "Street", label: "Street", desc: "Bold urban energy" },
-  { id: "Minimal", label: "Minimal", desc: "Negative space focus" },
+  // 🇻🇳 Vietnamese Thư Pháp
+  { id: "Thi Bút 1", label: "Thi Bút 1", desc: "Flowing Master Thư Pháp (Alex Brush)", category: "VIETNAMESE_THU_PHAP" },
+  { id: "Thi Bút 2", label: "Thi Bút 2", desc: "Poetic Rhythmic Thư Pháp (Dancing Script)", category: "VIETNAMESE_THU_PHAP" },
+  { id: "Thi Bút 3", label: "Thi Bút 3", desc: "Dynamic Modern Thư Pháp (Caveat)", category: "VIETNAMESE_THU_PHAP" },
+  { id: "Thi Bút 4", label: "Thi Bút 4", desc: "Imperial Cinnabar Seal Thư Pháp", category: "VIETNAMESE_THU_PHAP" },
+
+  // 🇯🇵 Japanese Shodō
+  { id: "Japanese 1", label: "Japanese 1", desc: "Bold Dry-Brush Shodō (Yuji Boku)", category: "JAPANESE_SHODO" },
+  { id: "Japanese 2", label: "Japanese 2", desc: "Classical Kanji Shodō (Yuji Syuku)", category: "JAPANESE_SHODO" },
+  { id: "Japanese 3", label: "Japanese 3", desc: "Flowing Kana Shodō (Yuji Mai)", category: "JAPANESE_SHODO" },
+
+  // 🇨🇳 Chinese Shūfǎ
+  { id: "Chinese 1", label: "Chinese 1", desc: "Master Grass Cursive (Long Cang)", category: "CHINESE_CALLIGRAPHY" },
+  { id: "Chinese 2", label: "Chinese 2", desc: "Standard Brush Shūfǎ (Ma Shan Zheng)", category: "CHINESE_CALLIGRAPHY" },
+  { id: "Chinese 3", label: "Chinese 3", desc: "Running Script Shūfǎ (Zhi Mang Xing)", category: "CHINESE_CALLIGRAPHY" },
+
+  // 🇰🇷 Korean Seoye
+  { id: "Korean 1", label: "Korean 1", desc: "Dynamic Hangul Seoye (Nanum Brush)", category: "KOREAN_BRUSH" },
+  { id: "Korean 2", label: "Korean 2", desc: "Bold Ancient Seoye (East Sea Dokdo)", category: "KOREAN_BRUSH" },
 ];
 const COMPOSITIONS = [
   { id: "Vertical", label: "Vertical", desc: "Top-to-bottom scroll" },
@@ -117,8 +127,15 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
   const [generateError, setGenerateError] = useState<string | null>(null);
 
   // Step 3 state
-  const [stylePack, setStylePack] = useState("Shodō");
+  const [stylePack, setStylePack] = useState("Thi Bút 1");
   const [composition, setComposition] = useState("Centered");
+
+  useEffect(() => {
+    if (culturalStyle === "VIETNAMESE_THU_PHAP") setStylePack("Thi Bút 1");
+    else if (culturalStyle === "JAPANESE_SHODO") setStylePack("Japanese 1");
+    else if (culturalStyle === "CHINESE_CALLIGRAPHY") setStylePack("Chinese 1");
+    else if (culturalStyle === "KOREAN_BRUSH") setStylePack("Korean 1");
+  }, [culturalStyle]);
 
   // Step 4 state
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -455,23 +472,41 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
 
             {/* Style Pack Grid */}
             <div>
-              <h2 className="font-headline-sm text-headline-sm text-on-background mb-4">Style Pack</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {STYLE_PACKS.map((pack) => (
-                  <button
-                    key={pack.id}
-                    onClick={() => setStylePack(pack.id)}
-                    className={`relative p-4 border flex flex-col items-start text-left transition-all ${
-                      stylePack === pack.id
-                        ? "border-primary bg-surface-container-highest"
-                        : "border-outline-variant bg-surface-container-lowest hover:border-primary"
-                    }`}
-                  >
-                    {stylePack === pack.id && <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-primary" />}
-                    <span className="font-body-md font-medium text-on-background text-sm">{pack.label}</span>
-                    <span className="font-label-caps text-on-surface-variant text-[10px] mt-1 leading-tight">{pack.desc}</span>
-                  </button>
-                ))}
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-4">
+                <h2 className="font-headline-sm text-headline-sm text-on-background">Font Styles</h2>
+                <span className="text-xs text-on-surface-variant font-label-caps">
+                  Selected tradition: <strong>{CULTURAL_STYLES.find(s => s.id === culturalStyle)?.label}</strong>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {STYLE_PACKS.map((pack) => {
+                  const isMatchingTradition = pack.category === culturalStyle;
+                  const isSelected = stylePack === pack.id;
+
+                  return (
+                    <button
+                      key={pack.id}
+                      onClick={() => setStylePack(pack.id)}
+                      className={`relative p-5 border rounded-lg flex flex-col items-start text-left transition-all ${
+                        isSelected
+                          ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
+                          : isMatchingTradition
+                          ? "border-outline-variant bg-surface-container-lowest hover:border-primary"
+                          : "border-outline-variant/60 bg-surface-container-lowest/60 opacity-80 hover:opacity-100 hover:border-primary"
+                      }`}
+                    >
+                      {isSelected && <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-primary" />}
+                      <span className="font-serif font-bold text-on-background text-base">{pack.label}</span>
+                      <span className="font-body-md text-on-surface-variant text-xs mt-1 leading-snug">{pack.desc}</span>
+                      {isMatchingTradition && (
+                        <span className="mt-3 px-2 py-0.5 bg-surface-variant text-on-surface-variant text-[10px] font-label-caps uppercase rounded">
+                          Recommended
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
