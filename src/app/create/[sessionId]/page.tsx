@@ -1,32 +1,67 @@
 "use client";
 
 /**
- * /create/[sessionId] — Full Personalization Wizard
+ * /create/[sessionId] — Thi Bút Studio 2.0 (Streamlined 3-Stage Experience)
  * 
- * Step 1: Input (NAME / QUOTE / STORY) + Language selection
- * Step 2: Cultural interpretation selection (Literal / Natural / Poetic)
- * Step 3: Style Pack + Composition selection
- * Step 4: AI Candidate gallery → buyer picks one
- * Step 5: Product selector (size, color)  [→ checkout]
+ * Stage 1: Express & Style (Prompt + Cultural Meaning + Style Pack in one unified view)
+ * Stage 2: Pick Your Brush (6 genuine brush variations with 1-click auto-advance)
+ * Stage 3: Interactive Product Studio & 1-Click Buy (Live canvas mockup + product size/color + checkout)
  */
 
 import { useState, use, useEffect, useCallback } from "react";
-import { ChevronRight, Loader2, CheckCircle2, ArrowLeft } from "lucide-react";
+import { 
+  ChevronRight, 
+  Loader2, 
+  CheckCircle2, 
+  ArrowLeft, 
+  Sparkles, 
+  Palette, 
+  ShoppingBag, 
+  Sliders, 
+  RotateCw, 
+  ZoomIn, 
+  ZoomOut,
+  ShieldCheck
+} from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CompositionEditor } from "@/components/create/CompositionEditor";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Mode = "NAME" | "QUOTE" | "STORY";
 type CulturalStyle = "VIETNAMESE_THU_PHAP" | "JAPANESE_SHODO" | "CHINESE_CALLIGRAPHY" | "KOREAN_BRUSH";
 type TextTreatment = "KEEP_ORIGINAL" | "TRANSLATE";
-type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
+type StudioStage = 1 | 2 | 3;
 
-const CULTURAL_STYLES: { id: CulturalStyle; label: string }[] = [
-  { id: "VIETNAMESE_THU_PHAP", label: "Vietnamese" },
-  { id: "JAPANESE_SHODO", label: "Japanese" },
-  { id: "CHINESE_CALLIGRAPHY", label: "Chinese" },
-  { id: "KOREAN_BRUSH", label: "Korean" },
+const CULTURAL_STYLES: { id: CulturalStyle; label: string; flag: string; tradition: string }[] = [
+  { id: "VIETNAMESE_THU_PHAP", label: "Vietnamese", flag: "🇻🇳", tradition: "Thư Pháp chữ Quốc Ngữ" },
+  { id: "JAPANESE_SHODO", label: "Japanese", flag: "🇯🇵", tradition: "Shodō (書道)" },
+  { id: "CHINESE_CALLIGRAPHY", label: "Chinese", flag: "🇨🇳", tradition: "Shūfǎ (書法)" },
+  { id: "KOREAN_BRUSH", label: "Korean", flag: "🇰🇷", tradition: "Seoye (書藝)" },
+];
+
+const STYLE_PACKS = [
+  { id: "Thi Bút Classic", label: "Thi Bút Classic", desc: "Vietnamese poetic brush & flourishes", badge: "Most Popular" },
+  { id: "Shodō", label: "Shodō", desc: "Japanese brush calligraphy & sumi ink", badge: "Traditional" },
+  { id: "Ink", label: "Bold Ink", desc: "Heavy pressure & authoritative strokes", badge: "Expressive" },
+  { id: "Zen", label: "Zen Minimal", desc: "Delicate touch & open negative space", badge: "Minimal" },
+  { id: "Seal", label: "Imperial Seal", desc: "Red cinnabar seal chop composition", badge: "Artistic" },
+];
+
+const QUICK_PROMPTS = [
+  "David",
+  "Peace",
+  "Có chí thì nên",
+  "Never Give Up",
+  "Trí Tuệ",
+  "Love & Harmony",
+];
+
+const PRODUCTS = [
+  { id: "Premium Hoodie", name: "Premium Heavyweight Hoodie", price: 99.0, mockup: "/mockups/blank_hoodie.jpg" },
+  { id: "Classic T-Shirt", name: "Classic Streetwear Tee", price: 45.0, mockup: "/mockups/model-male.jpg" },
+  { id: "Fine Art Poster", name: "Fine Art Museum Scroll", price: 25.0, mockup: "/mockups/fine-art-poster.jpg" },
+  { id: "Digital Download", name: "300 DPI Master Digital Pack", price: 9.99, mockup: "" },
 ];
 
 interface Interpretation {
@@ -47,690 +82,639 @@ interface Candidate {
   index: number;
   imageUrl: string;
   stylePack: string;
+  variationType?: string;
+  variationName?: string;
   variationNote: string;
   seed: number;
 }
 
-
-const MODES: Mode[] = ["NAME", "QUOTE", "STORY"];
-const STYLE_PACKS = [
-  { id: "Classic", label: "Thi Bút Classic", desc: "Vietnamese poetic brush" },
-  { id: "Shodō", label: "Shodō", desc: "Japanese brush calligraphy" },
-  { id: "Ink", label: "Ink", desc: "Bold expressive strokes" },
-  { id: "Zen", label: "Zen", desc: "Minimal & restrained" },
-  { id: "Seal", label: "Seal", desc: "Red stamp chop style" },
-  { id: "Modern", label: "Modern", desc: "Contemporary Asian type" },
-  { id: "Luxury", label: "Luxury", desc: "Gold-accented elegance" },
-  { id: "Street", label: "Street", desc: "Bold urban energy" },
-  { id: "Minimal", label: "Minimal", desc: "Negative space focus" },
-];
-const COMPOSITIONS = [
-  { id: "Vertical", label: "Vertical", desc: "Top-to-bottom scroll" },
-  { id: "Centered", label: "Centered", desc: "Balanced center" },
-  { id: "LeftChest", label: "Left Chest", desc: "Small logo placement" },
-  { id: "FullBack", label: "Full Back", desc: "Statement back print" },
-  { id: "Sleeve", label: "Sleeve", desc: "Vertical sleeve band" },
-];
-
-// ── Step indicator ─────────────────────────────────────────────────────────────
-function StepIndicator({ current, total }: { current: WizardStep; total: number }) {
-  const labels = ["Input", "Interpret", "Style", "Preview", "Compose", "Product"];
-  return (
-    <div className="flex justify-center items-center gap-2 font-label-caps text-label-caps text-on-surface-variant mb-8 w-full max-w-5xl mx-auto">
-      {labels.map((label, i) => {
-        const step = (i + 1) as WizardStep;
-        const isActive = step === current;
-        const isDone = step < current;
-        return (
-          <span key={label} className="flex items-center gap-2">
-            <span className={`${isActive ? "text-primary font-bold border-b border-primary" : isDone ? "text-secondary" : ""}`}>
-              {isDone ? <CheckCircle2 className="w-3 h-3 inline" /> : null} {label}
-            </span>
-            {i < total - 1 && <ChevronRight className="w-3 h-3 opacity-40" />}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Main Wizard ────────────────────────────────────────────────────────────────
 export default function CreatePage({ params }: { params: Promise<{ sessionId: string }> }) {
-  const { sessionId } = use(params); // Next.js 16: params is a Promise
-  const [step, setStep] = useState<WizardStep>(1);
+  const { sessionId } = use(params);
+  const searchParams = useSearchParams();
 
+  // ── Stage State ─────────────────────────────────────────────────────────────
+  const [stage, setStage] = useState<StudioStage>(1);
+
+  // ── Stage 1 State ───────────────────────────────────────────────────────────
   const [inputText, setInputText] = useState("");
   const [mode, setMode] = useState<Mode>("QUOTE");
   const [culturalStyle, setCulturalStyle] = useState<CulturalStyle>("VIETNAMESE_THU_PHAP");
   const [textTreatment, setTextTreatment] = useState<TextTreatment>("KEEP_ORIGINAL");
+  const [stylePack, setStylePack] = useState("Thi Bút Classic");
   
-  const [detectedInputLang, setDetectedInputLang] = useState<string | null>(null);
-  const [detectingLang, setDetectingLang] = useState(false);
-  const [languageOverridden, setLanguageOverridden] = useState(false); // user manually picked
-
-  // Step 2 state
   const [interpretations, setInterpretations] = useState<Interpretation[]>([]);
   const [selectedInterpretation, setSelectedInterpretation] = useState<Interpretation | null>(null);
-  const [analyzeLoading, setAnalyzeLoading] = useState(false);
-  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [interpretLoading, setInterpretLoading] = useState(false);
   const [generateLoading, setGenerateLoading] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
-  // Step 3 state
-  const [stylePack, setStylePack] = useState("Shodō");
-  const [composition, setComposition] = useState("Centered");
-
-  // Step 4 state
+  // ── Stage 2 State (Candidates) ──────────────────────────────────────────────
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
 
-  // Step 5 state
+  // ── Stage 3 State (Studio & Product) ────────────────────────────────────────
   const [selectedProduct, setSelectedProduct] = useState("Premium Hoodie");
-  const [compositionData, setCompositionData] = useState<any>(null);
+  const [selectedSize, setSelectedSize] = useState("L");
+  const [selectedColor, setSelectedColor] = useState("black");
+  const [canvasScale, setCanvasScale] = useState(1.0);
+  const [canvasRotation, setCanvasRotation] = useState(0);
 
-  const searchParams = useSearchParams();
-
-  // ── Read hero input from sessionStorage or query param on mount ─────────────
+  // ── Read hero input from URL search params on mount ─────────────────────────
   useEffect(() => {
-    // 1. Check URL query params first
     const textParam = searchParams.get("text");
     if (textParam) {
       setInputText(textParam);
-      // Auto-switch to QUOTE or NAME depending on length or just leave as default QUOTE
-      return; // if we found it in URL, skip sessionStorage
     }
+  }, [searchParams]);
 
-    // 2. Fallback to sessionStorage
-    const stored = sessionStorage.getItem(`session-${sessionId}`);
-    if (!stored) return;
-    try {
-      const data = JSON.parse(stored);
-      if (data.inputText) setInputText(data.inputText);
-      if (data.mode)      setMode(data.mode as Mode);
-      if (data.culturalStyle) setCulturalStyle(data.culturalStyle as CulturalStyle);
-      sessionStorage.removeItem(`session-${sessionId}`); // consume once
-    } catch { /* ignore */ }
-  }, [sessionId, searchParams]);
-
-  // ── Auto-detect language as user types (debounced 600ms) ────────────────────
+  // ── Debounced Cultural Interpretation Fetcher ───────────────────────────────
   useEffect(() => {
-    if (inputText.trim().length < 2) {
-      setDetectedInputLang(null);
+    const text = inputText.trim();
+    if (!text) {
+      setInterpretations([]);
+      setSelectedInterpretation(null);
       return;
     }
+
     const timer = setTimeout(async () => {
-      setDetectingLang(true);
+      setInterpretLoading(true);
       try {
-        const res = await fetch("/api/personalization/detect-language", {
+        const res = await fetch("/api/personalization/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: inputText.trim() }),
+          body: JSON.stringify({ inputText: text, culturalStyle, textTreatment, mode }),
         });
-        if (!res.ok) return;
-        const data = await res.json();
-        setDetectedInputLang(data.detectedLanguage ?? null);
-        // Auto-select suggested target only if user hasn't manually overridden
-        if (!languageOverridden && data.suggestedTarget) {
-          const matchingStyle = CULTURAL_STYLES.find(s => s.label === data.suggestedTarget);
-          if (matchingStyle) setCulturalStyle(matchingStyle.id);
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.interpretations ?? [];
+          setInterpretations(items);
+          const rec = items.find((i: Interpretation) => i.recommended) || items[0] || null;
+          setSelectedInterpretation(rec);
         }
-      } catch { /* silent */ } finally {
-        setDetectingLang(false);
+      } catch (err) {
+        console.warn("Auto-interpretation warning:", err);
+      } finally {
+        setInterpretLoading(false);
       }
-    }, 600);
+    }, 450);
+
     return () => clearTimeout(timer);
-  }, [inputText, languageOverridden]);
-
-
-  const handleAnalyze = useCallback(async () => {
-    const text = inputText.trim();
-    if (!text) return;
-    setAnalyzeLoading(true);
-    setAnalyzeError(null);
-    try {
-      const res = await fetch("/api/personalization/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inputText: text, culturalStyle, textTreatment, mode }),
-      });
-      if (!res.ok) throw new Error("Analysis failed");
-      const data = await res.json();
-      setInterpretations(data.interpretations ?? []);
-      setSelectedInterpretation(data.interpretations?.find((i: Interpretation) => i.recommended) ?? data.interpretations?.[0] ?? null);
-      setStep(2);
-    } catch {
-      setAnalyzeError("Could not analyze your text. Please try again.");
-    } finally {
-      setAnalyzeLoading(false);
-    }
   }, [inputText, culturalStyle, textTreatment, mode]);
 
-  async function handleGenerate() {
-    if (!selectedInterpretation) return;
+  // ── Generate Master Candidates (Transition from Stage 1 -> 2) ───────────────
+  const handleGenerate = async () => {
+    const text = inputText.trim();
+    if (!text) return;
+
     setGenerateLoading(true);
     setGenerateError(null);
     setCandidates([]);
+
+    const primaryInterpretation = selectedInterpretation || {
+      type: textTreatment === "KEEP_ORIGINAL" ? "ORIGINAL" : "NATURAL",
+      language: culturalStyle === "VIETNAMESE_THU_PHAP" ? "Vietnamese" : culturalStyle === "JAPANESE_SHODO" ? "Japanese" : "English",
+      text: text,
+      meaning: "Original expression",
+      confidence: 1.0,
+      recommended: true,
+    };
+
     try {
       const res = await fetch("/api/personalization/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId,
-          inputText: selectedInterpretation.text,
+          inputText: primaryInterpretation.text,
           culturalStyle,
           textTreatment,
           mode,
           stylePack,
-          composition,
-          selectedInterpretation,
+          composition: "Centered",
+          selectedInterpretation: primaryInterpretation,
         }),
       });
+
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || errData.message || "Generation failed");
+        throw new Error(errData.error || errData.message || "Failed to generate designs");
       }
+
       const data = await res.json();
-      if (data.candidates) {
+      if (data.candidates && data.candidates.length > 0) {
         setCandidates(data.candidates);
+        setSelectedCandidate(data.candidates[0]);
+        setStage(2); // Auto-advance to Stage 2
+      } else {
+        throw new Error("No candidates returned. Please try again.");
       }
     } catch (err: any) {
-      setGenerateError(err.message || "Could not generate designs. Please try again.");
+      setGenerateError(err.message || "Could not generate calligraphy. Please try again.");
     } finally {
       setGenerateLoading(false);
     }
-  }
+  };
 
-  // ── Renders ─────────────────────────────────────────────────────────────────
+  // ── Select Candidate (1-Click Advance from Stage 2 -> 3) ─────────────────────
+  const handleSelectCandidate = (candidate: Candidate) => {
+    setSelectedCandidate(candidate);
+    setStage(3); // Auto-advance to Stage 3 Interactive Studio
+  };
 
   return (
-    <div className="bg-background min-h-screen text-on-background font-body-md">
-      <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-12">
-        <StepIndicator current={step} total={6} />
-
-        {/* ── STEP 1: Input ─────────────────────────────────────────────────── */}
-        {step === 1 && (
-          <div className="max-w-2xl mx-auto flex flex-col gap-8 w-full">
-            <div>
-              <h1 className="font-display-lg-mobile md:font-headline-md text-display-lg-mobile md:text-headline-md text-on-background mb-2">
-                Tell Us Your Story
-              </h1>
-              <p className="font-body-md text-body-md text-on-surface-variant">
-                Enter a name, quote, or personal story — we'll turn it into art.
-              </p>
-            </div>
-
-            {/* Mode tabs */}
-            <div className="flex p-1 bg-surface-container-highest">
-              {MODES.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={`flex-1 py-3 font-label-caps text-label-caps uppercase transition-all ${
-                    mode === m ? "bg-background text-primary shadow-sm" : "text-on-surface-variant hover:text-primary"
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-
-            {/* Input */}
-            <textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder={
-                mode === "NAME" ? "Enter your name…"
-                  : mode === "QUOTE" ? "Enter a quote or phrase…"
-                  : "Share your story in a sentence or two…"
-              }
-              className="w-full border border-outline-variant bg-surface-container-lowest p-5 font-body-md text-body-md text-on-background placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none h-32 transition-colors"
-            />
-
-            {/* Cultural Style Selection */}
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <p className="font-label-caps text-label-caps text-on-surface-variant uppercase">Cultural Style</p>
-                {detectingLang && (
-                  <span className="flex items-center gap-1 text-[10px] text-on-surface-variant">
-                    <Loader2 className="w-3 h-3 animate-spin" /> detecting language…
-                  </span>
-                )}
-                {detectedInputLang && !detectingLang && (
-                  <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 bg-secondary/10 text-secondary border border-secondary/20 rounded-sm">
-                    ✓ Detected: {detectedInputLang}
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {CULTURAL_STYLES.map((style) => (
-                  <button
-                    key={style.id}
-                    onClick={() => { setCulturalStyle(style.id); setLanguageOverridden(true); }}
-                    className={`px-5 py-2 border font-label-caps text-label-caps uppercase transition-all ${
-                      culturalStyle === style.id
-                        ? "border-primary bg-primary text-on-primary"
-                        : "border-outline-variant text-on-surface-variant hover:border-primary"
-                    }`}
-                  >
-                    {style.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Text Treatment Selection */}
-            <div>
-              <p className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-3">Text Treatment</p>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => setTextTreatment("KEEP_ORIGINAL")}
-                  className={`px-5 py-2 border font-label-caps text-label-caps uppercase transition-all ${
-                    textTreatment === "KEEP_ORIGINAL"
-                      ? "border-on-background bg-on-background text-background"
-                      : "border-outline-variant text-on-surface-variant hover:border-on-background hover:text-on-background"
-                  }`}
-                >
-                  KEEP ORIGINAL
-                </button>
-                <button
-                  onClick={() => setTextTreatment("TRANSLATE")}
-                  className={`px-5 py-2 border font-label-caps text-label-caps uppercase transition-all ${
-                    textTreatment === "TRANSLATE"
-                      ? "border-on-background bg-on-background text-background"
-                      : "border-outline-variant text-on-surface-variant hover:border-on-background hover:text-on-background"
-                  }`}
-                >
-                  TRANSLATE
-                </button>
-              </div>
-              <p className="text-[12px] text-on-surface-variant mt-3 leading-relaxed">
-                {textTreatment === "KEEP_ORIGINAL" 
-                  ? `Your text will remain unchanged and be rendered in a ${CULTURAL_STYLES.find(s => s.id === culturalStyle)?.label} calligraphy-inspired style.`
-                  : `We'll help you choose a natural, literal, or poetic interpretation before creating the artwork.`}
-              </p>
-            </div>
-
-            {/* Dynamic Preview Summary */}
-            <div className="p-4 bg-surface-container-highest border border-outline-variant mt-2">
-              <p className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Your Direction</p>
-              <p className="font-headline-md text-on-background mb-1">"{inputText || '...'}"</p>
-              <p className="font-body-md text-on-surface-variant">
-                {detectedInputLang || "English"} 
-                {textTreatment === "TRANSLATE" ? " → " : " · "} 
-                {CULTURAL_STYLES.find(s => s.id === culturalStyle)?.label} 
-                {textTreatment === "KEEP_ORIGINAL" ? " (Original Text)" : " (Translation)"}
-              </p>
-            </div>
-
-            {analyzeError && (
-              <p className="text-error font-body-md text-sm">{analyzeError}</p>
-            )}
-
-            <button
-              onClick={() => handleAnalyze()}
-              disabled={!inputText.trim() || analyzeLoading}
-              className="self-start bg-primary text-on-primary px-10 py-4 font-label-caps text-label-caps uppercase hover:bg-surface-tint transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {analyzeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {analyzeLoading ? "Interpreting…" : "CONTINUE →"}
-            </button>
-          </div>
-        )}
-
-        {/* ── STEP 2: Interpretation Selection ──────────────────────────────── */}
-        {step === 2 && (
-          <div className="max-w-5xl mx-auto flex flex-col gap-8 w-full">
-            <div>
-              <h1 className="font-headline-md text-headline-md text-on-background mb-2">Choose Your Interpretation</h1>
-              <p className="font-body-md text-body-md text-on-surface-variant">
-                We found these culturally meaningful ways to express <strong>&ldquo;{inputText}&rdquo;</strong> in {CULTURAL_STYLES.find(s => s.id === culturalStyle)?.label}.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {interpretations.map((interp, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSelectedInterpretation(interp)}
-                  className={`relative p-6 border text-left flex flex-col gap-3 transition-all ${
-                    selectedInterpretation?.type === interp.type
-                      ? "border-primary bg-surface-container-highest"
-                      : "border-outline-variant bg-surface-container-lowest hover:border-primary"
-                  }`}
-                >
-                  {interp.recommended && (
-                    <span className="absolute top-3 right-3 bg-primary text-on-primary font-label-caps text-label-caps text-[10px] uppercase px-2 py-0.5">
-                      {interp.type === "SINO_VIETNAMESE" ? "Artistic Pick" : "Recommended"}
-                    </span>
-                  )}
-                  <span className="font-label-caps text-label-caps text-on-surface-variant uppercase">{interp.type}</span>
-                  <span className="text-4xl font-bold text-on-background leading-tight" style={{ fontFamily: "'Noto Serif JP', 'Noto Sans JP', serif" }}>
-                    {interp.text}
-                  </span>
-                  {interp.romanization && (
-                    <span className="font-body-md text-body-md text-on-surface-variant italic">{interp.romanization}</span>
-                  )}
-                  <span className="font-body-md text-body-md text-on-surface-variant">&ldquo;{interp.meaning}&rdquo;</span>
-                  {interp.confidence < 0.8 && (
-                    <span className="font-label-caps text-label-caps text-error text-[11px] uppercase">
-                      ⚠ Confidence: {Math.round(interp.confidence * 100)}%
-                    </span>
-                  )}
-                  {interp.warning && (
-                    <span className="font-label-caps text-label-caps text-error text-[11px]">{interp.warning}</span>
-                  )}
-                  {interp.culturalContext && (
-                    <span className="font-label-caps text-label-caps text-on-surface-variant text-[11px] border-t border-surface-variant pt-2 mt-1">
-                      {interp.culturalContext}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex gap-4">
-              <button onClick={() => setStep(1)} className="flex items-center gap-2 border border-outline-variant px-6 py-3 font-label-caps text-label-caps uppercase text-on-surface-variant hover:border-primary hover:text-primary transition-colors">
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
+    <div className="bg-[#FCFAF6] min-h-screen text-[#111111] font-body">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        
+        {/* ── Top Progress Tracker (3 Stages) ──────────────────────────────── */}
+        <div className="flex justify-center items-center gap-3 sm:gap-6 mb-10">
+          {[
+            { num: 1, title: "1. Create & Style" },
+            { num: 2, title: "2. Pick Your Brush" },
+            { num: 3, title: "3. Studio & Order" },
+          ].map((s) => {
+            const isActive = stage === s.num;
+            const isCompleted = stage > s.num;
+            return (
               <button
-                onClick={() => setStep(3)}
-                disabled={!selectedInterpretation}
-                className="bg-primary text-on-primary px-10 py-3 font-label-caps text-label-caps uppercase hover:bg-surface-tint transition-colors disabled:opacity-40"
+                key={s.num}
+                onClick={() => {
+                  if (s.num < stage || (s.num === 2 && candidates.length > 0) || (s.num === 3 && selectedCandidate)) {
+                    setStage(s.num as StudioStage);
+                  }
+                }}
+                disabled={s.num > stage && (s.num === 2 ? candidates.length === 0 : !selectedCandidate)}
+                className={`flex items-center gap-2 text-xs sm:text-sm font-mono uppercase tracking-wider transition-all ${
+                  isActive
+                    ? "text-[#B3261E] font-bold border-b-2 border-[#B3261E] pb-1"
+                    : isCompleted
+                    ? "text-emerald-700 hover:text-[#111111]"
+                    : "text-[#A09D96] opacity-60 cursor-not-allowed"
+                }`}
               >
-                Choose Style →
+                {isCompleted ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : null}
+                {s.title}
+                {s.num < 3 && <ChevronRight className="w-3.5 h-3.5 text-[#E5E0D8] hidden sm:inline ml-2" />}
               </button>
-            </div>
-          </div>
-        )}
+            );
+          })}
+        </div>
 
-        {/* ── STEP 3: Style + Composition ────────────────────────────────────── */}
-        {step === 3 && (
-          <div className="max-w-5xl mx-auto flex flex-col gap-10 w-full">
-            <div>
-              <h1 className="font-headline-md text-headline-md text-on-background mb-2">Choose Your Style</h1>
-              <p className="font-body-md text-body-md text-on-surface-variant">
-                Select a visual style and layout. Our AI will generate 6 unique designs for you to choose from.
-              </p>
-            </div>
-
-            {/* Style Pack Grid */}
-            <div>
-              <h2 className="font-headline-sm text-headline-sm text-on-background mb-4">Style Pack</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {STYLE_PACKS.map((pack) => (
-                  <button
-                    key={pack.id}
-                    onClick={() => setStylePack(pack.id)}
-                    className={`relative p-4 border flex flex-col items-start text-left transition-all ${
-                      stylePack === pack.id
-                        ? "border-primary bg-surface-container-highest"
-                        : "border-outline-variant bg-surface-container-lowest hover:border-primary"
-                    }`}
-                  >
-                    {stylePack === pack.id && <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-primary" />}
-                    <span className="font-body-md font-medium text-on-background text-sm">{pack.label}</span>
-                    <span className="font-label-caps text-on-surface-variant text-[10px] mt-1 leading-tight">{pack.desc}</span>
-                  </button>
-                ))}
+        {/* ═══════════════════════════════════════════════════════════════════════
+            STAGE 1: Create & Style (Unified Input, Meaning, and Style Pack)
+        ═══════════════════════════════════════════════════════════════════════ */}
+        {stage === 1 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-4xl mx-auto space-y-8"
+          >
+            {/* Header */}
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#111111] text-[#F6F1E7] text-xs font-mono uppercase tracking-widest rounded-full mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-[#B3261E]" />
+                Thi Bút Studio 2.0
               </div>
-            </div>
-
-            {/* Composition */}
-            <div>
-              <h2 className="font-headline-sm text-headline-sm text-on-background mb-4">Composition</h2>
-              <div className="flex flex-wrap gap-3">
-                {COMPOSITIONS.map((comp) => (
-                  <button
-                    key={comp.id}
-                    onClick={() => setComposition(comp.id)}
-                    className={`px-5 py-2.5 border font-label-caps text-label-caps uppercase transition-all ${
-                      composition === comp.id
-                        ? "border-primary bg-primary text-on-primary"
-                        : "border-outline-variant text-on-surface-variant hover:border-primary"
-                    }`}
-                  >
-                    {comp.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <button onClick={() => setStep(2)} className="flex items-center gap-2 border border-outline-variant px-6 py-3 font-label-caps text-label-caps uppercase text-on-surface-variant hover:border-primary hover:text-primary transition-colors">
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
-              <button
-                onClick={() => { setStep(4); handleGenerate(); }}
-                disabled={generateLoading}
-                className="bg-primary text-on-primary px-10 py-3 font-label-caps text-label-caps uppercase hover:bg-surface-tint transition-colors disabled:opacity-40 flex items-center gap-2"
-              >
-                {generateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {generateLoading ? "Generating…" : "Generate My Designs →"}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 4: Candidate Preview Gallery ─────────────────────────────── */}
-        {step === 4 && (
-          <div className="max-w-5xl mx-auto flex flex-col gap-8 w-full">
-            <div>
-              <h1 className="font-headline-md text-headline-md text-on-background mb-2">
-                {generateLoading ? "Creating Your Designs…" : "Choose Your Favourite"}
+              <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#111111]">
+                Express Your Words in Art
               </h1>
-              <p className="font-body-md text-body-md text-on-surface-variant">
-                {generateLoading
-                  ? "Our AI is generating 6 unique brush variations for you."
-                  : "Six interpretations of your selected style."}
+              <p className="text-sm sm:text-base text-[#77756F] max-w-lg mx-auto">
+                Transform any name, quote, or phrase into authentic Asian brush calligraphy.
               </p>
-              {!generateLoading && candidates.length > 0 && candidates[0].stylePack === "Thi Bút Brush" && (
-                <div className="mt-4 p-3 bg-[#fff8f0] border border-[#cc2222]/20 text-[#9b1c1c] text-sm">
-                  <strong>Latin Compatibility Mode:</strong> Shodō is optimized for East Asian scripts. We have automatically applied <strong>Thi Bút Brush</strong> to render your Vietnamese text properly.
-                </div>
-              )}
-              {generateError && (
-                <div className="mt-4 p-3 bg-error-container text-on-error-container text-sm">
-                  {generateError}
-                </div>
-              )}
             </div>
 
-            {generateLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="aspect-[3/4] bg-surface-container animate-pulse flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 text-on-surface-variant animate-spin" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                {candidates.map((c) => (
-                  <div key={c.seed} className="flex flex-col items-center">
+            {/* Input & Prompt Card */}
+            <div className="bg-white border border-[#E5E0D8] rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#77756F] mb-2 font-bold">
+                  Your Name, Word, or Phrase
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder="e.g. David, Peace, Có chí thì nên..."
+                    className="w-full text-xl sm:text-2xl font-serif px-5 py-4 bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl focus:outline-none focus:border-[#B3261E] focus:ring-1 focus:ring-[#B3261E] transition-all"
+                  />
+                  {interpretLoading && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <Loader2 className="w-5 h-5 text-[#B3261E] animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Prompts */}
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <span className="text-xs text-[#77756F] font-mono">Suggestions:</span>
+                  {QUICK_PROMPTS.map((p) => (
                     <button
-                      onClick={() => setSelectedCandidate(c)}
-                      className={`relative aspect-[3/4] overflow-hidden bg-[#faf8f5] w-full flex items-center justify-center transition-all ${
-                        selectedCandidate?.seed === c.seed
-                          ? "border border-black ring-1 ring-black"
-                          : "border border-outline-variant hover:border-black/50"
-                      }`}
+                      key={p}
+                      type="button"
+                      onClick={() => setInputText(p)}
+                      className="px-2.5 py-1 text-xs bg-[#F4EFE6] text-[#4A4844] rounded-md hover:bg-[#B3261E] hover:text-white transition-colors"
                     >
-                      {/* The artwork itself taking 70-80% */}
-                      <div className="w-[80%] h-[80%] flex items-center justify-center">
-                        <img 
-                          src={c.imageUrl} 
-                          alt={`Variation: ${c.variationNote}`} 
-                          className="w-full h-full object-contain mix-blend-multiply pointer-events-none select-none" 
-                          onContextMenu={(e) => e.preventDefault()} 
-                          draggable={false} 
-                        />
-                      </div>
-                      
-                      {selectedCandidate?.seed === c.seed && (
-                        <div className="absolute top-3 right-3 bg-[#cc2222] text-white rounded-sm p-0.5 shadow-sm">
-                          <CheckCircle2 className="w-4 h-4" />
-                        </div>
-                      )}
-                    </button>
-                    <div className="mt-3 text-center">
-                      <span className="font-label-caps text-label-caps text-on-surface-variant uppercase text-[10px]">
-                        REAL BRUSH ART
-                      </span>
-                      <p className="font-body-md text-xs font-medium text-on-background capitalize mt-0.5">
-                        {c.variationNote}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!generateLoading && (
-              <div className="sticky bottom-4 flex gap-4 bg-background/90 p-4 border border-outline-variant shadow-sm z-10">
-                <button onClick={() => setStep(3)} className="flex items-center gap-2 px-6 py-3 font-label-caps text-label-caps uppercase text-on-surface-variant hover:text-primary transition-colors">
-                  <ArrowLeft className="w-4 h-4" /> Back to Style
-                </button>
-                <div className="flex-1" />
-                <button
-                  onClick={() => setStep(5)}
-                  disabled={!selectedCandidate}
-                  className="bg-primary text-on-primary px-10 py-3 font-label-caps text-label-caps uppercase hover:bg-surface-tint transition-colors disabled:opacity-40"
-                >
-                  Make It Yours →
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── STEP 5: Composition Editor (Make It Yours) ──────────────────── */}
-        {step === 5 && selectedCandidate && (
-          <div className="max-w-6xl mx-auto flex flex-col gap-8 w-full">
-            <div>
-              <h1 className="font-headline-md text-headline-md text-on-background mb-2">
-                Personalize Layout
-              </h1>
-              <p className="font-body-md text-body-md text-on-surface-variant">
-                Upload a background, scale, rotate, and recolor your authentic calligraphy.
-              </p>
-            </div>
-
-            <CompositionEditor 
-              artworkUrl={selectedCandidate.imageUrl}
-              onContinue={(data) => {
-                console.log("Saving composition data:", data);
-                setCompositionData(data);
-                if (data.productMode === "product" && data.selectedProduct) {
-                  // Map MVP product ID to actual name for checkout
-                  const nameMap: Record<string, string> = {
-                    hoodie: "Premium Hoodie",
-                    poster: "Fine Art Poster",
-                    tee: "Classic T-Shirt",
-                  };
-                  setSelectedProduct(nameMap[data.selectedProduct] || "Premium Hoodie");
-                }
-                setStep(6);
-              }}
-              onBack={() => setStep(4)}
-            />
-          </div>
-        )}
-
-        {/* ── STEP 6: Product selector ───────────────────────────────────────── */}
-        {step === 6 && selectedCandidate && (
-          <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 w-full">
-            {/* Preview */}
-            <div className="border border-surface-variant bg-surface-container-lowest p-8">
-              <img 
-                src={selectedCandidate.imageUrl} 
-                alt="Your design" 
-                className="w-full object-contain max-h-96 pointer-events-none select-none" 
-                onContextMenu={(e) => e.preventDefault()} 
-                draggable={false} 
-              />
-              <div className="mt-4 border-t border-surface-variant pt-4">
-                <p className="font-label-caps text-label-caps text-on-surface-variant uppercase">Your Interpretation</p>
-                {selectedInterpretation && (
-                  <p className="font-headline-sm text-headline-sm text-on-background mt-1" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-                    {selectedInterpretation.text}
-                  </p>
-                )}
-                {selectedInterpretation?.romanization && (
-                  <p className="font-body-md text-body-md text-on-surface-variant">{selectedInterpretation.romanization}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Product picker */}
-            <div className="flex flex-col gap-6">
-              <h1 className="font-headline-md text-headline-md text-on-background">
-                {compositionData?.productMode === "product" ? "Your Selected Product" : "Choose Your Product"}
-              </h1>
-              
-              {compositionData?.productMode === "product" ? (
-                <div className="flex flex-col gap-4">
-                  <div className="border border-primary bg-primary/5 p-6 text-left">
-                    <span className="font-body-md text-body-md font-medium text-on-background block">{selectedProduct}</span>
-                    <span className="font-label-caps text-label-caps text-on-surface-variant mt-1 block">
-                      ${{
-                        "Premium Hoodie": 99.00,
-                        "Classic T-Shirt": 45.00,
-                        "Fine Art Poster": 25.00,
-                      }[selectedProduct]?.toFixed(2) || "45.00"}
-                    </span>
-                  </div>
-                  
-                  {/* Mock Size Selector */}
-                  {selectedProduct !== "Fine Art Poster" && (
-                    <div>
-                      <p className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Select Size</p>
-                      <div className="flex gap-2">
-                        {["S", "M", "L", "XL"].map(size => (
-                          <button key={size} className="w-12 h-12 border border-outline-variant hover:border-primary flex items-center justify-center font-label-caps">
-                            {size}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {["Digital Download (All 6)", "Premium Hoodie", "Classic T-Shirt", "Canvas Print", "Tote Bag", "Coffee Mug", "Poster"].map((product) => (
-                    <button 
-                      key={product} 
-                      onClick={() => setSelectedProduct(product)}
-                      className={`border p-4 text-left transition-colors ${
-                        selectedProduct === product 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-outline-variant hover:border-primary'
-                      }`}
-                    >
-                      <span className="font-body-md text-body-md font-medium text-on-background block">{product}</span>
-                      <span className="font-label-caps text-label-caps text-on-surface-variant">
-                        {product === "Digital Download (All 6)" ? "$9.99" : `$${{
-                          "Premium Hoodie": 99.00,
-                          "Classic T-Shirt": 45.00,
-                          "Canvas Print": 49.00,
-                          "Tote Bag": 29.00,
-                          "Coffee Mug": 19.00,
-                          "Poster": 25.00,
-                        }[product]?.toFixed(2) || "45.00"}`}
-                      </span>
+                      {p}
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Cultural Tradition Selector */}
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#77756F] mb-3 font-bold">
+                  Select Cultural Calligraphy Tradition
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {CULTURAL_STYLES.map((cs) => {
+                    const isSelected = culturalStyle === cs.id;
+                    return (
+                      <button
+                        key={cs.id}
+                        type="button"
+                        onClick={() => setCulturalStyle(cs.id)}
+                        className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                          isSelected
+                            ? "border-[#B3261E] bg-[#B3261E]/5 ring-1 ring-[#B3261E]"
+                            : "border-[#E5E0D8] bg-[#FCFAF6] hover:border-[#77756F]"
+                        }`}
+                      >
+                        <div className="text-2xl mb-2">{cs.flag}</div>
+                        <div>
+                          <div className="font-serif font-bold text-sm text-[#111111]">{cs.label}</div>
+                          <div className="text-[11px] text-[#77756F] font-mono truncate">{cs.tradition}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Cultural Meaning & Transliteration (When Available) */}
+              {interpretations.length > 0 && (
+                <div className="p-4 bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-mono uppercase tracking-wider text-[#B3261E] font-bold">
+                      Cultural Interpretation & Meaning
+                    </span>
+                    <span className="text-xs text-[#77756F]">Select representation</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {interpretations.map((interp, idx) => {
+                      const isSel = selectedInterpretation?.text === interp.text;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedInterpretation(interp)}
+                          className={`p-3 rounded-lg border text-left transition-all ${
+                            isSel
+                              ? "border-[#B3261E] bg-white ring-1 ring-[#B3261E]"
+                              : "border-[#E5E0D8] bg-white hover:border-[#77756F]"
+                          }`}
+                        >
+                          <div className="text-xs font-mono text-[#77756F] uppercase">{interp.type}</div>
+                          <div className="text-lg font-serif font-bold text-[#111111] mt-0.5">{interp.text}</div>
+                          {interp.romanization && (
+                            <div className="text-xs text-[#77756F] italic">{interp.romanization}</div>
+                          )}
+                          <div className="text-xs text-[#4A4844] mt-1 line-clamp-1">&ldquo;{interp.meaning}&rdquo;</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
 
-              <Link
-                href={`/checkout?candidate=${selectedCandidate.id}&product=${encodeURIComponent(selectedProduct)}`}
-                className="w-full bg-primary text-on-primary py-4 font-label-caps text-label-caps uppercase text-center hover:bg-surface-tint transition-colors block mt-4"
+              {/* Style Pack Selector */}
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#77756F] mb-3 font-bold">
+                  Select Calligraphy Brush Style
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {STYLE_PACKS.map((sp) => {
+                    const isSelected = stylePack === sp.id;
+                    return (
+                      <button
+                        key={sp.id}
+                        type="button"
+                        onClick={() => setStylePack(sp.id)}
+                        className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                          isSelected
+                            ? "border-[#B3261E] bg-[#B3261E]/5 ring-1 ring-[#B3261E]"
+                            : "border-[#E5E0D8] bg-[#FCFAF6] hover:border-[#77756F]"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[#EAE4DA] text-[#4A4844] rounded">
+                            {sp.badge}
+                          </span>
+                          {isSelected && <CheckCircle2 className="w-4 h-4 text-[#B3261E]" />}
+                        </div>
+                        <div>
+                          <div className="font-serif font-bold text-sm text-[#111111]">{sp.label}</div>
+                          <div className="text-[11px] text-[#77756F] mt-1 leading-tight">{sp.desc}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Error Display */}
+              {generateError && (
+                <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 text-sm rounded-xl">
+                  {generateError}
+                </div>
+              )}
+
+              {/* Primary Action */}
+              <button
+                onClick={handleGenerate}
+                disabled={generateLoading || !inputText.trim()}
+                className="w-full py-4 bg-[#B3261E] hover:bg-[#8e1f18] text-white rounded-xl font-mono text-sm uppercase tracking-widest transition-all shadow-md disabled:opacity-40 flex items-center justify-center gap-2"
               >
-                Proceed to Checkout →
-              </Link>
+                {generateLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Generating 6 Real Brush Variations...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    Generate 6 Brush Variations →
+                  </>
+                )}
+              </button>
             </div>
-          </div>
+          </motion.div>
         )}
+
+        {/* ═══════════════════════════════════════════════════════════════════════
+            STAGE 2: Choose Your Brush Masterpiece (6 Variations Gallery)
+        ═══════════════════════════════════════════════════════════════════════ */}
+        {stage === 2 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-8"
+          >
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h1 className="font-serif text-3xl font-bold text-[#111111]">
+                  Pick Your Master Brush Dynamic
+                </h1>
+                <p className="text-sm text-[#77756F]">
+                  Click your favorite stroke energy to instantly customize and purchase.
+                </p>
+              </div>
+              <button
+                onClick={() => setStage(1)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-[#E5E0D8] rounded-lg text-xs font-mono uppercase text-[#4A4844] hover:border-[#111111]"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Edit Words & Style
+              </button>
+            </div>
+
+            {/* 6 Variations Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {candidates.map((c) => {
+                const isSelected = selectedCandidate?.seed === c.seed;
+                return (
+                  <div
+                    key={c.seed}
+                    onClick={() => handleSelectCandidate(c)}
+                    className={`group cursor-pointer bg-white border rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between hover:shadow-lg ${
+                      isSelected
+                        ? "border-[#B3261E] ring-2 ring-[#B3261E] bg-[#FCFAF6]"
+                        : "border-[#E5E0D8] hover:border-[#77756F]"
+                    }`}
+                  >
+                    {/* Artwork Preview (Large & High Scale) */}
+                    <div className="aspect-[4/3] bg-[#FAF8F5] border border-[#EAE4DA] rounded-xl flex items-center justify-center p-6 overflow-hidden relative group-hover:scale-[1.02] transition-transform">
+                      <img
+                        src={c.imageUrl}
+                        alt={c.variationNote}
+                        className="max-h-full max-w-full object-contain pointer-events-none select-none"
+                        onContextMenu={(e) => e.preventDefault()}
+                        draggable={false}
+                      />
+                      {isSelected && (
+                        <div className="absolute top-3 right-3 bg-[#B3261E] text-white p-1 rounded-full shadow">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Metadata & 1-Click CTA */}
+                    <div className="mt-4 pt-3 border-t border-[#E5E0D8] flex justify-between items-center">
+                      <div>
+                        <div className="text-xs font-mono uppercase font-bold text-[#B3261E]">
+                          {c.variationName || "Brush Masterpiece"}
+                        </div>
+                        <div className="text-xs text-[#77756F] line-clamp-1 mt-0.5">
+                          {c.variationNote}
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono uppercase bg-[#111111] text-white px-3 py-1.5 rounded-lg group-hover:bg-[#B3261E] transition-colors">
+                        Select →
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════════
+            STAGE 3: Interactive Product Studio & 1-Click Order
+        ═══════════════════════════════════════════════════════════════════════ */}
+        {stage === 3 && selectedCandidate && (
+          <motion.div 
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-8"
+          >
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h1 className="font-serif text-3xl font-bold text-[#111111]">
+                  Personalize & Order
+                </h1>
+                <p className="text-sm text-[#77756F]">
+                  Adjust positioning, choose your garment or scroll, and proceed to checkout.
+                </p>
+              </div>
+              <button
+                onClick={() => setStage(2)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-[#E5E0D8] rounded-lg text-xs font-mono uppercase text-[#4A4844] hover:border-[#111111]"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Change Brush Dynamic
+              </button>
+            </div>
+
+            {/* Split Screen Studio */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              
+              {/* Left: Interactive Canvas (7 cols) */}
+              <div className="lg:col-span-7 bg-white border border-[#E5E0D8] rounded-2xl p-6 shadow-sm space-y-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-mono uppercase tracking-wider text-[#77756F] font-bold">
+                    Live Product Preview Canvas
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCanvasScale((s) => Math.max(0.7, s - 0.1))}
+                      className="p-1.5 bg-[#F4EFE6] hover:bg-[#EAE4DA] rounded text-[#4A4844]"
+                      title="Scale down"
+                    >
+                      <ZoomOut className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs font-mono text-[#77756F] w-12 text-center">
+                      {Math.round(canvasScale * 100)}%
+                    </span>
+                    <button
+                      onClick={() => setCanvasScale((s) => Math.min(1.5, s + 0.1))}
+                      className="p-1.5 bg-[#F4EFE6] hover:bg-[#EAE4DA] rounded text-[#4A4844]"
+                      title="Scale up"
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Canvas Box */}
+                <div className="aspect-square bg-[#FAF8F5] border border-[#EAE4DA] rounded-xl relative overflow-hidden flex items-center justify-center p-8">
+                  {/* Mockup Background */}
+                  {selectedProduct !== "Digital Download" && (
+                    <img
+                      src={PRODUCTS.find((p) => p.id === selectedProduct)?.mockup || "/mockups/blank_hoodie.jpg"}
+                      alt="Product Mockup"
+                      className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none opacity-90"
+                    />
+                  )}
+
+                  {/* Artwork Layer */}
+                  <motion.div
+                    style={{
+                      scale: canvasScale,
+                      rotate: canvasRotation,
+                    }}
+                    className="relative z-10 w-[75%] h-[75%] flex items-center justify-center"
+                  >
+                    <img
+                      src={selectedCandidate.imageUrl}
+                      alt="Your Calligraphy Artwork"
+                      className={`max-h-full max-w-full object-contain pointer-events-none select-none ${
+                        selectedProduct !== "Digital Download" ? "mix-blend-multiply" : ""
+                      }`}
+                      onContextMenu={(e) => e.preventDefault()}
+                      draggable={false}
+                    />
+                  </motion.div>
+                </div>
+
+                {/* Artwork Origin Badge */}
+                <div className="p-4 bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl flex justify-between items-center text-xs font-mono">
+                  <div>
+                    <span className="text-[#77756F] block">Validated Text:</span>
+                    <span className="font-bold text-[#111111]">{inputText}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#77756F] block">Brush Dynamic:</span>
+                    <span className="font-bold text-[#B3261E]">{selectedCandidate.variationName}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#77756F] block">Tradition:</span>
+                    <span className="font-bold text-[#111111]">
+                      {CULTURAL_STYLES.find((c) => c.id === culturalStyle)?.label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Product Selection & Direct 1-Click Order (5 cols) */}
+              <div className="lg:col-span-5 bg-white border border-[#E5E0D8] rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-[#77756F] mb-3 font-bold">
+                    1. Choose Merchandise
+                  </label>
+                  <div className="space-y-2">
+                    {PRODUCTS.map((prod) => {
+                      const isSel = selectedProduct === prod.id;
+                      return (
+                        <button
+                          key={prod.id}
+                          onClick={() => setSelectedProduct(prod.id)}
+                          className={`w-full p-4 rounded-xl border text-left flex justify-between items-center transition-all ${
+                            isSel
+                              ? "border-[#B3261E] bg-[#B3261E]/5 ring-1 ring-[#B3261E]"
+                              : "border-[#E5E0D8] bg-[#FCFAF6] hover:border-[#77756F]"
+                          }`}
+                        >
+                          <div>
+                            <div className="font-serif font-bold text-sm text-[#111111]">{prod.name}</div>
+                            <div className="text-xs text-[#77756F]">Premium museum quality finish</div>
+                          </div>
+                          <div className="font-mono text-sm font-bold text-[#111111]">
+                            ${prod.price.toFixed(2)}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Sizing (For Apparel) */}
+                {selectedProduct !== "Fine Art Poster" && selectedProduct !== "Digital Download" && (
+                  <div>
+                    <label className="block text-xs font-mono uppercase tracking-wider text-[#77756F] mb-2 font-bold">
+                      2. Select Size
+                    </label>
+                    <div className="flex gap-2">
+                      {["S", "M", "L", "XL", "2XL"].map((sz) => (
+                        <button
+                          key={sz}
+                          onClick={() => setSelectedSize(sz)}
+                          className={`flex-1 py-2.5 rounded-lg border font-mono text-xs font-bold transition-all ${
+                            selectedSize === sz
+                              ? "border-[#111111] bg-[#111111] text-white"
+                              : "border-[#E5E0D8] bg-[#FCFAF6] text-[#111111] hover:border-[#77756F]"
+                          }`}
+                        >
+                          {sz}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Guarantee & Sizing Trust Badge */}
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1 text-emerald-800 text-xs">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    Printful Master Guarantee (TB-CALLI-001)
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-emerald-700">
+                    Rendered at 4500×5400 px @ 300 DPI vector fidelity. Backed by full print master certification.
+                  </p>
+                </div>
+
+                {/* Direct Checkout CTA */}
+                <Link
+                  href={`/checkout?candidate=${selectedCandidate.id}&product=${encodeURIComponent(selectedProduct)}`}
+                  className="w-full py-4 bg-[#B3261E] hover:bg-[#8e1f18] text-white rounded-xl font-mono text-sm uppercase tracking-widest text-center transition-all shadow-md block flex items-center justify-center gap-2"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  Proceed to Checkout (${PRODUCTS.find((p) => p.id === selectedProduct)?.price.toFixed(2)}) →
+                </Link>
+              </div>
+
+            </div>
+          </motion.div>
+        )}
+
       </div>
     </div>
   );
