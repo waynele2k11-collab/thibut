@@ -811,7 +811,8 @@ export default function CreatePage({ params }: { params: Promise<{ sessionId: st
         {step === 6 && selectedCandidate && (() => {
           const currentConfig = PRODUCT_CATALOG[selectedProduct] || PRODUCT_CATALOG["Premium Hoodie"];
           const activeMockup = currentConfig.colors.find(c => c.name === selectedColor)?.mockup || currentConfig.colors[0]?.mockup || "/mockups/blank_hoodie.jpg";
-          const previewBackground = compositionData?.bgImage || (selectedProduct !== "Digital Download (All 6)" ? activeMockup : null);
+          const hasUserCustomPhoto = (compositionData?.productMode === "photo" || compositionData?.productMode === "generate") && compositionData?.bgImage;
+          const previewBackground = hasUserCustomPhoto ? compositionData.bgImage : (selectedProduct !== "Digital Download (All 6)" ? activeMockup : null);
           const isApparel = currentConfig.category === "apparel";
 
           return (

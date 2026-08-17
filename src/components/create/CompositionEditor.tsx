@@ -416,7 +416,7 @@ export function CompositionEditor({ artworkUrl, onContinue, onBack }: Compositio
               rotation, 
               color, 
               recoloredArtworkUrl: recoloredArtwork,
-              bgImage: displayBg,
+              bgImage: bgMode === "photo" ? bgImage : bgMode === "generate" ? generatedBg : null,
               productMode: bgMode,
               selectedProduct: bgMode === "product" ? selectedProduct : null 
             })}
