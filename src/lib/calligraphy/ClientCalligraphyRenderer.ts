@@ -10,6 +10,7 @@ export interface ClientRenderOptions {
   tradition: "VIETNAMESE_THU_PHAP" | "JAPANESE_SHODO" | "CHINESE_CALLIGRAPHY" | "KOREAN_BRUSH";
   strokePreset: "BOLD_BRUSH" | "FLOWING_INK" | "DRY_BRUSH" | "CLASSICAL" | "FREE_SPIRIT";
   variationType: "01_CONTROLLED" | "02_BOLD" | "03_DRY_BRUSH" | "04_EXPRESSIVE" | "05_MINIMAL" | "06_SIGNATURE";
+  fontId?: string;
   layout?: "HORIZONTAL" | "VERTICAL" | "EMBLEM" | "FULL_BACK";
   inkColor?: string;
   hasSeal?: boolean;
@@ -43,6 +44,7 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
     tradition = "VIETNAMESE_THU_PHAP",
     strokePreset = "BOLD_BRUSH",
     variationType = "01_CONTROLLED",
+    fontId,
     layout = "HORIZONTAL",
     inkColor = "#0B0B0B",
     hasSeal = true,
@@ -51,25 +53,46 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
   const trimmed = text.trim() || "Thi Bút";
   const isVertical = layout === "VERTICAL";
 
-  // Font family mapping based on tradition and stroke
-  let fontFamily = "'UTM ThuPhap Thien An', 'Caveat Brush', 'Great Vibes', cursive";
-  if (tradition === "JAPANESE_SHODO") {
-    fontFamily = strokePreset === "BOLD_BRUSH" ? "'Yuji Boku', serif" 
-      : strokePreset === "FLOWING_INK" ? "'Yuji Mai', cursive" 
-      : strokePreset === "CLASSICAL" ? "'Yuji Syuku', serif" : "'Yuji Boku', serif";
-  } else if (tradition === "CHINESE_CALLIGRAPHY") {
-    fontFamily = strokePreset === "BOLD_BRUSH" ? "'Ma Shan Zheng', cursive" 
-      : strokePreset === "FREE_SPIRIT" ? "'Long Cang', cursive" 
-      : strokePreset === "DRY_BRUSH" ? "'Liu Jian Mao Cao', cursive" : "'Ma Shan Zheng', cursive";
-  } else if (tradition === "KOREAN_BRUSH") {
-    fontFamily = strokePreset === "DRY_BRUSH" ? "'East Sea Dokdo', cursive" : "'Nanum Brush Script', cursive";
-  } else {
-    // Vietnamese Thư Pháp
-    fontFamily = strokePreset === "BOLD_BRUSH" ? "'UTM ThuPhap Thien An', 'Caveat Brush', cursive"
-      : strokePreset === "FLOWING_INK" ? "'Arizonia', 'Great Vibes', cursive"
-      : strokePreset === "DRY_BRUSH" ? "'Kaushan Script', 'Caveat Brush', cursive"
-      : strokePreset === "FREE_SPIRIT" ? "'Great Vibes', cursive"
-      : "'UTM ThuPhap Thien An', cursive";
+  // Exact Font Family Mapping if specific fontId chosen
+  const FONT_MAP: Record<string, string> = {
+    "utm-thuphap-thien-an": "'UTM ThuPhap Thien An', 'Caveat Brush', cursive",
+    "great-vibes": "'Great Vibes', cursive",
+    "kaushan-script": "'Kaushan Script', cursive",
+    "caveat-brush": "'Caveat Brush', cursive",
+    "arizonia": "'Arizonia', cursive",
+    "alex-brush": "'Alex Brush', cursive",
+    "yuji-boku": "'Yuji Boku', serif",
+    "yuji-syuku": "'Yuji Syuku', serif",
+    "yuji-mai": "'Yuji Mai', cursive",
+    "liu-jian-mao-cao": "'Liu Jian Mao Cao', cursive",
+    "long-cang": "'Long Cang', cursive",
+    "ma-shan-zheng": "'Ma Shan Zheng', cursive",
+    "zhi-mang-xing": "'Zhi Mang Xing', cursive",
+    "nanum-brush-script": "'Nanum Brush Script', cursive",
+    "east-sea-dokdo": "'East Sea Dokdo', cursive",
+  };
+
+  let fontFamily = fontId && FONT_MAP[fontId] ? FONT_MAP[fontId] : "";
+
+  if (!fontFamily) {
+    if (tradition === "JAPANESE_SHODO") {
+      fontFamily = strokePreset === "BOLD_BRUSH" ? "'Yuji Boku', serif" 
+        : strokePreset === "FLOWING_INK" ? "'Yuji Mai', cursive" 
+        : strokePreset === "CLASSICAL" ? "'Yuji Syuku', serif" : "'Yuji Boku', serif";
+    } else if (tradition === "CHINESE_CALLIGRAPHY") {
+      fontFamily = strokePreset === "BOLD_BRUSH" ? "'Ma Shan Zheng', cursive" 
+        : strokePreset === "FREE_SPIRIT" ? "'Long Cang', cursive" 
+        : strokePreset === "DRY_BRUSH" ? "'Liu Jian Mao Cao', cursive" : "'Ma Shan Zheng', cursive";
+    } else if (tradition === "KOREAN_BRUSH") {
+      fontFamily = strokePreset === "DRY_BRUSH" ? "'East Sea Dokdo', cursive" : "'Nanum Brush Script', cursive";
+    } else {
+      // Vietnamese Thư Pháp
+      fontFamily = strokePreset === "BOLD_BRUSH" ? "'UTM ThuPhap Thien An', 'Caveat Brush', cursive"
+        : strokePreset === "FLOWING_INK" ? "'Arizonia', 'Great Vibes', cursive"
+        : strokePreset === "DRY_BRUSH" ? "'Kaushan Script', 'Caveat Brush', cursive"
+        : strokePreset === "FREE_SPIRIT" ? "'Great Vibes', cursive"
+        : "'UTM ThuPhap Thien An', cursive";
+    }
   }
 
   const strokeWidth = variationType === "02_BOLD" ? "9px" 

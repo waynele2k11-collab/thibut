@@ -13,7 +13,8 @@ import {
   ArrowRight,
   Maximize2,
   RefreshCw,
-  Info
+  Info,
+  Type
 } from "lucide-react";
 import { generateInstantSvgUri, safeBase64Encode, safeBase64Decode } from "@/lib/calligraphy/ClientCalligraphyRenderer";
 
@@ -131,6 +132,32 @@ const TRADITIONS: { id: CulturalTradition; label: string; flag: string; native: 
   },
 ];
 
+const DEFAULT_TRADITION_FONTS: Record<CulturalTradition, { id: string; name: string; desc: string; badge: string }[]> = {
+  VIETNAMESE_THU_PHAP: [
+    { id: "utm-thuphap-thien-an", name: "UTM Thư Pháp Thiên Ân", desc: "Gold standard master dragon ascenders", badge: "Primary" },
+    { id: "arizonia", name: "Phượng Vũ (Arizonia)", desc: "Delicate dancing phoenix curves", badge: "OFL" },
+    { id: "great-vibes", name: "Long Vũ (Great Vibes)", desc: "Grand sweeping flourish loops", badge: "OFL" },
+    { id: "kaushan-script", name: "Phi Bạch (Kaushan)", desc: "Raw horsehair dry brush texture", badge: "OFL" },
+    { id: "caveat-brush", name: "Mực Nho (Caveat)", desc: "Heavy saturated sumi mass", badge: "OFL" },
+    { id: "alex-brush", name: "Khí Phách (Alex)", desc: "Classic poetic fluid rhythm", badge: "OFL" },
+  ],
+  JAPANESE_SHODO: [
+    { id: "yuji-boku", name: "Yuji Boku (勇司 朴)", desc: "Heavy dry-brush Shodō sumi ink", badge: "OFL" },
+    { id: "yuji-syuku", name: "Yuji Syuku (勇司 宿)", desc: "Restrained classical Kanji brush", badge: "OFL" },
+    { id: "yuji-mai", name: "Yuji Mai (勇司 舞)", desc: "Flowing Kana and Kanji cadence", badge: "OFL" },
+  ],
+  CHINESE_CALLIGRAPHY: [
+    { id: "long-cang", name: "Long Cang (龙苍)", desc: "Master semi-cursive grass script", badge: "OFL" },
+    { id: "liu-jian-mao-cao", name: "Liu Jian Mao Cao (刘建毛草)", desc: "Expressive wild grass cursive", badge: "OFL" },
+    { id: "ma-shan-zheng", name: "Ma Shan Zheng (马善政)", desc: "Standard regular brush balance", badge: "OFL" },
+    { id: "zhi-mang-xing", name: "Zhi Mang Xing (志芒星)", desc: "Swift running script brushwork", badge: "OFL" },
+  ],
+  KOREAN_BRUSH: [
+    { id: "nanum-brush-script", name: "Nanum Brush (나눔손글씨)", desc: "Lively authentic Hangul brush", badge: "OFL" },
+    { id: "east-sea-dokdo", name: "East Sea Dokdo (독도체)", desc: "Ancient stone-rubbing script", badge: "OFL" },
+  ],
+};
+
 const TREATMENTS: { id: WordTreatment; label: string; tag: string; desc: string }[] = [
   { 
     id: "KEEP_ORIGINAL", 
@@ -152,12 +179,12 @@ const TREATMENTS: { id: WordTreatment; label: string; tag: string; desc: string 
   },
 ];
 
-const STROKE_PRESETS: { id: StrokePreset; label: string; subtitle: string; icon: string; glyph: string }[] = [
-  { id: "BOLD_BRUSH", label: "Bold Brush", subtitle: "Heavy sumi ink & deep pressure", icon: "💥", glyph: "大" },
-  { id: "FLOWING_INK", label: "Flowing Ink", subtitle: "Graceful dancing rhythm & loops", icon: "🌊", glyph: "水" },
-  { id: "DRY_BRUSH", label: "Dry Brush", subtitle: "Visible bristle texture & flying white", icon: "⚡", glyph: "飛" },
-  { id: "CLASSICAL", label: "Classical", subtitle: "Authoritative balanced precision", icon: "🏛️", glyph: "正" },
-  { id: "FREE_SPIRIT", label: "Free Spirit", subtitle: "Wild expressive grass cursive", icon: "🍃", glyph: "草" },
+const STROKE_PRESETS: { id: StrokePreset; label: string; subtitle: string; icon: string }[] = [
+  { id: "BOLD_BRUSH", label: "Bold Brush", subtitle: "Heavy sumi ink & deep pressure", icon: "💥" },
+  { id: "FLOWING_INK", label: "Flowing Ink", subtitle: "Graceful dancing rhythm & loops", icon: "🌊" },
+  { id: "DRY_BRUSH", label: "Dry Brush", subtitle: "Visible bristle texture & flying white", icon: "⚡" },
+  { id: "CLASSICAL", label: "Classical", subtitle: "Authoritative balanced precision", icon: "🏛️" },
+  { id: "FREE_SPIRIT", label: "Free Spirit", subtitle: "Wild expressive grass cursive", icon: "🍃" },
 ];
 
 const VARIATION_PILLS: { id: VariationType; label: string; short: string; desc: string; icon: string }[] = [
@@ -264,12 +291,26 @@ export function StudioConfigurator({
     fetch("/api/fonts/active")
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && Array.isArray(data.fonts)) {
+        if (data.success && Array.isArray(data.fonts) && data.fonts.length > 0) {
           setActiveFonts(data.fonts);
         }
       })
       .catch(() => {});
   }, []);
+
+  // Compute available fonts for active tradition (from server or default fallback)
+  const currentTraditionFonts = useMemo(() => {
+    const fromServer = activeFonts.filter((f) => f.category === state.tradition);
+    if (fromServer.length > 0) {
+      return fromServer.map((f) => ({
+        id: f.id,
+        name: f.name,
+        desc: f.description || "Master calligraphy typeface",
+        badge: f.license || "Verified",
+      }));
+    }
+    return DEFAULT_TRADITION_FONTS[state.tradition] || DEFAULT_TRADITION_FONTS.VIETNAMESE_THU_PHAP;
+  }, [activeFonts, state.tradition]);
 
   // ── Instant Client-Side Fallback SVG (0ms Latency on every stroke) ────────────
   const instantClientSvg = useMemo(() => {
@@ -284,6 +325,7 @@ export function StudioConfigurator({
       tradition: state.tradition,
       strokePreset: state.strokePreset,
       variationType: state.variationIndex,
+      fontId: state.fontId,
       layout: state.layout,
       inkColor: colorMap[state.inkColor] || "#0B0B0B",
       hasSeal: state.hasSeal,
@@ -294,6 +336,7 @@ export function StudioConfigurator({
     state.tradition,
     state.strokePreset,
     state.variationIndex,
+    state.fontId,
     state.layout,
     state.inkColor,
     state.hasSeal,
@@ -427,11 +470,6 @@ export function StudioConfigurator({
     }
     return instantClientSvg;
   }, [activeCandidate?.imageUrl, state.inkColor, instantClientSvg]);
-
-  // Available fonts for selected tradition
-  const filteredFonts = useMemo(() => {
-    return activeFonts.filter((f) => f.category === state.tradition);
-  }, [activeFonts, state.tradition]);
 
   const activeTraditionObj = TRADITIONS.find((t) => t.id === state.tradition) || TRADITIONS[0];
   const activeTreatmentObj = TREATMENTS.find((t) => t.id === state.treatment) || TREATMENTS[0];
@@ -603,7 +641,7 @@ export function StudioConfigurator({
             Studio Controls
           </h1>
           <p className="text-xs text-[#66635D] mt-0.5">
-            Personalize your words, stroke aesthetics, and layout in real-time.
+            Personalize your words, font styles, and layout in real-time.
           </p>
         </div>
 
@@ -654,12 +692,13 @@ export function StudioConfigurator({
                     <button
                       key={t.id}
                       onClick={() => {
+                        const defaultFont = t.id === "VIETNAMESE_THU_PHAP" ? "utm-thuphap-thien-an" 
+                          : t.id === "JAPANESE_SHODO" ? "yuji-boku"
+                          : t.id === "CHINESE_CALLIGRAPHY" ? "long-cang" : "nanum-brush-script";
                         setState((prev) => ({
                           ...prev,
                           tradition: t.id,
-                          fontId: t.id === "VIETNAMESE_THU_PHAP" ? "utm-thuphap-thien-an" 
-                            : t.id === "JAPANESE_SHODO" ? "yuji-boku"
-                            : t.id === "CHINESE_CALLIGRAPHY" ? "long-cang" : "nanum-brush-script",
+                          fontId: defaultFont,
                         }));
                         setTraditionDropdownOpen(false);
                       }}
@@ -721,20 +760,28 @@ export function StudioConfigurator({
           </div>
         </div>
 
-        {/* ── SECTION 2: CHOOSE YOUR STROKE (With Live Option Previews) ─────── */}
-        <div className="flex flex-col gap-3.5 pb-5 border-b border-[#EBE6DC]">
-          <span className="text-xs font-label-caps uppercase text-[#111111] font-bold tracking-wider">
-            2. Choose Your Stroke (Live Style Options)
-          </span>
+        {/* ── SECTION 2: CHOOSE YOUR FONT STYLE (With Live Font Previews) ───── */}
+        <div className="flex flex-col gap-4 pb-5 border-b border-[#EBE6DC]">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-label-caps uppercase text-[#111111] font-bold tracking-wider flex items-center gap-1.5">
+              <Type className="w-3.5 h-3.5" /> 2. Font Style Options ({currentTraditionFonts.length})
+            </span>
+            <span className="text-[11px] font-mono text-[#888580]">
+              {activeTraditionObj.label.split(" ")[0]} Scripts
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {STROKE_PRESETS.map((s) => {
-              const isSelected = state.strokePreset === s.id;
-              // Generate live micro-preview for this stroke card
-              const microPreviewSvg = generateInstantSvgUri({
-                text: (state.inputText || "Thi Bút").split(/\s+/)[0] || "Thi",
+            {currentTraditionFonts.map((font) => {
+              const isSelected = state.fontId === font.id;
+              // Generate live micro-preview in this exact font
+              const sampleWord = (state.inputText || "Thi Bút").split(/\s+/)[0] || "Thi";
+              const fontMicroPreviewSvg = generateInstantSvgUri({
+                text: sampleWord,
                 tradition: state.tradition,
-                strokePreset: s.id,
+                strokePreset: state.strokePreset,
                 variationType: "01_CONTROLLED",
+                fontId: font.id,
                 layout: "HORIZONTAL",
                 inkColor: isSelected ? "#111111" : "#444444",
                 hasSeal: false,
@@ -742,37 +789,69 @@ export function StudioConfigurator({
 
               return (
                 <button
-                  key={s.id}
-                  onClick={() => setState((prev) => ({ ...prev, strokePreset: s.id }))}
-                  className={`p-3 rounded-xl text-left border transition-all relative overflow-hidden flex flex-col justify-between min-h-[92px] ${
+                  key={font.id}
+                  onClick={() => setState((prev) => ({ ...prev, fontId: font.id }))}
+                  className={`p-3 rounded-xl text-left border transition-all relative overflow-hidden flex flex-col justify-between min-h-[96px] ${
                     isSelected
-                      ? "border-black bg-[#F4EFE6] ring-1 ring-black shadow-sm"
+                      ? "border-black bg-[#F4EFE6] ring-1 ring-black shadow-sm scale-[1.01]"
                       : "border-[#E0DBD1] hover:border-black/50 bg-[#FAF8F5]"
                   }`}
                 >
                   <div className="flex items-start justify-between w-full">
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-[#111111]">
-                      <span>{s.icon}</span>
-                      <span>{s.label}</span>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-xs text-[#111111] truncate max-w-[170px]">
+                        {font.name}
+                      </span>
+                      <span className="text-[10px] text-[#66635D] truncate max-w-[170px]">
+                        {font.desc}
+                      </span>
                     </div>
-                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-[#B3261E]" />}
+                    {isSelected ? (
+                      <CheckCircle2 className="w-4 h-4 text-[#B3261E] flex-shrink-0" />
+                    ) : (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-[#EAE5DC] text-[#66635D] rounded font-mono font-semibold">
+                        {font.badge}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Micro Stroke Artwork Preview */}
-                  <div className="w-full h-7 mt-1.5 flex items-center justify-start overflow-hidden opacity-85">
+                  {/* Micro Font Artwork Preview */}
+                  <div className="w-full h-8 mt-2 flex items-center justify-start overflow-hidden opacity-90">
                     <img
-                      src={microPreviewSvg}
-                      alt={s.label}
+                      src={fontMicroPreviewSvg}
+                      alt={font.name}
                       className="h-full object-contain pointer-events-none select-none"
                     />
                   </div>
-
-                  <span className="text-[10px] text-[#66635D] block mt-1 leading-snug">
-                    {s.subtitle}
-                  </span>
                 </button>
               );
             })}
+          </div>
+
+          {/* Stroke Style Presets Chips */}
+          <div className="pt-2">
+            <label className="text-[11px] font-label-caps uppercase text-[#66635D] block mb-1.5 font-bold">
+              Brush Pressure & Stroke Weight
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {STROKE_PRESETS.map((s) => {
+                const isSelected = state.strokePreset === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setState((prev) => ({ ...prev, strokePreset: s.id }))}
+                    className={`py-2 px-2.5 rounded-lg border text-left text-xs transition-all flex items-center gap-1.5 ${
+                      isSelected
+                        ? "border-black bg-[#111111] text-white font-bold"
+                        : "border-[#E0DBD1] bg-white text-[#111111] hover:border-black/50"
+                    }`}
+                  >
+                    <span>{s.icon}</span>
+                    <span className="truncate">{s.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -842,33 +921,13 @@ export function StudioConfigurator({
               className="w-full flex items-center justify-between py-2 text-xs font-label-caps uppercase text-[#66635D] font-bold hover:text-black transition-colors"
             >
               <span className="flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5" /> Advanced Styling ▾
+                <Sliders className="w-3.5 h-3.5" /> Advanced Dimensions ▾
               </span>
               {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
 
             {showAdvanced && (
               <div className="mt-2 p-4 bg-[#FAF8F5] border border-[#E0DBD1] rounded-xl flex flex-col gap-3.5 text-xs">
-                {/* Specific Font Override */}
-                {filteredFonts.length > 0 && (
-                  <div>
-                    <label className="text-[10px] font-label-caps uppercase text-[#66635D] block mb-1 font-bold">
-                      Typography Font Override
-                    </label>
-                    <select
-                      value={state.fontId}
-                      onChange={(e) => setState((prev) => ({ ...prev, fontId: e.target.value }))}
-                      className="w-full p-2.5 border border-[#E0DBD1] rounded-lg bg-white outline-none cursor-pointer text-xs font-medium"
-                    >
-                      {filteredFonts.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
                 {/* Scale & Rotation Sliders */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
