@@ -8,13 +8,14 @@ import {
   ChevronUp, 
   Sliders, 
   Layers, 
-  Feather,
-  CheckCircle2,
+  Feather, 
+  CheckCircle2, 
   ArrowRight,
   Maximize2,
   RefreshCw,
   Info
 } from "lucide-react";
+import { generateInstantSvgUri } from "@/lib/calligraphy/ClientCalligraphyRenderer";
 
 export type CulturalTradition = 
   | "VIETNAMESE_THU_PHAP" 
@@ -159,13 +160,13 @@ const STROKE_PRESETS: { id: StrokePreset; label: string; subtitle: string; icon:
   { id: "FREE_SPIRIT", label: "Free Spirit", subtitle: "Wild expressive grass cursive", icon: "🍃", glyph: "草" },
 ];
 
-const VARIATION_PILLS: { id: VariationType; label: string; short: string; desc: string }[] = [
-  { id: "01_CONTROLLED", label: "01 Harmony", short: "01", desc: "Balanced classical harmony with dragon swash" },
-  { id: "02_BOLD", label: "02 Bold Sumi", short: "02", desc: "Dense, heavy ink mass and saturated strokes" },
-  { id: "03_DRY_BRUSH", label: "03 Dry Brush", short: "03", desc: "Raw flying white (phi bạch / hihaku) texture" },
-  { id: "04_EXPRESSIVE", label: "04 Phoenix", short: "04", desc: "Dancing curves with dynamic ink splatters" },
-  { id: "05_MINIMAL", label: "05 Zen Minimal", short: "05", desc: "Clean hairline strokes with negative space" },
-  { id: "06_SIGNATURE", label: "06 Imperial Seal", short: "06", desc: "Master signature with carved cinnabar red seal" },
+const VARIATION_PILLS: { id: VariationType; label: string; short: string; desc: string; icon: string }[] = [
+  { id: "01_CONTROLLED", label: "01 Harmony", short: "01", desc: "Balanced classical harmony with dragon swash", icon: "🐉" },
+  { id: "02_BOLD", label: "02 Bold Sumi", short: "02", desc: "Dense, heavy ink mass and saturated strokes", icon: "🖋️" },
+  { id: "03_DRY_BRUSH", label: "03 Dry Brush", short: "03", desc: "Raw flying white (phi bạch / hihaku) texture", icon: "⚡" },
+  { id: "04_EXPRESSIVE", label: "04 Phoenix", short: "04", desc: "Dancing curves with dynamic ink splatters", icon: "🦚" },
+  { id: "05_MINIMAL", label: "05 Zen Minimal", short: "05", desc: "Clean hairline strokes with negative space", icon: "⭕" },
+  { id: "06_SIGNATURE", label: "06 Imperial Seal", short: "06", desc: "Master signature with carved cinnabar red seal", icon: "🈴" },
 ];
 
 const INK_PIGMENTS: { id: InkPigment; label: string; hex: string; desc: string }[] = [
@@ -255,7 +256,6 @@ export function StudioConfigurator({
   const [isAnalyzingMeaning, setIsAnalyzingMeaning] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [traditionDropdownOpen, setTraditionDropdownOpen] = useState(false);
-  const [treatmentDropdownOpen, setTreatmentDropdownOpen] = useState(false);
 
   // Active Fonts loaded from registry
   const [activeFonts, setActiveFonts] = useState<any[]>([]);
@@ -270,6 +270,34 @@ export function StudioConfigurator({
       })
       .catch(() => {});
   }, []);
+
+  // ── Instant Client-Side Fallback SVG (0ms Latency on every stroke) ────────────
+  const instantClientSvg = useMemo(() => {
+    const colorMap = {
+      black: "#0B0B0B",
+      vermilion: "#B3261E",
+      gold: "#C5A059",
+      ivory: "#F6F1E7",
+    };
+    return generateInstantSvgUri({
+      text: state.interpretation.text || state.inputText,
+      tradition: state.tradition,
+      strokePreset: state.strokePreset,
+      variationType: state.variationIndex,
+      layout: state.layout,
+      inkColor: colorMap[state.inkColor] || "#0B0B0B",
+      hasSeal: state.hasSeal,
+    });
+  }, [
+    state.inputText,
+    state.interpretation.text,
+    state.tradition,
+    state.strokePreset,
+    state.variationIndex,
+    state.layout,
+    state.inkColor,
+    state.hasSeal,
+  ]);
 
   // ── Two-Tier Engine: Trigger Cultural AI Analysis when text or treatment changes ──
   useEffect(() => {
@@ -323,7 +351,7 @@ export function StudioConfigurator({
       .finally(() => setIsAnalyzingMeaning(false));
   }, [state.inputText, state.tradition, state.treatment]);
 
-  // ── Deterministic Studio Engine: Render 6 Variations on visual changes ─────────
+  // ── Deterministic Studio Engine: Server-side rendering in background ───────────
   const renderRequestIdRef = useRef(0);
 
   useEffect(() => {
@@ -392,11 +420,13 @@ export function StudioConfigurator({
     }
   };
 
-  // Recolor active candidate SVG locally on ink color changes
+  // Recolor active candidate SVG locally on ink color changes, fallback to instant client SVG
   const displayArtworkUrl = useMemo(() => {
-    if (!activeCandidate?.imageUrl) return "";
-    return recolorSvgString(activeCandidate.imageUrl, state.inkColor);
-  }, [activeCandidate?.imageUrl, state.inkColor]);
+    if (activeCandidate?.imageUrl) {
+      return recolorSvgString(activeCandidate.imageUrl, state.inkColor);
+    }
+    return instantClientSvg;
+  }, [activeCandidate?.imageUrl, state.inkColor, instantClientSvg]);
 
   // Available fonts for selected tradition
   const filteredFonts = useMemo(() => {
@@ -429,7 +459,7 @@ export function StudioConfigurator({
 
             {isRendering ? (
               <span className="text-xs text-[#B3261E] font-semibold flex items-center gap-1.5 animate-pulse font-mono flex-shrink-0">
-                <Sparkles className="w-3.5 h-3.5" /> Rendering Brush...
+                <Sparkles className="w-3.5 h-3.5" /> Refining Vector...
               </span>
             ) : (
               <span className="text-[11px] font-mono text-[#888580] hidden sm:inline">
@@ -453,27 +483,20 @@ export function StudioConfigurator({
             </span>
 
             {/* Live Vector Artwork Rendering */}
-            {displayArtworkUrl ? (
-              <img
-                src={displayArtworkUrl}
-                alt={state.interpretation.text}
-                className="max-h-[86%] max-w-[86%] object-contain select-none pointer-events-none transition-transform duration-200"
-                style={{
-                  transform: `scale(${state.advanced.scale}) rotate(${state.advanced.rotation}deg)`,
-                  filter: state.inkColor === "ivory" ? "drop-shadow(0px 2px 6px rgba(0,0,0,0.45))" : undefined,
-                }}
-                onContextMenu={(e) => e.preventDefault()}
-                draggable={false}
-              />
-            ) : (
-              <div className="flex flex-col items-center gap-2.5 text-on-surface-variant p-6 text-center">
-                <Feather className="w-8 h-8 text-[#B3261E] animate-bounce" />
-                <span className="text-xs font-mono font-medium text-[#66635D]">Synthesizing brush vector...</span>
-              </div>
-            )}
+            <img
+              src={displayArtworkUrl}
+              alt={state.interpretation.text}
+              className="max-h-[86%] max-w-[86%] object-contain select-none pointer-events-none transition-transform duration-200"
+              style={{
+                transform: `scale(${state.advanced.scale}) rotate(${state.advanced.rotation}deg)`,
+                filter: state.inkColor === "ivory" ? "drop-shadow(0px 2px 6px rgba(0,0,0,0.45))" : undefined,
+              }}
+              onContextMenu={(e) => e.preventDefault()}
+              draggable={false}
+            />
           </div>
 
-          {/* ── 01–06 Variation Preset Quick-Pills (Prominent) ───────────────── */}
+          {/* ── 01–06 Variation Preset Quick-Pills (Prominent with Micro-Icons) ── */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-label-caps uppercase text-[#46474A] font-bold tracking-wider">
@@ -501,8 +524,8 @@ export function StudioConfigurator({
                     {isActive && (
                       <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#B3261E] rounded-full ring-2 ring-white" />
                     )}
-                    <span className="text-xs font-mono font-bold block">{pill.short}</span>
-                    <span className="text-[10px] truncate max-w-full font-medium block mt-0.5">
+                    <span className="text-sm block">{pill.icon}</span>
+                    <span className="text-[10px] truncate max-w-full font-bold block mt-0.5">
                       {pill.label.replace(/^\d+\s*/, "")}
                     </span>
                   </button>
@@ -698,32 +721,53 @@ export function StudioConfigurator({
           </div>
         </div>
 
-        {/* ── SECTION 2: CHOOSE YOUR STROKE ─────────────────────────────────── */}
+        {/* ── SECTION 2: CHOOSE YOUR STROKE (With Live Option Previews) ─────── */}
         <div className="flex flex-col gap-3.5 pb-5 border-b border-[#EBE6DC]">
           <span className="text-xs font-label-caps uppercase text-[#111111] font-bold tracking-wider">
-            2. Choose Your Stroke
+            2. Choose Your Stroke (Live Style Options)
           </span>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {STROKE_PRESETS.map((s) => {
               const isSelected = state.strokePreset === s.id;
+              // Generate live micro-preview for this stroke card
+              const microPreviewSvg = generateInstantSvgUri({
+                text: (state.inputText || "Thi Bút").split(/\s+/)[0] || "Thi",
+                tradition: state.tradition,
+                strokePreset: s.id,
+                variationType: "01_CONTROLLED",
+                layout: "HORIZONTAL",
+                inkColor: isSelected ? "#111111" : "#444444",
+                hasSeal: false,
+              });
+
               return (
                 <button
                   key={s.id}
                   onClick={() => setState((prev) => ({ ...prev, strokePreset: s.id }))}
-                  className={`p-3 rounded-xl text-left border transition-all relative overflow-hidden ${
+                  className={`p-3 rounded-xl text-left border transition-all relative overflow-hidden flex flex-col justify-between min-h-[92px] ${
                     isSelected
                       ? "border-black bg-[#F4EFE6] ring-1 ring-black shadow-sm"
                       : "border-[#E0DBD1] hover:border-black/50 bg-[#FAF8F5]"
                   }`}
                 >
-                  <span className="absolute right-2 bottom-1 font-serif text-3xl opacity-10 font-bold select-none pointer-events-none">
-                    {s.glyph}
-                  </span>
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-[#111111]">
-                    <span>{s.icon}</span>
-                    <span>{s.label}</span>
+                  <div className="flex items-start justify-between w-full">
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-[#111111]">
+                      <span>{s.icon}</span>
+                      <span>{s.label}</span>
+                    </div>
+                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-[#B3261E]" />}
                   </div>
-                  <span className="text-[10px] text-[#66635D] block mt-0.5 leading-snug">
+
+                  {/* Micro Stroke Artwork Preview */}
+                  <div className="w-full h-7 mt-1.5 flex items-center justify-start overflow-hidden opacity-85">
+                    <img
+                      src={microPreviewSvg}
+                      alt={s.label}
+                      className="h-full object-contain pointer-events-none select-none"
+                    />
+                  </div>
+
+                  <span className="text-[10px] text-[#66635D] block mt-1 leading-snug">
                     {s.subtitle}
                   </span>
                 </button>
@@ -732,31 +776,34 @@ export function StudioConfigurator({
           </div>
         </div>
 
-        {/* ── SECTION 3: COMPOSITION ────────────────────────────────────────── */}
+        {/* ── SECTION 3: COMPOSITION (With Blueprint Diagrams) ──────────────── */}
         <div className="flex flex-col gap-3 pb-5 border-b border-[#EBE6DC]">
           <span className="text-xs font-label-caps uppercase text-[#111111] font-bold tracking-wider">
             3. Composition Layout
           </span>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { id: "HORIZONTAL", label: "↔ Horizontal Banner", desc: "Modern balanced line" },
-              { id: "VERTICAL", label: "⬍ Vertical Scroll", desc: "Traditional hanging scroll" },
-              { id: "EMBLEM", label: "⭕ Centered Emblem", desc: "Circular badge focus" },
-              { id: "FULL_BACK", label: "📜 Full Statement", desc: "Expansive layout" },
+              { id: "HORIZONTAL", label: "↔ Horizontal", desc: "Balanced modern line", visual: "───" },
+              { id: "VERTICAL", label: "⬍ Vertical Scroll", desc: "Hanging scroll format", visual: "│\n│" },
+              { id: "EMBLEM", label: "⭕ Centered Emblem", desc: "Circular badge focus", visual: "◉" },
+              { id: "FULL_BACK", label: "📜 Full Statement", desc: "Expansive layout", visual: "▓▓" },
             ].map((layout) => {
               const isSelected = state.layout === layout.id;
               return (
                 <button
                   key={layout.id}
                   onClick={() => setState((prev) => ({ ...prev, layout: layout.id as CompositionLayout }))}
-                  className={`p-3 border rounded-xl text-left text-xs transition-all ${
+                  className={`p-3 border rounded-xl text-left text-xs transition-all flex flex-col justify-between ${
                     isSelected
                       ? "border-black bg-[#F4EFE6] font-bold ring-1 ring-black shadow-sm"
                       : "border-[#E0DBD1] bg-[#FAF8F5] hover:border-black/50 text-[#111111]"
                   }`}
                 >
-                  <span className="block font-bold text-[#111111]">{layout.label}</span>
-                  <span className="text-[10px] text-[#66635D] block mt-0.5">{layout.desc}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#111111]">{layout.label}</span>
+                    <span className="font-mono text-xs opacity-50 font-bold">{layout.visual}</span>
+                  </div>
+                  <span className="text-[10px] text-[#66635D] block mt-1">{layout.desc}</span>
                 </button>
               );
             })}
