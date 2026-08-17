@@ -14,18 +14,18 @@ import { VietnameseThuPhapSynthesizer } from "../VietnameseThuPhapSynthesizer";
 import fs from "fs";
 import path from "path";
 
-let cachedAlexBrushBase64 = "";
-function getAlexBrushBase64(): string {
-  if (cachedAlexBrushBase64) return cachedAlexBrushBase64;
+const FONT_BASE64_CACHE: Record<string, string> = {};
+function getFontBase64(fileName: string): string {
+  if (FONT_BASE64_CACHE[fileName]) return FONT_BASE64_CACHE[fileName];
   try {
-    const fontPath = path.join(process.cwd(), "public", "fonts", "AlexBrush-Regular.ttf");
+    const fontPath = path.join(process.cwd(), "public", "fonts", fileName);
     if (fs.existsSync(fontPath)) {
-      cachedAlexBrushBase64 = fs.readFileSync(fontPath).toString("base64");
+      FONT_BASE64_CACHE[fileName] = fs.readFileSync(fontPath).toString("base64");
     }
   } catch (e) {
-    console.warn("Could not read AlexBrush-Regular.ttf:", e);
+    console.warn(`Could not read font ${fileName}:`, e);
   }
-  return cachedAlexBrushBase64;
+  return FONT_BASE64_CACHE[fileName] || "";
 }
 
 export class DeterministicBrushProvider implements CalligraphyRendererProvider {
@@ -213,30 +213,59 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
       });
     }
 
-    let fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
-    if (stylePackId === "Japanese 1" || stylePackId === "Shodō") {
-      fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
-    } else if (stylePackId === "Japanese 2") {
+    let fontFamily = "'Yuji Boku', serif";
+    let fontFile = "YujiBoku-Regular.ttf";
+    let fontName = "Yuji Boku";
+
+    if (stylePackId === "Japanese 1" || stylePackId === "Shodō" || stylePackId.includes("Boku")) {
+      fontFamily = "'Yuji Boku', serif";
+      fontFile = "YujiBoku-Regular.ttf";
+      fontName = "Yuji Boku";
+    } else if (stylePackId === "Japanese 2" || stylePackId.includes("Syuku")) {
       fontFamily = "'Yuji Syuku', serif";
-    } else if (stylePackId === "Japanese 3") {
+      fontFile = "YujiBoku-Regular.ttf";
+      fontName = "Yuji Syuku";
+    } else if (stylePackId === "Japanese 3" || stylePackId.includes("Mai")) {
       fontFamily = "'Yuji Mai', cursive";
-    } else if (stylePackId === "Chinese 1" || stylePackId === "Ink") {
-      fontFamily = "'Long Cang', 'Ma Shan Zheng', cursive";
-    } else if (stylePackId === "Chinese 2") {
+      fontFile = "YujiMai-Regular.ttf";
+      fontName = "Yuji Mai";
+    } else if (stylePackId === "Chinese 1" || stylePackId.includes("Liu Jian")) {
+      fontFamily = "'Liu Jian Mao Cao', cursive";
+      fontFile = "LiuJianMaoCao-Regular.ttf";
+      fontName = "Liu Jian Mao Cao";
+    } else if (stylePackId === "Chinese 2" || stylePackId.includes("Long Cang") || stylePackId === "Ink") {
+      fontFamily = "'Long Cang', cursive";
+      fontFile = "LongCang-Regular.ttf";
+      fontName = "Long Cang";
+    } else if (stylePackId === "Chinese 3" || stylePackId.includes("Ma Shan")) {
       fontFamily = "'Ma Shan Zheng', cursive";
-    } else if (stylePackId === "Chinese 3") {
+      fontFile = "MaShanZheng-Regular.ttf";
+      fontName = "Ma Shan Zheng";
+    } else if (stylePackId === "Chinese 4" || stylePackId.includes("Zhi Mang")) {
       fontFamily = "'Zhi Mang Xing', cursive";
-    } else if (stylePackId === "Korean 1" || stylePackId === "Zen") {
+      fontFile = "ZhiMangXing-Regular.ttf";
+      fontName = "Zhi Mang Xing";
+    } else if (stylePackId === "Korean 1" || stylePackId.includes("Nanum") || stylePackId === "Zen") {
       fontFamily = "'Nanum Brush Script', cursive";
-    } else if (stylePackId === "Korean 2") {
+      fontFile = "NanumBrushScript-Regular.ttf";
+      fontName = "Nanum Brush Script";
+    } else if (stylePackId === "Korean 2" || stylePackId.includes("Dokdo")) {
       fontFamily = "'East Sea Dokdo', cursive";
+      fontFile = "EastSeaDokdo-Regular.ttf";
+      fontName = "East Sea Dokdo";
     } else {
       if (script === "HAN") {
-        fontFamily = "'Long Cang', 'Ma Shan Zheng', cursive";
+        fontFamily = "'Long Cang', cursive";
+        fontFile = "LongCang-Regular.ttf";
+        fontName = "Long Cang";
       } else if (script === "JAPANESE_MIXED") {
-        fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
+        fontFamily = "'Yuji Boku', serif";
+        fontFile = "YujiBoku-Regular.ttf";
+        fontName = "Yuji Boku";
       } else if (script === "KOREAN_HANGUL") {
-        fontFamily = "'Nanum Brush Script', 'East Sea Dokdo', cursive";
+        fontFamily = "'Nanum Brush Script', cursive";
+        fontFile = "NanumBrushScript-Regular.ttf";
+        fontName = "Nanum Brush Script";
       }
     }
 
@@ -248,21 +277,21 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
     const turbulenceFreq = (0.035 + config.dryBrushIntensity * 0.09).toFixed(3);
     const displacementScale = (config.dryBrushIntensity * 16).toFixed(1);
 
-    const alexBrushBase64 = getAlexBrushBase64();
-    const fontFaceBlock = alexBrushBase64
+    const fontBase64 = getFontBase64(fontFile);
+    const fontFaceBlock = fontBase64
       ? `@font-face {
-          font-family: 'Alex Brush';
-          src: url('data:font/ttf;charset=utf-8;base64,${alexBrushBase64}') format('truetype');
+          font-family: '${fontName}';
+          src: url('data:font/ttf;charset=utf-8;base64,${fontBase64}') format('truetype');
           font-weight: normal;
           font-style: normal;
         }`
-      : `@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&amp;family=Dancing+Script:wght@700&amp;family=Long+Cang&amp;family=Yuji+Boku&amp;family=Nanum+Brush+Script&amp;display=swap');`;
+      : `@import url('https://fonts.googleapis.com/css2?family=Long+Cang&amp;family=Ma+Shan+Zheng&amp;family=Zhi+Mang+Xing&amp;family=Yuji+Boku&amp;family=Yuji+Mai&amp;family=Nanum+Brush+Script&amp;family=East+Sea+Dokdo&amp;display=swap');`;
 
     const filterDef = `
       <style>
         ${fontFaceBlock}
         .thu-phap-text {
-          font-family: ${fontFamily};
+          font-family: '${fontName}', ${fontFamily};
           font-weight: 700;
           letter-spacing: ${isThuPhap ? "0.05em" : "0.02em"};
         }
