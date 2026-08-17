@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thi Bút - Design Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#dbdad5",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#30312e",
+                        "on-secondary-fixed-variant": "#920023",
+                        "surface-container": "#f0eee9",
+                        "primary-container": "#1b1b1c",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#838484",
+                        "secondary": "#b71032",
+                        "surface": "#fbf9f4",
+                        "inverse-primary": "#c8c6c7",
+                        "surface-variant": "#e4e2dd",
+                        "outline-variant": "#c7c6ca",
+                        "primary": "#000000",
+                        "on-primary-fixed": "#1b1b1c",
+                        "on-primary-fixed-variant": "#474647",
+                        "surface-tint": "#5f5e5f",
+                        "surface-bright": "#fbf9f4",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#f2f1ec",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#000000",
+                        "outline": "#76777b",
+                        "secondary-fixed": "#ffdad9",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-surface": "#1b1c19",
+                        "surface-container-high": "#eae8e3",
+                        "on-secondary-fixed": "#40000a",
+                        "surface-container-highest": "#e4e2dd",
+                        "surface-container-low": "#f5f3ee",
+                        "on-secondary-container": "#fffbff",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "secondary-fixed-dim": "#ffb3b4",
+                        "secondary-container": "#da3148",
+                        "background": "#fbf9f4",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "on-surface-variant": "#46474a",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "on-background": "#1b1c19",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#858384",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#1a1c1c",
+                        "primary-fixed": "#e5e2e3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "24px",
+                        "gutter": "24px",
+                        "section-gap": "120px",
+                        "unit": "8px",
+                        "container-max": "1280px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "display-lg-mobile": ["Playfair Display"],
+                        "headline-md": ["Playfair Display"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Playfair Display"],
+                        "label-caps": ["Inter"],
+                        "headline-sm": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="bg-background dark:bg-background docked full-width top-0 border-b border-surface-variant dark:border-on-surface-variant flat no shadows z-50 sticky">
+<div class="flex justify-between items-center w-full px-margin-desktop py-4 max-w-container-max mx-auto">
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-primary dark:text-on-background cursor-pointer">menu</span>
+<span class="font-display-lg text-display-lg text-primary dark:text-on-background tracking-tight">Thi Bút</span>
+</div>
+<nav class="hidden md:flex gap-8 items-center h-full">
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-300 font-label-caps text-label-caps h-full flex items-center py-2" href="#">Explore</a>
+<a class="text-primary font-bold border-b-2 border-secondary hover:text-secondary transition-colors duration-300 font-label-caps text-label-caps h-full flex items-center py-2" href="#">Creator Studio</a>
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-300 font-label-caps text-label-caps h-full flex items-center py-2" href="#">Personalization Lab</a>
+</nav>
+<div class="flex items-center gap-4">
+<button aria-label="Role Toggle" class="text-primary dark:text-on-background scale-95 duration-200 flex items-center font-label-caps text-label-caps gap-2">
+                    Role Toggle
+                </button>
+<button aria-label="Cart" class="text-primary dark:text-on-background scale-95 duration-200 flex items-center font-label-caps text-label-caps gap-2">
+                    Cart
+                </button>
+<button aria-label="person" class="text-primary dark:text-on-background scale-95 duration-200 flex items-center">
+<span class="material-symbols-outlined">person</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-8 md:py-12 flex flex-col gap-8 md:gap-12">
+<!-- Step Indicator -->
+<div class="w-full max-w-3xl mx-auto flex justify-between items-center relative text-on-surface-variant">
+<div class="absolute top-1/2 left-0 w-full h-px bg-surface-variant -z-10 transform -translate-y-1/2"></div>
+<div class="flex flex-col items-center bg-background px-4">
+<div class="w-8 h-8 rounded-full border border-surface-variant flex items-center justify-center mb-2 bg-surface text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<span class="font-label-caps text-label-caps uppercase">1. Meaning</span>
+</div>
+<div class="flex flex-col items-center bg-background px-4">
+<div class="w-8 h-8 rounded-full border border-surface-variant flex items-center justify-center mb-2 bg-surface text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<span class="font-label-caps text-label-caps uppercase">2. Style</span>
+</div>
+<div class="flex flex-col items-center bg-background px-4">
+<div class="w-8 h-8 rounded-full border-2 border-primary flex items-center justify-center mb-2 bg-primary text-on-primary">
+<span class="font-label-caps text-label-caps">3</span>
+</div>
+<span class="font-label-caps text-label-caps text-primary uppercase font-bold">3. Design &amp; Preview</span>
+</div>
+</div>
+<!-- Split Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+<!-- Left Side: Preview Panel -->
+<div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-4 relative">
+<div class="relative w-full aspect-square md:aspect-[4/3] bg-surface-container-low border border-outline-variant overflow-hidden rounded-DEFAULT flex items-center justify-center group" data-alt="A pristine, high-fashion product photography shot of a premium, heavyweight white cotton hoodie hanging in a minimalist, light-drenched studio. The hoodie is perfectly lit by soft, diffused daylight, highlighting the subtle texture of the fabric. In the center of the chest is a bold, masterful stroke of Japanese calligraphy in rich Sumi ink, accompanied by a small vermilion seal. The background is a clean, slightly textured rice paper aesthetic, adhering to a serene Zen-Modern style." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCql1DH45PyKuJPJxLcGruuHaxc5FA9jeOadhPk8yYldwscCAm4w1b1TiYcOjatIOhYLRe7_IMT6pekHBwfNMFvqussfj10b3Szcp-nK_sQ6K32HcJxqDne5DnO9dgZ_wYywhQnDtEr023Rc0C2UsJWYEZKaK2nWEuKl7LVGlFW4uGuJ6u2kWy56WPtwlhSygSpWqEPHFMp7wHYm_JAfyXNxL8KVBOrF3vHF1Np2JZKGSR8lAR7mLUY')">
+<!-- Floating Controls -->
+<div class="absolute bottom-6 right-6 flex bg-surface-container-highest rounded-full shadow-sm p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 border border-outline-variant">
+<button aria-label="Zoom Out" class="w-10 h-10 flex items-center justify-center text-on-surface hover:text-primary rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">zoom_out</span>
+</button>
+<div class="w-px h-6 bg-outline-variant self-center mx-1"></div>
+<button aria-label="Zoom In" class="w-10 h-10 flex items-center justify-center text-on-surface hover:text-primary rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">zoom_in</span>
+</button>
+<div class="w-px h-6 bg-outline-variant self-center mx-1"></div>
+<button aria-label="Rotate" class="w-10 h-10 flex items-center justify-center text-on-surface hover:text-primary rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">rotate_right</span>
+</button>
+</div>
+</div>
+<p class="font-label-caps text-label-caps text-center text-on-surface-variant uppercase tracking-widest">
+                    Artwork: Shichitenhakki (Fall seven, stand up eight)
+                </p>
+</div>
+<!-- Right Side: Configuration Panel -->
+<div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-8 bg-surface-container-lowest p-6 border border-surface-variant rounded-DEFAULT sticky top-[100px]">
+<div>
+<h2 class="font-headline-sm text-headline-sm mb-6 pb-2 border-b border-surface-variant">Configure Product</h2>
+<!-- Product Selection -->
+<div class="mb-8">
+<label class="font-label-caps text-label-caps uppercase text-on-surface-variant mb-4 block">Product Type</label>
+<div class="flex overflow-x-auto pb-2 gap-3 snap-x scrollbar-hide">
+<button class="snap-start flex-shrink-0 px-6 py-3 border-2 border-primary bg-primary text-on-primary font-label-caps text-label-caps uppercase transition-colors">Premium Hoodie</button>
+<button class="snap-start flex-shrink-0 px-6 py-3 border border-outline-variant text-on-surface hover:border-primary font-label-caps text-label-caps uppercase transition-colors bg-surface-container-low">Essential Tee</button>
+<button class="snap-start flex-shrink-0 px-6 py-3 border border-outline-variant text-on-surface hover:border-primary font-label-caps text-label-caps uppercase transition-colors bg-surface-container-low">Framed Canvas</button>
+<button class="snap-start flex-shrink-0 px-6 py-3 border border-outline-variant text-on-surface hover:border-primary font-label-caps text-label-caps uppercase transition-colors bg-surface-container-low">Washi Print</button>
+</div>
+</div>
+<!-- Color Picker -->
+<div class="mb-8">
+<div class="flex justify-between items-center mb-4">
+<label class="font-label-caps text-label-caps uppercase text-on-surface-variant block">Material Color</label>
+<span class="font-body-md text-body-md text-on-surface">Paper White</span>
+</div>
+<div class="flex gap-4">
+<button aria-label="Paper White" class="w-10 h-10 rounded-full bg-[#fbf9f4] border-2 border-primary shadow-sm focus:outline-none ring-2 ring-offset-2 ring-primary ring-offset-background"></button>
+<button aria-label="Sumi Black" class="w-10 h-10 rounded-full bg-[#1b1c19] border border-outline-variant shadow-sm focus:outline-none hover:border-primary transition-colors"></button>
+<button aria-label="Stone Grey" class="w-10 h-10 rounded-full bg-[#838484] border border-outline-variant shadow-sm focus:outline-none hover:border-primary transition-colors"></button>
+<button aria-label="Natural Sand" class="w-10 h-10 rounded-full bg-[#e4e2dd] border border-outline-variant shadow-sm focus:outline-none hover:border-primary transition-colors"></button>
+</div>
+</div>
+<!-- Placement Presets -->
+<div class="mb-8">
+<label class="font-label-caps text-label-caps uppercase text-on-surface-variant mb-4 block">Artwork Placement</label>
+<div class="grid grid-cols-3 gap-3">
+<button class="border-2 border-primary bg-surface p-4 flex flex-col items-center justify-center gap-2 hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-primary">view_agenda</span>
+<span class="font-label-caps text-label-caps uppercase text-primary">Center Front</span>
+</button>
+<button class="border border-outline-variant bg-surface p-4 flex flex-col items-center justify-center gap-2 hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">width_normal</span>
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant">Left Chest</span>
+</button>
+<button class="border border-outline-variant bg-surface p-4 flex flex-col items-center justify-center gap-2 hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">aspect_ratio</span>
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant">Full Back</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

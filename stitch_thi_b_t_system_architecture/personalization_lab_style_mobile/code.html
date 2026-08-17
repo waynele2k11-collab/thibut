@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thi Bút - Personalization Lab - Style</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed-dim": "#c8c6c7",
+                      "on-background": "#1b1c19",
+                      "secondary-fixed": "#ffdad9",
+                      "on-secondary-fixed-variant": "#920023",
+                      "on-secondary-fixed": "#40000a",
+                      "surface-container-high": "#eae8e3",
+                      "on-secondary": "#ffffff",
+                      "on-surface": "#1b1c19",
+                      "inverse-primary": "#c8c6c7",
+                      "primary-container": "#1b1b1c",
+                      "surface": "#fbf9f4",
+                      "on-error-container": "#93000a",
+                      "outline-variant": "#c7c6ca",
+                      "secondary-fixed-dim": "#ffb3b4",
+                      "inverse-on-surface": "#f2f1ec",
+                      "on-tertiary-container": "#838484",
+                      "surface-bright": "#fbf9f4",
+                      "tertiary": "#000000",
+                      "tertiary-fixed-dim": "#c6c6c6",
+                      "surface-container-lowest": "#ffffff",
+                      "on-error": "#ffffff",
+                      "background": "#fbf9f4",
+                      "on-primary-fixed": "#1b1b1c",
+                      "surface-tint": "#5f5e5f",
+                      "on-surface-variant": "#46474a",
+                      "outline": "#76777b",
+                      "tertiary-container": "#1a1c1c",
+                      "error-container": "#ffdad6",
+                      "on-tertiary-fixed-variant": "#454747",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed-variant": "#474647",
+                      "surface-dim": "#dbdad5",
+                      "on-primary-container": "#858384",
+                      "surface-container-highest": "#e4e2dd",
+                      "primary-fixed": "#e5e2e3",
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "on-tertiary": "#ffffff",
+                      "inverse-surface": "#30312e",
+                      "surface-container": "#f0eee9",
+                      "on-primary": "#ffffff",
+                      "surface-variant": "#e4e2dd",
+                      "tertiary-fixed": "#e2e2e2",
+                      "surface-container-low": "#f5f3ee",
+                      "secondary": "#b71032",
+                      "primary": "#000000",
+                      "on-secondary-container": "#fffbff",
+                      "secondary-container": "#da3148"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-mobile": "24px",
+                      "container-max": "1280px",
+                      "gutter": "24px",
+                      "unit": "8px",
+                      "section-gap": "120px",
+                      "margin-desktop": "64px"
+              },
+              "fontFamily": {
+                      "display-lg-mobile": ["Playfair Display"],
+                      "label-caps": ["Inter"],
+                      "headline-sm": ["Playfair Display"],
+                      "body-md": ["Inter"],
+                      "headline-md": ["Playfair Display"],
+                      "display-lg": ["Playfair Display"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "display-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                      "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                      "headline-sm": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "headline-md": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.surface-container-low');
+            color: theme('colors.on-surface');
+            background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" opacity="0.04"/%3E%3C/svg%3E');
+        }
+        /* Custom Radio Button Styling */
+        .style-radio:checked + div {
+            border-color: theme('colors.primary');
+            background-color: theme('colors.surface-container-lowest');
+        }
+        .style-radio:checked + div .radio-indicator {
+            border-color: theme('colors.primary');
+            background-color: theme('colors.primary');
+        }
+        .style-radio:checked + div .radio-indicator::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: theme('colors.surface');
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col relative pb-24 md:pb-0">
+<!-- Top App Bar - Linear Transactional (Suppressed standard nav) -->
+<header class="flex justify-between items-center w-full px-margin-mobile py-4 bg-transparent absolute top-0 z-10">
+<button aria-label="Go back" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<span class="font-display-lg-mobile text-display-lg-mobile text-primary tracking-tight">Thi Bút</span>
+<div class="w-10 h-10"></div> <!-- Spacer for centering -->
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col items-center w-full px-margin-mobile pt-24 pb-8 md:max-w-xl md:mx-auto">
+<!-- Step Indicator -->
+<div class="mb-4 w-full flex justify-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Step 2: Style</span>
+</div>
+<!-- Header Section with Ma (Whitespace) -->
+<div class="w-full text-center mb-12">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-on-surface mb-4">Brush &amp; Ink Expression</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md mx-auto">Choose the calligraphic style that best captures the energy of your message.</p>
+</div>
+<!-- Style Selection Form -->
+<form class="w-full flex flex-col gap-6" id="styleForm">
+<!-- Option 1: Kaisho -->
+<label class="relative cursor-pointer group w-full">
+<input class="style-radio sr-only" name="calligraphy_style" type="radio" value="kaisho"/>
+<div class="w-full border border-outline-variant rounded-lg p-4 transition-all duration-300 hover:border-outline flex flex-col gap-4 bg-surface/50 backdrop-blur-sm relative overflow-hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded-full border border-outline-variant relative radio-indicator transition-colors duration-200"></div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface m-0">Kaisho <span class="font-body-md text-body-md text-on-surface-variant ml-1 font-normal">(Block Style)</span></h2>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant m-0 pl-8">Focus on clarity, strength, and traditional structure.</p>
+<div class="mt-2 pl-8 pr-2 pb-2">
+<div class="w-full aspect-[2/1] bg-surface-container-highest rounded-md overflow-hidden relative border border-surface-dim">
+<img alt="Kaisho Calligraphy Sample" class="w-full h-full object-cover mix-blend-multiply" data-alt="A pristine sheet of traditional washi paper laid flat on a minimalist wooden table. Black sumi ink strokes form the character 'Kaisho' in a highly structured, bold, and precise block style. The lighting is bright and high-key, highlighting the stark contrast between the deep black ink and the stark white paper in a modern Zen aesthetic. The composition is clean, emphasizing the sharp edges of the brushstrokes." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBApr5Una5I_YZblID9fn_q9x1SO5H4DQuZMHwEjdLp-c1svKJVssC_TbM7cuzBn-eB3YggZOaZk8xDsCRmtgNZdU3LKsT_IUJeR4Ql7Ndjem9uUbcvxpFRqm5jaS0Y8sL1Rshl-SfKSA17q41xrAVTqJ6iFoB2dDpzC9qZdyoQ6q3UrOCFLd8imwp2wKfmXE1itxUxThOq2zxlus2CMoCzM6FzUV8nY_TPyT8RXViiSRXho9wtBOtK"/>
+</div>
+</div>
+</div>
+</label>
+<!-- Option 2: Gyosho (Most Popular) -->
+<label class="relative cursor-pointer group w-full">
+<input checked="" class="style-radio sr-only" name="calligraphy_style" type="radio" value="gyosho"/>
+<div class="w-full border border-primary rounded-lg p-4 transition-all duration-300 flex flex-col gap-4 bg-surface-container-lowest relative overflow-hidden shadow-sm">
+<!-- Badge -->
+<div class="absolute top-0 right-0 bg-secondary text-on-secondary font-label-caps text-label-caps px-3 py-1 rounded-bl-md z-10">
+                        Most Popular
+                    </div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded-full border-primary bg-primary relative radio-indicator transition-colors duration-200">
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-surface"></div>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface m-0">Gyosho <span class="font-body-md text-body-md text-on-surface-variant ml-1 font-normal">(Semi-Cursive)</span></h2>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant m-0 pl-8 pr-20">Focus on flow, movement, and elegance.</p>
+<div class="mt-2 pl-8 pr-2 pb-2">
+<div class="w-full aspect-[2/1] bg-surface-container-highest rounded-md overflow-hidden relative border border-surface-dim">
+<img alt="Gyosho Calligraphy Sample" class="w-full h-full object-cover mix-blend-multiply" data-alt="A macro shot of fluid, semi-cursive sumi ink calligraphy on textured rice paper. The brushstrokes are connected and elegant, demonstrating a smooth flow of movement. The lighting is soft and natural, creating a serene and premium light-mode atmosphere typical of high-end artisanal products. The rich black ink pools slightly in the thicker sections of the stroke, adding tactile depth." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnSrQJH1GcyCDkgTRooSQCqk0Mh8U6zCAncTO3JCDlcHGmpv3H-awTbI52hE2hK5fRiOGgvTkkVyhMslgg8PrO9f7hYBxSekMdaeoKYyaxGqT_WUv-MrgI-y0HtJuWohPtML33kBIEJHEus4NAFsX0WDH330bsUjfqjTYEA8gULmNCk80r8RLJZ0e8zwHJOqp2Sse3n-hO_izWV1Pzbk34WhtxuVttX_TbGWURBCR3E3wn1bVueiDD"/>
+</div>
+</div>
+</div>
+</label>
+<!-- Option 3: Sosho -->
+<label class="relative cursor-pointer group w-full">
+<input class="style-radio sr-only" name="calligraphy_style" type="radio" value="sosho"/>
+<div class="w-full border border-outline-variant rounded-lg p-4 transition-all duration-300 hover:border-outline flex flex-col gap-4 bg-surface/50 backdrop-blur-sm relative overflow-hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded-full border border-outline-variant relative radio-indicator transition-colors duration-200"></div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface m-0">Sosho <span class="font-body-md text-body-md text-on-surface-variant ml-1 font-normal">(Cursive Style)</span></h2>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant m-0 pl-8">Focus on abstraction, spirit, and dynamic energy.</p>
+<div class="mt-2 pl-8 pr-2 pb-2">
+<div class="w-full aspect-[2/1] bg-surface-container-highest rounded-md overflow-hidden relative border border-surface-dim">
+<img alt="Sosho Calligraphy Sample" class="w-full h-full object-cover mix-blend-multiply" data-alt="Dynamic, highly abstract sumi ink strokes splashed across a pristine white paper canvas. The cursive calligraphy is rapid and expressive, showing dry brush effects (kasure) where the ink runs thin, emphasizing speed and spiritual energy. The minimalist setting and bright studio lighting ensure a clean, high-contrast, modern aesthetic that feels luxurious and authentic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXMaf5uZqjQKG5PBOSx6rX-UjzckUp87fcJqxXNBuMZDJg2c8b9vzwx_r7fuVxhahdmdSGElzPGCOxVapg42pBM0vVCCV5IDBIKH5b2dcLmyKQE9Oel3c3-wanSWYu9H1LgXDeAbvQ3mZr2GhlZv6vFE2IJUVjki-eZsQ2YaHE4gaM6By6m2KZah4r3sEb3mvd331tf7mP3xj-hUxCuFPpc9NH_qld9zKxMI9Eug9xDbLvZPzUivxb"/>
+</div>
+</div>
+</div>
+</label>
+</form>
+<!-- Bottom spacing for the fixed footer -->
+<div class="h-32 w-full"></div>
+</main>
+<!-- Transactional Footer Navigation -->
+<div class="fixed bottom-0 w-full z-50 bg-surface-container-lowest border-t border-surface-variant px-margin-mobile py-4 pb-safe flex justify-between items-center shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:static md:shadow-none md:border-none md:bg-transparent md:pt-12 md:px-0">
+<button class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-2 px-2 py-2">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+<span class="hidden md:inline">Back</span>
+</button>
+<button class="bg-primary text-on-primary font-body-md text-body-md font-semibold px-8 py-4 rounded-full flex items-center gap-2 hover:bg-tertiary transition-colors active:scale-95">
+            Continue to Design
+            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+</body></html>

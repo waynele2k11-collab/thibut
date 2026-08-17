@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thi Bút - Artist Handbook</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#838484",
+                        "background": "#fbf9f4",
+                        "secondary-fixed-dim": "#ffb3b4",
+                        "surface-variant": "#e4e2dd",
+                        "inverse-on-surface": "#f2f1ec",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#1b1b1c",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "tertiary-fixed": "#e2e2e2",
+                        "error": "#ba1a1a",
+                        "on-surface": "#1b1c19",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#1a1c1c",
+                        "secondary-fixed": "#ffdad9",
+                        "surface-container-low": "#f5f3ee",
+                        "secondary": "#b71032",
+                        "primary": "#000000",
+                        "on-primary-container": "#858384",
+                        "surface-container": "#f0eee9",
+                        "tertiary": "#000000",
+                        "on-surface-variant": "#46474a",
+                        "secondary-container": "#da3148",
+                        "primary-fixed": "#e5e2e3",
+                        "surface": "#fbf9f4",
+                        "outline": "#76777b",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#1b1c19",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#474647",
+                        "on-secondary-fixed": "#40000a",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "outline-variant": "#c7c6ca",
+                        "primary-container": "#1b1b1c",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#fffbff",
+                        "inverse-primary": "#c8c6c7",
+                        "surface-bright": "#fbf9f4",
+                        "on-secondary-fixed-variant": "#920023",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "surface-tint": "#5f5e5f",
+                        "surface-dim": "#dbdad5",
+                        "surface-container-high": "#eae8e3",
+                        "inverse-surface": "#30312e",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e4e2dd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "gutter": "24px",
+                        "unit": "8px",
+                        "margin-mobile": "24px",
+                        "margin-desktop": "64px",
+                        "section-gap": "120px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Playfair Display", "serif"],
+                        "display-lg": ["Playfair Display", "serif"],
+                        "label-caps": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "display-lg-mobile": ["Playfair Display", "serif"],
+                        "headline-sm": ["Playfair Display", "serif"],
+                        "body-md": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        /* Custom noise texture overlay */
+        .noise-bg {
+            position: relative;
+        }
+        .noise-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.05"/%3E%3C/svg%3E');
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased noise-bg min-h-screen flex flex-col items-center">
+<!-- Suppressed Header for linear/focus experience -->
+<main class="w-full max-w-lg mx-auto flex flex-col flex-grow">
+<!-- Hero Section -->
+<section class="px-margin-mobile pt-16 pb-section-gap flex flex-col items-center text-center">
+<span class="text-label-caps font-label-caps text-secondary mb-4 tracking-widest uppercase">The Handbook</span>
+<h1 class="text-display-lg-mobile font-display-lg-mobile text-primary mb-8">V.1.0 Archival Edition</h1>
+<div class="w-full aspect-[3/4] relative mb-12 border border-outline-variant/30 overflow-hidden bg-surface-container-low flex items-center justify-center p-8">
+<img class="object-contain w-full h-full mix-blend-multiply" data-alt="A striking, minimalist still life of a high-end calligraphy brush resting on a pure white washi paper scroll. The scene is illuminated by soft, diffuse natural light, creating a Zen-modern light-mode aesthetic. Deep black sumi ink contrasts sharply with pristine white backgrounds, accented by a subtle, vibrant red seal in the corner. The mood is calm, professional, and tactile." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSGtROnI75GJlCv3TEvFDC90q1jvlxQYQpaQBHpGNzWyUMiB0-Pntk1vpvRZ6g-v3GdlT-sO4Ieso7kwAOkC6TEAwBDkeCstEXLrEuru6-h1CKvpvaFU3KnEZh2d8MMICPKL_RCjM7Az8Tq6-jVraRopBrfr-CAVZrBq3AP141WLa5aTo8SHWZ_oSw8IXgWz25s2afsFgOHKw2HegR4nIbW_pYlft65NaMJ3YLRnHGz3pLRj52qIOG"/>
+</div>
+<p class="text-body-lg font-body-lg text-on-surface-variant max-w-sm">
+                Mastery begins in silence. A covenant between the artist, the tool, and the void of the unwritten page.
+            </p>
+</section>
+<!-- The Tools Focus -->
+<section class="px-margin-mobile py-section-gap bg-surface flex flex-col items-start border-t border-outline-variant/20">
+<h2 class="text-headline-md font-headline-md text-primary mb-12">The Artifacts</h2>
+<div class="flex flex-col gap-12 w-full">
+<!-- Tool 1 -->
+<article class="flex flex-col">
+<div class="w-full h-48 bg-surface-container mb-6 relative overflow-hidden">
+<img class="absolute inset-0 w-full h-full object-cover opacity-90" data-alt="Macro photography focusing intimately on the tip of a traditional calligraphy brush, heavily loaded with wet, dark black ink. The background is a stark, slightly textured white paper surface. The lighting is high-key and soft, highlighting the glossy texture of the ink and the individual bristles of the brush. Zen-modern, light-mode, minimalist design style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPiMRsiWZa5UA2PVUkcOYYEcWA9ORNxwkUL9WtPL9MORuWnq8CUXjTgqkMpSl70-rO9HdcxDG3V3bumDhQWC4ce6LwJS2faWMke6UeVmqgHZ4yhtW5V8o-ZXSwK2iT22sFVQrRYfGxsCM-76l-rMyw7xaao6wVhVM_5wNg63QqBLayAZxSw7IsoA4voI2LT86GcyVDDp8QcpdTEtzMV6YiP9e5xKyK0e9gtDjeFwazfYx1gajFT6FK"/>
+</div>
+<div class="flex justify-between items-baseline mb-2 border-b border-outline-variant/20 pb-2">
+<h3 class="text-headline-sm font-headline-sm text-primary">The Brush</h3>
+<span class="text-label-caps font-label-caps text-on-surface-variant">01</span>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant mt-4">Crafted for perfect tension. It translates the mind's intent into physical reality with unforgiving precision.</p>
+</article>
+<!-- Tool 2 -->
+<article class="flex flex-col">
+<div class="w-full h-48 bg-surface-container mb-6 relative overflow-hidden">
+<img class="absolute inset-0 w-full h-full object-cover opacity-90" data-alt="An abstract, high-contrast overhead shot of a solid ink stick resting on an ancient stone inkwell. Dense black against light stone gray. A single drop of vibrant cinnabar red pigment rests nearby. The lighting is pristine and clinical, emphasizing texture and materials. Modern, premium e-commerce gallery aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3iweRS4IzTM7tkmVhTr3u5oIV9F3Zkt25J3vT6gIiHPlMvmfWzTIA_ewN_v7mGClaj-WqR8CgIWMwsgvx0QzZPLAOlOrpfJ8INHJUWgGR4V5Lzese3Rmetm2ZyfQkzJdKUcFthfiWlhmuqiVukj65eRnnePdKyKkn6LPJa5ckAp4WMFt1i0n9CxQM4Q_OYbRaprVIzYdTGH428UBEH5fIb4s0HoECzThKOrPGsgSi_QZ4VvuMzxzJ"/>
+</div>
+<div class="flex justify-between items-baseline mb-2 border-b border-outline-variant/20 pb-2">
+<h3 class="text-headline-sm font-headline-sm text-primary">The Ink</h3>
+<span class="text-label-caps font-label-caps text-on-surface-variant">02</span>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant mt-4">Sourced from ancient pine soot. It binds permanently to the paper fibers, making every stroke eternal.</p>
+</article>
+</div>
+</section>
+<!-- Covenant Section -->
+<section class="px-margin-mobile py-section-gap flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-4xl text-secondary mb-8" style="font-variation-settings: 'FILL' 0;">self_improvement</span>
+<h2 class="text-headline-md font-headline-md text-primary mb-6">The Covenant of Honor</h2>
+<p class="text-body-lg font-body-lg text-on-surface-variant mb-12 max-w-sm">
+                We demand intention. Do not touch the brush until the mind is clear. 
+            </p>
+<button class="bg-primary text-on-primary text-label-caps font-label-caps py-4 px-8 w-full uppercase tracking-widest hover:bg-secondary transition-colors duration-300">
+                Acknowledge &amp; Enter
+            </button>
+</section>
+</main>
+<!-- Suppressed Footer for linear/focus experience -->
+</body></html>

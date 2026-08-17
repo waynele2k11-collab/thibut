@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Artwork Discovery - Thi Bút Marketplace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#1b1b1c",
+                        "tertiary": "#000000",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "on-secondary": "#ffffff",
+                        "background": "#fbf9f4",
+                        "on-secondary-container": "#fffbff",
+                        "surface-container-highest": "#e4e2dd",
+                        "secondary-fixed": "#ffdad9",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "surface-tint": "#5f5e5f",
+                        "inverse-on-surface": "#f2f1ec",
+                        "on-background": "#1b1c19",
+                        "on-surface": "#1b1c19",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#1a1c1c",
+                        "on-error": "#ffffff",
+                        "primary": "#000000",
+                        "secondary-container": "#da3148",
+                        "outline-variant": "#c7c6ca",
+                        "tertiary-fixed": "#e2e2e2",
+                        "surface-variant": "#e4e2dd",
+                        "on-surface-variant": "#46474a",
+                        "surface-container-high": "#eae8e3",
+                        "surface-bright": "#fbf9f4",
+                        "primary-fixed": "#e5e2e3",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#40000a",
+                        "on-primary-container": "#858384",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#1b1b1c",
+                        "surface": "#fbf9f4",
+                        "on-secondary-fixed-variant": "#920023",
+                        "surface-container-low": "#f5f3ee",
+                        "on-tertiary-container": "#838484",
+                        "inverse-primary": "#c8c6c7",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#dbdad5",
+                        "outline": "#76777b",
+                        "inverse-surface": "#30312e",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "secondary": "#b71032",
+                        "on-primary-fixed-variant": "#474647",
+                        "surface-container": "#f0eee9",
+                        "secondary-fixed-dim": "#ffb3b4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-gap": "120px",
+                        "margin-desktop": "64px",
+                        "container-max": "1280px",
+                        "unit": "8px",
+                        "gutter": "24px",
+                        "margin-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg-mobile": ["Playfair Display"],
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-sm": ["Playfair Display"],
+                        "display-lg": ["Playfair Display"],
+                        "headline-md": ["Playfair Display"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .texture-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+        /* Custom scrollbar for minimalist look */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e5e2e3; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c8c6c7; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen relative font-body-md text-body-md antialiased selection:bg-secondary-container selection:text-on-secondary-container">
+<div class="texture-overlay"></div>
+<!-- TopNavBar component generated from JSON -->
+<nav class="bg-background dark:bg-background text-primary dark:text-on-background sticky top-0 z-40 w-full border-b border-surface-variant dark:border-on-surface-variant transition-all duration-300">
+<div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-4 max-w-container-max mx-auto">
+<div class="flex items-center gap-gutter">
+<a aria-label="Home" class="font-display-lg text-display-lg text-primary dark:text-on-background tracking-tighter" href="#">
+                    Thi Bút
+                </a>
+</div>
+<!-- Search Bar (on_left configuration per JSON) -->
+<div class="hidden md:flex flex-1 max-w-md mx-gutter relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline-variant group-focus-within:text-primary transition-colors">search</span>
+</div>
+<input aria-label="Search" class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border-b border-surface-variant focus:border-primary focus:ring-0 focus:outline-none transition-colors duration-300 text-body-md placeholder-outline font-body-md text-on-surface bg-transparent" placeholder="Search calligraphy, artists, or styles..." type="text"/>
+</div>
+<div class="hidden md:flex items-center gap-8">
+<!-- Navigation Links -->
+<!-- Active match: Explore (Search Results Page aligns with Explore) -->
+<a class="text-primary font-bold border-b-2 border-secondary font-label-caps text-label-caps pb-1 hover:text-secondary transition-colors duration-300 hover:scale-95 duration-200" href="#">
+                    Explore
+                </a>
+<a class="text-on-surface-variant font-medium font-label-caps text-label-caps hover:text-secondary transition-colors duration-300 hover:scale-95 duration-200" href="#">
+                    Creator Studio
+                </a>
+<a class="text-on-surface-variant font-medium font-label-caps text-label-caps hover:text-secondary transition-colors duration-300 hover:scale-95 duration-200" href="#">
+                    Personalization Lab
+                </a>
+</div>
+<div class="flex items-center gap-6">
+<!-- Trailing Actions -->
+<button aria-label="Role Toggle" class="text-on-surface-variant hover:text-secondary transition-colors duration-300 hover:scale-95 duration-200 font-label-caps text-label-caps hidden lg:block">
+                    Role Toggle
+                </button>
+<button aria-label="Cart" class="text-on-surface-variant hover:text-secondary transition-colors duration-300 hover:scale-95 duration-200 relative group">
+<span class="material-symbols-outlined group-hover:fill-current">shopping_cart</span>
+<span class="absolute -top-1 -right-1 bg-secondary text-on-secondary text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">2</span>
+</button>
+<button aria-label="User Profile" class="text-on-surface-variant hover:text-secondary transition-colors duration-300 hover:scale-95 duration-200 group">
+<span class="material-symbols-outlined group-hover:fill-current" data-icon="person">person</span>
+</button>
+<!-- Mobile Menu Toggle -->
+<button aria-label="Open menu" class="md:hidden text-primary">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</div>
+<!-- Mobile Search Bar (visible only on small screens) -->
+<div class="md:hidden px-margin-mobile pb-4 pt-2">
+<div class="relative group w-full">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline-variant group-focus-within:text-primary transition-colors">search</span>
+</div>
+<input aria-label="Search" class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border-b border-surface-variant focus:border-primary focus:ring-0 focus:outline-none transition-colors duration-300 text-body-md placeholder-outline font-body-md text-on-surface bg-transparent" placeholder="Search..." type="text"/>
+</div>
+</div>
+</nav>
+<main class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-12 md:py-24">
+<!-- Page Header -->
+<div class="mb-16 md:mb-24 flex flex-col md:flex-row md:items-end justify-between gap-8">
+<div class="max-w-2xl">
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-4">
+                    Discover Art
+                </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+                    Explore our curated collection of traditional and contemporary Asian calligraphy. Find the perfect brushstroke for your next project.
+                </p>
+</div>
+<!-- Sort Dropdown (Minimalist) -->
+<div class="flex items-center gap-2 border-b border-surface-variant pb-2 self-start md:self-end">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Sort by:</span>
+<select class="bg-transparent border-none font-body-md text-primary focus:ring-0 cursor-pointer pr-8 py-0">
+<option>Trending</option>
+<option>Newest</option>
+<option>Price: Low to High</option>
+<option>Price: High to Low</option>
+</select>
+</div>
+</div>
+<div class="flex flex-col lg:flex-row gap-12 lg:gap-24 relative">
+<!-- Sidebar Filters -->
+<aside class="w-full lg:w-64 flex-shrink-0 lg:sticky lg:top-32 self-start space-y-12 pr-4 hidden md:block">
+<!-- Category Filter -->
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-6 pb-2 border-b border-surface-variant">Category</h3>
+<div class="space-y-4">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="form-checkbox text-primary border-outline-variant focus:ring-primary rounded-sm h-4 w-4 bg-transparent transition-colors" type="checkbox"/>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Characters (Kanji/Hán tự)</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="form-checkbox text-primary border-outline-variant focus:ring-primary rounded-sm h-4 w-4 bg-transparent transition-colors" type="checkbox"/>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Abstract Brush</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="form-checkbox text-primary border-outline-variant focus:ring-primary rounded-sm h-4 w-4 bg-transparent transition-colors" type="checkbox"/>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Phrases &amp; Idioms</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="form-checkbox text-primary border-outline-variant focus:ring-primary rounded-sm h-4 w-4 bg-transparent transition-colors" type="checkbox"/>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Sumi-e (Ink Wash)</span>
+</label>
+</div>
+</div>
+<!-- Language Filter -->
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-6 pb-2 border-b border-surface-variant">Language</h3>
+<div class="space-y-4">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="form-checkbox text-primary border-outline-variant focus:ring-primary rounded-sm h-4 w-4 bg-transparent transition-colors" type="checkbox"/>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Japanese (Kanji/Kana)</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="form-checkbox text-primary border-outline-variant focus:ring-primary rounded-sm h-4 w-4 bg-transparent transition-colors" type="checkbox"/>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Vietnamese (Thư pháp)</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="form-checkbox text-primary border-outline-variant focus:ring-primary rounded-sm h-4 w-4 bg-transparent transition-colors" type="checkbox"/>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Chinese (Hanzi)</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="form-checkbox text-primary border-outline-variant focus:ring-primary rounded-sm h-4 w-4 bg-transparent transition-colors" type="checkbox"/>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Korean (Hanja/Hangul)</span>
+</label>
+</div>
+</div>
+<!-- Style Family Filter (Pill tags instead of checkboxes) -->
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-6 pb-2 border-b border-surface-variant">Style Family</h3>
+<div class="flex flex-wrap gap-2">
+<button class="px-4 py-2 bg-surface-container border border-outline-variant rounded-full font-label-caps text-label-caps text-on-surface hover:border-primary transition-colors">Street</button>
+<button class="px-4 py-2 bg-primary text-on-primary border border-primary rounded-full font-label-caps text-label-caps transition-colors">Zen</button>
+<button class="px-4 py-2 bg-surface-container border border-outline-variant rounded-full font-label-caps text-label-caps text-on-surface hover:border-primary transition-colors">Modern</button>
+<button class="px-4 py-2 bg-surface-container border border-outline-variant rounded-full font-label-caps text-label-caps text-on-surface hover:border-primary transition-colors">Traditional</button>
+<button class="px-4 py-2 bg-surface-container border border-outline-variant rounded-full font-label-caps text-label-caps text-on-surface hover:border-primary transition-colors">Expressive</button>
+</div>
+</div>
+<!-- Price Range (Minimal slider visual) -->
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-6 pb-2 border-b border-surface-variant">Base Price</h3>
+<div class="px-2">
+<!-- Placeholder for visual slider -->
+<div class="h-1 bg-surface-variant w-full relative mt-4 mb-6 rounded-full">
+<div class="absolute h-1 bg-primary left-1/4 right-1/4 rounded-full"></div>
+<div class="absolute w-4 h-4 bg-primary rounded-full -top-1.5 left-1/4 transform -translate-x-1/2 cursor-pointer shadow-sm"></div>
+<div class="absolute w-4 h-4 bg-primary rounded-full -top-1.5 right-1/4 transform translate-x-1/2 cursor-pointer shadow-sm"></div>
+</div>
+<div class="flex justify-between font-label-caps text-label-caps text-on-surface-variant">
+<span>$25</span>
+<span>$500+</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Results Grid -->
+<div class="flex-1">
+<!-- Mobile Filter Trigger -->
+<div class="md:hidden flex justify-between items-center mb-8 border-y border-surface-variant py-4">
+<span class="font-body-md text-on-surface-variant">Showing 142 results</span>
+<button class="flex items-center gap-2 font-label-caps text-label-caps text-primary border border-outline-variant px-4 py-2 rounded-full">
+<span class="material-symbols-outlined text-[18px]">tune</span> Filters
+                    </button>
+</div>
+<div class="hidden md:block mb-8 text-on-surface-variant font-label-caps text-label-caps">
+                    142 artworks found
+                </div>
+<!-- Asymmetric Bento-style Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-16">
+<!-- Artwork Card 1 (Large focus) -->
+<article class="group cursor-pointer flex flex-col sm:col-span-2 xl:col-span-2">
+<!-- Lightbox style image container -->
+<div class="relative w-full aspect-[16/9] bg-surface-container-highest mb-6 overflow-hidden flex items-center justify-center p-8 border border-transparent group-hover:border-outline-variant transition-colors duration-500">
+<!-- Subtle paper texture overlay specifically for the art -->
+<div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8cGF0aCBkPSJNMCAwTDIgMk00IDRMMiAyIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1vcGFjaXR5PSIwLjAyIiBzdHJva2Utd2lkdGg9IjEiLz4KPC9zdmc+')] opacity-50 z-10 pointer-events-none"></div>
+<img class="object-contain w-full h-full transform group-hover:scale-[1.02] transition-transform duration-700 ease-out relative z-0" data-alt="A striking, large-scale Japanese Zen calligraphy stroke in deep sumi ink on textured washi paper, illustrating the character for 'Dragon'. The stroke is energetic, with visible bristle marks and splatters, set against a vast minimalist white background under soft, high-key studio lighting. Modern Zen aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIETsrlo-6NOP01yZPWh7WLCS66mYKXV0nevBTb4mnIe0ChEzsrUQGX2xXRfQSq4_eddBm3Y_btCT5GCKF-SsYUGAqB7J49dA33PwbTK_6hcdZ-BEyRowMUB32U6yRWkAoQOYnYC1UtnrktYO5WDI1CpHzUSe_wyoDfD636roWctwMNGKLYHGuIn-t1JF7RwBHmqgNLPoe-cHbLdo2sJ1tBtkAlrMv6tV_Q4AqRe-xUT-_ZWZBTc_U"/>
+<!-- Overlay actions -->
+<div class="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<button aria-label="Save to favorites" class="bg-surface/90 text-primary w-10 h-10 rounded-full flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+</div>
+<div class="flex justify-between items-start gap-4">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2 flex-wrap">
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant font-label-caps text-[10px] uppercase tracking-wider rounded">Zen</span>
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant font-label-caps text-[10px] uppercase tracking-wider rounded">Kanji</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-primary mb-1 group-hover:text-secondary transition-colors">Dragon Prosperity</h2>
+<p class="font-body-md text-on-surface-variant">by <span class="text-primary border-b border-transparent group-hover:border-primary transition-colors">Master Kenjiro</span></p>
+</div>
+<div class="text-right flex-shrink-0">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-1">Personal License</p>
+<p class="font-headline-sm text-headline-sm text-primary">$125</p>
+</div>
+</div>
+</article>
+<!-- Artwork Card 2 -->
+<article class="group cursor-pointer flex flex-col">
+<div class="relative w-full aspect-[4/5] bg-surface-container-highest mb-6 overflow-hidden flex items-center justify-center p-6 border border-transparent group-hover:border-outline-variant transition-colors duration-500">
+<img class="object-contain w-full h-full transform group-hover:scale-[1.03] transition-transform duration-700 ease-out" data-alt="A delicate, fluid Vietnamese calligraphy piece depicting the word 'Peace' in modern script. The ink is a subtle charcoal grey with thin, elegant sweeps on smooth, slightly off-white rice paper. The lighting is diffused, casting no harsh shadows, highlighting the minimalist and serene modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHdHisCLOfDTbBVeKgn4d1mkQAkmlmzlNNbarn1ATTCDtPrD0YxPqxRNptulefsJCIc_AcY8BIg-Y_UA6zi7tdBeDcxtS-kHGU4RllYXBZyPHXkA8Cbv3VR11Ro5cSur0DXvDrQXYdsc2KuxEMG1ORUl-KJbBnB9NsdTfTPzROmdZGn4Lpj3krNR6k56BdnrGblravzj2lIIP1n2H7oivsfjgaaUI6SWmPQ3x14F-wFZHNMWrlYThh"/>
+<div class="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<button class="bg-surface/90 text-primary w-10 h-10 rounded-full flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+</div>
+<div class="flex justify-between items-start gap-4">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2 flex-wrap">
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant font-label-caps text-[10px] uppercase tracking-wider rounded">Modern</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-primary mb-1 group-hover:text-secondary transition-colors line-clamp-1">Inner Peace Flow</h2>
+<p class="font-body-md text-on-surface-variant text-sm">by <span class="text-primary">Thanh Nguyen</span></p>
+</div>
+<div class="text-right flex-shrink-0">
+<p class="font-headline-sm text-headline-sm text-primary">$85</p>
+</div>
+</div>
+</article>
+<!-- Artwork Card 3 -->
+<article class="group cursor-pointer flex flex-col">
+<div class="relative w-full aspect-[4/5] bg-surface-container-highest mb-6 overflow-hidden flex items-center justify-center p-6 border border-transparent group-hover:border-outline-variant transition-colors duration-500">
+<img class="object-contain w-full h-full transform group-hover:scale-[1.03] transition-transform duration-700 ease-out" data-alt="Expressive, chaotic street-style calligraphy combining traditional brush techniques with graffiti elements. The character is abstract, written in dense black ink with stark, dry brush textures on a raw, textured background. Lighting is stark and dramatic, emphasizing the tactile quality of the paper. Gritty yet premium aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGKwJKUg1EAlZ2MkcKXXoTE7T6UTCyHxCtJtcv_A6-nMRJ5mj4LjPhAdeD6OjHHaenURU3FaIfT3OZx975PR9_AtjvSfZtSBOy2IKjaq5f_04XfEPrtjsUrdvwPOzqEsMML-Y7UhtQGHbX89n7xtteClCbUjCSSEJEkNaQUUX58D3hCHwcvwJ-rj2RWLPhzMZzBcwXWqcuLRZfjDDd9wwaqGUBy3_tqnyL1V0m-bLYO9Emt9LP4I3E"/>
+<div class="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<button class="bg-surface/90 text-primary w-10 h-10 rounded-full flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+</div>
+<div class="flex justify-between items-start gap-4">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2 flex-wrap">
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant font-label-caps text-[10px] uppercase tracking-wider rounded">Street</span>
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant font-label-caps text-[10px] uppercase tracking-wider rounded">Abstract</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-primary mb-1 group-hover:text-secondary transition-colors line-clamp-1">Urban Wind</h2>
+<p class="font-body-md text-on-surface-variant text-sm">by <span class="text-primary">Sato Y.</span></p>
+</div>
+<div class="text-right flex-shrink-0">
+<p class="font-headline-sm text-headline-sm text-primary">$150</p>
+</div>
+</div>
+</article>
+<!-- Artwork Card 4 -->
+<article class="group cursor-pointer flex flex-col">
+<div class="relative w-full aspect-[4/5] bg-surface-container-highest mb-6 overflow-hidden flex items-center justify-center p-6 border border-transparent group-hover:border-outline-variant transition-colors duration-500">
+<img class="object-contain w-full h-full transform group-hover:scale-[1.03] transition-transform duration-700 ease-out" data-alt="Minimalist, perfectly balanced Chinese Hanzi character for 'Water'. Painted with a very wet brush, allowing the ink to bloom slightly at the edges on pure white paper. The composition uses significant negative space (Ma) around the single character. Lighting is soft and pure white, creating a tranquil, high-end gallery feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFg3lKyyoYxvae1sJmkG4J6vZNP1TIkCAsVYNCfVv55jYNKNxmP-AQkixLztyx9dUoU58YjMz7fMxcGcC9aHV3sU2aMXC0Myv_MxQS62yvP8S7DWrg54veBneQSL79ibTmmFcsnRPuL60aXTWEu6dk53BXHfWRPKhaWk6K2XdEIfLN4xHoxi-7FoHnUfwcJ6h_7hECLqwtbBcCK6qw56PWs3SSduBQIDFTag2zSmO2syvaZUDxBUo5"/>
+<div class="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<button class="bg-surface/90 text-primary w-10 h-10 rounded-full flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+</div>
+<div class="flex justify-between items-start gap-4">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2 flex-wrap">
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant font-label-caps text-[10px] uppercase tracking-wider rounded">Zen</span>
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant font-label-caps text-[10px] uppercase tracking-wider rounded">Hanzi</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-primary mb-1 group-hover:text-secondary transition-colors line-clamp-1">Still Water Bloom</h2>
+<p class="font-body-md text-on-surface-variant text-sm">by <span class="text-primary">Lin Wei</span></p>
+</div>
+<div class="text-right flex-shrink-0">
+<p class="font-headline-sm text-headline-sm text-primary">$95</p>
+</div>
+</div>
+</article>
+<!-- Artwork Card 5 -->
+<article class="group cursor-pointer flex flex-col sm:col-span-2 xl:col-span-1">
+<div class="relative w-full aspect-[4/5] bg-surface-container-highest mb-6 overflow-hidden flex items-center justify-center p-6 border border-transparent group-hover:border-outline-variant transition-colors duration-500">
+<img class="object-contain w-full h-full transform group-hover:scale-[1.03] transition-transform duration-700 ease-out" data-alt="A bold, sweeping ensō (circle) painted with a thick, textured brush in one continuous motion. Deep black ink with dry brush breaks (kasure) on a very subtle warm cream background. Minimalist and powerful composition. Gallery lighting highlighting the texture of the ink against the smooth paper backdrop." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAMxRDHrK2MESWb5suZtrZ0ZLhNlPlNsZHq3w2ealq8POy6i1ftfRD7K-9BtrRb9KvX32HWK66M70rm6Xdrvd9QFNtLfHLHp_v33vJic9V1rC-sRvsUfnlQVhoWuY-AcJenbzJ3tM-zWcs_ePO71URt7HV8Vv7WGLkwZmSu2ohwBAKWqIKqP0mg8SI-N8W-6asAurHzTQFHR5Ccm1--ELJWPEdaS1LJ7oneJirHSkSOQECoYwKAWaF"/>
+<div class="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<button class="bg-surface/90 text-primary w-10 h-10 rounded-full flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+</div>
+<div class="flex justify-between items-start gap-4">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2 flex-wrap">
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant font-label-caps text-[10px] uppercase tracking-wider rounded">Zen</span>
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant font-label-caps text-[10px] uppercase tracking-wider rounded">Abstract</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-primary mb-1 group-hover:text-secondary transition-colors line-clamp-1">Ensō Void #4</h2>
+<p class="font-body-md text-on-surface-variant text-sm">by <span class="text-primary">Master Kenjiro</span></p>
+</div>
+<div class="text-right flex-shrink-0">
+<p class="font-headline-sm text-headline-sm text-primary">$210</p>
+</div>
+</div>
+</article>
+</div>
+<!-- Pagination (Minimalist) -->
+<div class="mt-24 pt-8 border-t border-surface-variant flex justify-between items-center">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined">arrow_back</span>
+<span class="font-label-caps text-label-caps">Previous</span>
+</button>
+<div class="flex gap-4 font-body-md text-on-surface-variant">
+<span class="text-primary font-bold">1</span>
+<a class="hover:text-primary transition-colors" href="#">2</a>
+<a class="hover:text-primary transition-colors" href="#">3</a>
+<span>...</span>
+<a class="hover:text-primary transition-colors" href="#">12</a>
+</div>
+<button class="flex items-center gap-2 text-primary hover:text-secondary transition-colors">
+<span class="font-label-caps text-label-caps">Next</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer component generated from JSON -->
+<footer class="bg-surface-container-low dark:bg-surface-container-lowest text-primary dark:text-on-surface w-full mt-section-gap">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter px-margin-mobile md:px-margin-desktop py-section-gap max-w-container-max mx-auto">
+<div class="flex flex-col gap-6">
+<div class="font-headline-sm text-headline-sm text-primary">
+                    Thi Bút
+                </div>
+<p class="font-body-md text-body-md max-w-sm opacity-80 hover:opacity-100 transition-opacity">
+                    © 2024 Thi Bút Marketplace. Preserving the art of the brush.
+                </p>
+</div>
+<div class="flex flex-col md:items-end justify-between gap-8 md:gap-0">
+<nav class="flex flex-wrap gap-x-8 gap-y-4 md:justify-end">
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary underline transition-all opacity-80 hover:opacity-100" href="#">Cultural Guide</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary underline transition-all opacity-80 hover:opacity-100" href="#">Legal</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary underline transition-all opacity-80 hover:opacity-100" href="#">Licensing</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary underline transition-all opacity-80 hover:opacity-100" href="#">Artist Terms</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary underline transition-all opacity-80 hover:opacity-100" href="#">Support</a>
+</nav>
+<!-- Back to top action (optional but fits the aesthetic) -->
+<button class="flex items-center gap-2 self-start md:self-end text-on-surface-variant hover:text-primary transition-colors font-label-caps text-label-caps group" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+<span class="material-symbols-outlined group-hover:-translate-y-1 transition-transform">arrow_upward</span>
+                    Back to top
+                </button>
+</div>
+</div>
+</footer>
+</body></html>

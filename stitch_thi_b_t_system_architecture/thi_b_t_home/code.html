@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thi Bút - Your Words, Elevated by Art</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#1b1b1c",
+                        "tertiary": "#000000",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "on-secondary": "#ffffff",
+                        "background": "#fbf9f4",
+                        "on-secondary-container": "#fffbff",
+                        "surface-container-highest": "#e4e2dd",
+                        "secondary-fixed": "#ffdad9",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "surface-tint": "#5f5e5f",
+                        "inverse-on-surface": "#f2f1ec",
+                        "on-background": "#1b1c19",
+                        "on-surface": "#1b1c19",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#1a1c1c",
+                        "on-error": "#ffffff",
+                        "primary": "#000000",
+                        "secondary-container": "#da3148",
+                        "outline-variant": "#c7c6ca",
+                        "tertiary-fixed": "#e2e2e2",
+                        "surface-variant": "#e4e2dd",
+                        "on-surface-variant": "#46474a",
+                        "surface-container-high": "#eae8e3",
+                        "surface-bright": "#fbf9f4",
+                        "primary-fixed": "#e5e2e3",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#40000a",
+                        "on-primary-container": "#858384",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#1b1b1c",
+                        "surface": "#fbf9f4",
+                        "on-secondary-fixed-variant": "#920023",
+                        "surface-container-low": "#f5f3ee",
+                        "on-tertiary-container": "#838484",
+                        "inverse-primary": "#c8c6c7",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#dbdad5",
+                        "outline": "#76777b",
+                        "inverse-surface": "#30312e",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "secondary": "#b71032",
+                        "on-primary-fixed-variant": "#474647",
+                        "surface-container": "#f0eee9",
+                        "secondary-fixed-dim": "#ffb3b4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-gap": "120px",
+                        "margin-desktop": "64px",
+                        "container-max": "1280px",
+                        "unit": "8px",
+                        "gutter": "24px",
+                        "margin-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg-mobile": ["Playfair Display"],
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-sm": ["Playfair Display"],
+                        "display-lg": ["Playfair Display"],
+                        "headline-md": ["Playfair Display"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .texture-overlay {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen relative">
+<div class="texture-overlay fixed inset-0 z-0"></div>
+<!-- TopNavBar (Shared Component) -->
+<nav class="bg-background dark:bg-background docked full-width top-0 border-b border-surface-variant dark:border-on-surface-variant flat no shadows relative z-50">
+<div class="flex justify-between items-center w-full px-margin-desktop py-4 max-w-container-max mx-auto">
+<!-- Brand Logo -->
+<a class="font-display-lg text-display-lg text-primary dark:text-on-background flex-shrink-0" href="#">
+                Thi Bút
+            </a>
+<!-- Navigation Links (Web) -->
+<div class="hidden md:flex space-x-8 items-center flex-grow justify-center">
+<a class="text-primary font-bold border-b-2 border-secondary font-label-caps text-label-caps uppercase hover:text-secondary transition-colors duration-300" href="#">Explore</a>
+<a class="text-on-surface-variant font-medium font-label-caps text-label-caps uppercase hover:text-secondary transition-colors duration-300" href="#">Creator Studio</a>
+<a class="text-on-surface-variant font-medium font-label-caps text-label-caps uppercase hover:text-secondary transition-colors duration-300" href="#">Personalization Lab</a>
+</div>
+<!-- Actions -->
+<div class="flex items-center space-x-6 flex-shrink-0">
+<button class="text-on-surface-variant font-medium font-label-caps text-label-caps uppercase hover:text-secondary transition-colors duration-300 scale-95 duration-200">Role Toggle</button>
+<div class="flex space-x-4">
+<button aria-label="Search" class="hover:text-secondary transition-colors duration-300 scale-95 duration-200">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button aria-label="Cart" class="hover:text-secondary transition-colors duration-300 scale-95 duration-200">
+<span class="material-symbols-outlined">shopping_cart</span>
+</button>
+<button aria-label="person" class="hover:text-secondary transition-colors duration-300 scale-95 duration-200">
+<span class="material-symbols-outlined">person</span>
+</button>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="relative z-10 pb-section-gap">
+<!-- Hero Section -->
+<section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pt-24 md:pt-32 pb-section-gap flex flex-col md:flex-row items-center gap-16">
+<div class="md:w-1/2 flex flex-col items-start space-y-8">
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary max-w-lg leading-tight">
+                    Your Words,<br/>Elevated by Art.
+                </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-md">
+                    Transform your personal ethos into wearable masterpieces. Master calligraphers craft your chosen words into striking visual statements on premium garments.
+                </p>
+<a class="inline-flex items-center justify-center bg-primary text-on-primary px-8 py-4 font-label-caps text-label-caps hover:bg-secondary hover:text-on-secondary transition-all duration-300 scale-95 hover:scale-100 ease-out border border-transparent hover:border-secondary shadow-sm" href="#explore">
+                    Start Creating
+                </a>
+</div>
+<!-- Hero Image / Bento Layout -->
+<div class="md:w-1/2 w-full grid grid-cols-2 gap-4 auto-rows-[200px]">
+<div class="col-span-2 row-span-2 relative overflow-hidden bg-surface-container-low group">
+<img alt="Premium personalized hoodie with calligraphy" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A high-end studio photograph of a premium, heavyweight white cotton hoodie elegantly draped over a minimal wooden stand. Prominently displayed on the chest is striking, Zen-style black ink calligraphy spelling the word 'Prosperity'. The lighting is soft and directional, highlighting the texture of the fabric and the fluid, bold strokes of the ink. The background is a clean, neutral stone color, perfectly embodying a modern minimalist, luxury aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDA-xqdAr5uF8q7H2XYGhT6BxFjLjWe-1669EcvwFCPiTr9gFVtnzc_BSmRmq0_sngcI867AcXOqrFKBz_EpttmTdRgHANT4YNsjtaqfibOQ9IlKn7nR1VRdd6Wg7g2-8rUunhJ0QcV-NDwyBACOqZR7eFJu-SlskItrkE-J5SyZUQQ_wpI9xzkcgS6xFoiDq5dHBJsCWXePnLba63MwEoTYE5a2NfeeR_JCNzw84vAh0X0LSmjWYf2"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+<div class="absolute bottom-6 left-6">
+<span class="bg-surface/90 text-primary font-label-caps text-label-caps px-3 py-1 uppercase tracking-wider backdrop-blur-sm">Featured</span>
+</div>
+</div>
+</div>
+</section>
+<div class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop mb-section-gap flex justify-center">
+<div class="w-16 h-px bg-outline-variant"></div>
+</div>
+<!-- Featured Categories -->
+<section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pb-section-gap" id="explore">
+<div class="flex justify-between items-end mb-12">
+<h2 class="font-headline-md text-headline-md text-primary">Curated Themes</h2>
+<a class="font-label-caps text-label-caps text-secondary hover:text-primary transition-colors flex items-center group" href="#">
+                    VIEW ALL <span class="material-symbols-outlined ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Category 1 -->
+<a class="group block" href="#">
+<div class="relative overflow-hidden aspect-[4/5] bg-surface-container-highest mb-6">
+<img alt="Animals Theme Calligraphy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Close up photograph of a stylized, abstract calligraphy piece resembling a soaring crane. The ink work is fluid and dynamic, capturing the essence of the animal with minimal, masterful strokes on high-quality, textured washi paper. The scene is brightly lit with a soft white glow, emphasizing the contrast between the deep sumi ink and the bright paper, fitting a modern, Zen-minimalist gallery setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKO0gyK56VJVkoTuCR__DLr44QmB5BX7hMUaIt0QpQ5-_oskeQCC5f2Iebm4YfwHSVADOcrBmSdwjszxOYlibE29b2x96_uyta29EHHvj4xAxNHELvYeVoGnR1Oug5_ITh2lofLCS_yPwTamShI4RPNdAk8cHzA77UF5YsodQKDyDY6U_u4OI_iZmAjR1L8DusujjrIlDw_WWRq4vWW23i8FSMWaFCVThGSZIxilimvhko7rDXIAA_"/>
+<div class="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2">Animals</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Spirit and vitality captured in brush strokes.</p>
+</a>
+<!-- Category 2 -->
+<a class="group block" href="#">
+<div class="relative overflow-hidden aspect-[4/5] bg-surface-container-highest mb-6">
+<img alt="Culture Theme Calligraphy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A beautifully crafted calligraphy artwork focusing on traditional cultural symbols, perhaps a stylized lotus or ancient character for wisdom. The brushwork is deliberate and heavy, showing the rich texture of the ink. The artwork is presented in a minimalist, light-wood frame against a stark white wall. Soft, natural daylight casts gentle shadows, creating a serene, high-end museum presentation in light mode." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEcGMrpz_IqhgjHbG6sF-FHk5xsh0mgOAVxl1eB3p5ou6uuHLNhnqblrDeMz64UbSvhlYJFNgoe7L32idASz82mT_zMBfh6CVrrobUNVLPTl685-iFPLMrcDpUPJz-t3EVg-6BW7LtFeyx4mICkgT25K8cltjzIEWRuDQbTPN6MMBuIGfpIy_dXBGa9l3mKMsG2pFtA9_2jDmwKH5-zXamIYbihrIfzjdPybRJzkrcNeMSfpp3xtX9"/>
+<div class="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2">Culture</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Timeless wisdom and heritage expressed through ink.</p>
+</a>
+<!-- Category 3 -->
+<a class="group block" href="#">
+<div class="relative overflow-hidden aspect-[4/5] bg-surface-container-highest mb-6">
+<img alt="Family Theme Calligraphy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="An intimate, warm-toned photograph of a custom calligraphy piece depicting characters representing family and harmony. The artwork is resting on a clean, light stone surface alongside a traditional inkstone and a delicate bamboo brush. The lighting is soft and inviting, highlighting the personal, bespoke nature of the creation. The overall aesthetic is calm, orderly, and deeply respectful of the craft." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOX82PDckGoFyd7YafFBnXTCjQH0mcAhCX_BV8DLeTaSPdfbA2HBTPPhGgoLndreUjFuc-M9mUuOMf1xgQezqgyeTMZuthFVE95_cZaAHZ8BNVeh3Fm_fntCJspb1fY5yxIgE6yG0hIbbwRLK6VWbs0hMKiwJkMuGulbanSgVn2xHjOOvTvQKOG9OTKXGglbKJtXS9Ph216zO3iU6lvj1WOa7y1OatqFgB-drztRrZa-qXwj6I5zfT"/>
+<div class="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2">Family</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Bonds and legacy immortalized for generations.</p>
+</a>
+</div>
+</section>
+<div class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop mb-section-gap flex justify-center">
+<div class="w-16 h-px bg-outline-variant"></div>
+</div>
+<!-- How It Works Section -->
+<section class="bg-surface-container-low py-section-gap">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+<div class="text-center mb-16">
+<h2 class="font-headline-md text-headline-md text-primary mb-4">The Process</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">From an artist's brush to a statement piece, understand the journey of personalization.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+<!-- Connecting Line (Desktop only) -->
+<div class="hidden md:block absolute top-12 left-1/6 right-1/6 h-px bg-outline-variant z-0"></div>
+<!-- Step 1 -->
+<div class="relative z-10 flex flex-col items-center text-center">
+<div class="w-24 h-24 rounded-full bg-background border border-surface-variant flex items-center justify-center mb-6 shadow-sm">
+<span class="material-symbols-outlined text-3xl text-secondary">brush</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-3">1. Select Artwork</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Browse exclusive calligraphy designs from master creators, finding the concept that resonates.</p>
+</div>
+<!-- Step 2 -->
+<div class="relative z-10 flex flex-col items-center text-center">
+<div class="w-24 h-24 rounded-full bg-background border border-surface-variant flex items-center justify-center mb-6 shadow-sm">
+<span class="material-symbols-outlined text-3xl text-secondary">tune</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-3">2. Personalize</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Choose your canvas—from premium apparel to fine prints—and customize the scale and placement.</p>
+</div>
+<!-- Step 3 -->
+<div class="relative z-10 flex flex-col items-center text-center">
+<div class="w-24 h-24 rounded-full bg-background border border-surface-variant flex items-center justify-center mb-6 shadow-sm">
+<span class="material-symbols-outlined text-3xl text-secondary">local_shipping</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-3">3. Receive Excellence</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Your personalized piece is meticulously crafted and delivered, ready to make a profound statement.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="bg-surface-container-low dark:bg-surface-container-lowest full-width flat no shadows">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter px-margin-desktop py-section-gap max-w-container-max mx-auto">
+<div class="flex flex-col items-start space-y-6">
+<div class="font-headline-sm text-headline-sm text-primary">
+                    Thi Bút
+                </div>
+<p class="text-on-surface-variant font-body-md text-body-md max-w-sm">
+                    Preserving the art of the brush. Elevating modern expression.
+                </p>
+<div class="text-on-surface-variant font-label-caps text-label-caps uppercase opacity-80 hover:opacity-100 transition-opacity">
+                    © 2024 Thi Bút Marketplace.
+                </div>
+</div>
+<div class="flex flex-col md:items-end justify-start space-y-4 pt-4 md:pt-0">
+<h4 class="font-label-caps text-label-caps text-primary uppercase mb-2">Explore</h4>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary hover:underline transition-all opacity-80 hover:opacity-100" href="#">Cultural Guide</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary hover:underline transition-all opacity-80 hover:opacity-100" href="#">Legal</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary hover:underline transition-all opacity-80 hover:opacity-100" href="#">Licensing</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary hover:underline transition-all opacity-80 hover:opacity-100" href="#">Artist Terms</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary hover:underline transition-all opacity-80 hover:opacity-100" href="#">Support</a>
+</div>
+</div>
+</footer>
+</body></html>

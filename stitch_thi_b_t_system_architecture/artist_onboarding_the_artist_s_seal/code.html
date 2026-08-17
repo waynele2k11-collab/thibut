@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thi Bút - Artist Onboarding: The Seal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-container": "#da3148",
+                      "secondary-fixed": "#ffdad9",
+                      "inverse-on-surface": "#f2f1ec",
+                      "tertiary-container": "#1a1c1c",
+                      "surface-variant": "#e4e2dd",
+                      "surface-tint": "#5f5e5f",
+                      "error": "#ba1a1a",
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "on-primary-fixed-variant": "#474647",
+                      "on-surface-variant": "#46474a",
+                      "on-tertiary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "secondary-fixed-dim": "#ffb3b4",
+                      "surface-container": "#f0eee9",
+                      "tertiary-fixed": "#e2e2e2",
+                      "on-secondary": "#ffffff",
+                      "primary-fixed-dim": "#c8c6c7",
+                      "surface-bright": "#fbf9f4",
+                      "on-secondary-fixed": "#40000a",
+                      "primary": "#000000",
+                      "on-primary-fixed": "#1b1b1c",
+                      "on-tertiary-container": "#838484",
+                      "on-surface": "#1b1c19",
+                      "on-primary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "background": "#fbf9f4",
+                      "surface-container-highest": "#e4e2dd",
+                      "surface-container-low": "#f5f3ee",
+                      "surface": "#fbf9f4",
+                      "outline-variant": "#c7c6ca",
+                      "outline": "#76777b",
+                      "secondary": "#b71032",
+                      "primary-container": "#1b1b1c",
+                      "surface-dim": "#dbdad5",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary": "#000000",
+                      "surface-container-high": "#eae8e3",
+                      "on-tertiary-fixed-variant": "#454747",
+                      "tertiary-fixed-dim": "#c6c6c6",
+                      "inverse-surface": "#30312e",
+                      "error-container": "#ffdad6",
+                      "on-background": "#1b1c19",
+                      "on-primary-container": "#858384",
+                      "primary-fixed": "#e5e2e3",
+                      "inverse-primary": "#c8c6c7",
+                      "on-secondary-container": "#fffbff",
+                      "on-secondary-fixed-variant": "#920023"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "64px",
+                      "margin-mobile": "24px",
+                      "section-gap": "120px",
+                      "gutter": "24px",
+                      "unit": "8px",
+                      "container-max": "1280px"
+              },
+              "fontFamily": {
+                      "display-lg": ["Playfair Display"],
+                      "body-md": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "headline-sm": ["Playfair Display"],
+                      "body-lg": ["Inter"],
+                      "headline-md": ["Playfair Display"],
+                      "display-lg-mobile": ["Playfair Display"]
+              },
+              "fontSize": {
+                      "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                      "headline-sm": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-md": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "display-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body {
+            background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.05"/%3E%3C/svg%3E');
+        }
+        
+        /* Subtle glowing effect for the seal */
+        .seal-glow {
+            box-shadow: 0 0 40px rgba(183, 16, 50, 0.15);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c7c6ca;
+            border-radius: 4px;
+        }
+        
+        /* Confetti animation styles */
+        .confetti-piece {
+            position: fixed;
+            width: 10px;
+            height: 30px;
+            background-color: #b71032;
+            top: -50px;
+            z-index: 9999;
+            animation: fall linear forwards;
+            opacity: 0;
+        }
+        
+        @keyframes fall {
+            0% { top: -50px; transform: rotate(0deg) scaleY(1); opacity: 1; }
+            100% { top: 100vh; transform: rotate(360deg) scaleY(0.5); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex antialiased">
+<!-- SideNavBar -->
+<nav class="hidden lg:flex flex-col border-r border-outline-variant dark:border-outline bg-surface-container-low dark:bg-tertiary-container h-screen w-64 fixed left-0 top-0 z-40">
+<!-- Header -->
+<div class="p-8 border-b border-outline-variant flex flex-col items-center justify-center text-center">
+<div class="w-16 h-16 rounded-full overflow-hidden mb-4 border border-outline-variant">
+<img alt="Artist Portrait" class="w-full h-full object-cover" data-alt="A minimalist, high-key black and white portrait of an artist in a bright studio space. Soft natural light illuminates their face, conveying a sense of calm focus and expertise, fitting the Zen-Modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6Gmd2HXh_DNjg_MQdcxvQcbsS1fpdTt7F7Z4tSqtoxlxZj6a_8S07BmG4NDQzXf-0n4q_nCWl23wQD6H0fldz_Iy0ZFCGctcbN6DGu38Ff1Sl8ACTSy6r0-TPS71aYgKmACTTnMARqMdEsC3cGOc8NLfEcT9lQPpPT9AJxs_RRRKPhog5G8qzOuhaA2x_YCJ6yEREChVlG2pOGlCy34hwTUAgRhVCzjbWOtztPeni-Fk4SQ6NllA8"/>
+</div>
+<h2 class="font-display-lg text-headline-sm text-primary mb-1">New Artist</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Onboarding</p>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 py-6 flex flex-col gap-2">
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-on-tertiary-container py-3 px-6 hover:bg-surface-variant dark:hover:bg-surface-container-highest transition-colors scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined font-light">person_edit</span>
+<span class="font-body-md text-body-md">Identity</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-on-tertiary-container py-3 px-6 hover:bg-surface-variant dark:hover:bg-surface-container-highest transition-colors scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined font-light">brush</span>
+<span class="font-body-md text-body-md">Artistry</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-on-tertiary-container py-3 px-6 hover:bg-surface-variant dark:hover:bg-surface-container-highest transition-colors scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined font-light">storefront</span>
+<span class="font-body-md text-body-md">Commercial</span>
+</a>
+<!-- Active Tab -->
+<a class="flex items-center gap-4 text-primary dark:text-on-primary-fixed font-bold border-r-2 border-secondary bg-surface-bright dark:bg-surface-dim py-3 px-6 scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined font-medium" style="color: #b71032;">verified</span>
+<span class="font-body-md text-body-md">The Seal</span>
+</a>
+</div>
+<!-- CTA Footer -->
+<div class="p-6 border-t border-outline-variant">
+<button class="w-full py-3 border border-outline text-primary font-label-caps text-label-caps uppercase tracking-widest hover:bg-surface-variant transition-colors">
+                Need Help?
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 lg:ml-64 min-h-screen flex flex-col pt-margin-mobile md:pt-margin-desktop pb-section-gap px-margin-mobile md:px-margin-desktop relative overflow-hidden">
+<!-- Step Indicator -->
+<div class="w-full max-w-container-max mx-auto mb-16 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-widest uppercase">Step 4 of 4</span>
+<div class="h-px bg-outline-variant w-16"></div>
+<span class="font-label-caps text-label-caps text-primary tracking-widest uppercase">The Seal (Hanko)</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-2">
+<span class="font-label-caps text-label-caps uppercase">Save &amp; Exit</span>
+<span class="material-symbols-outlined text-sm">logout</span>
+</button>
+</div>
+<!-- Central Content Area - Asymmetric Grid -->
+<div class="w-full max-w-container-max mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-start flex-1">
+<!-- Left Column: Context & Actions (Cols 1-5) -->
+<div class="md:col-span-5 flex flex-col gap-10">
+<div>
+<h1 class="font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-6">
+                        Establish Your Provenance.
+                    </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed mb-6">
+                        In traditional East Asian artistry, the Hanko (seal) is more than a signature; it is the spiritual weight of the artist pressed onto the work. It signifies completion, authenticity, and profound intent.
+                    </p>
+<p class="font-body-md text-body-md text-on-surface-variant opacity-80 leading-relaxed">
+                        Your digital seal acts as your cryptographic signature on the Thi Bút platform, embedding your identity permanently into the provenance of every piece you create.
+                    </p>
+</div>
+<div class="space-y-4 w-full max-w-md">
+<!-- Option 1: Upload -->
+<label class="group relative flex items-start gap-4 p-6 border border-outline-variant bg-surface hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex h-6 items-center">
+<input checked="" class="h-4 w-4 text-primary focus:ring-primary border-outline-variant bg-transparent" name="seal-method" type="radio" value="upload"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-[18px] text-primary mb-1">Upload Traditional Seal</span>
+<span class="font-body-md text-[14px] text-on-surface-variant">Digitize an existing physical stamp (SVG or high-res PNG).</span>
+</div>
+<span class="material-symbols-outlined absolute right-6 top-6 text-on-surface-variant group-hover:text-primary transition-colors">upload_file</span>
+</label>
+<!-- Option 2: Generate -->
+<label class="group relative flex items-start gap-4 p-6 border border-outline-variant bg-surface hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex h-6 items-center">
+<input class="h-4 w-4 text-primary focus:ring-primary border-outline-variant bg-transparent" name="seal-method" type="radio" value="generate"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-[18px] text-primary mb-1">Generate Digital Seal</span>
+<span class="font-body-md text-[14px] text-on-surface-variant">Create a custom typographic seal using our studio tools.</span>
+</div>
+<span class="material-symbols-outlined absolute right-6 top-6 text-on-surface-variant group-hover:text-primary transition-colors">draw</span>
+</label>
+</div>
+</div>
+<!-- Right Column: The Canvas (Cols 7-12) -->
+<div class="md:col-span-6 md:col-start-7 flex flex-col items-center justify-center min-h-[500px]">
+<!-- The Canvas Area -->
+<div class="relative w-full aspect-square max-w-[480px] bg-white border border-outline-variant flex flex-col items-center justify-center p-12 overflow-hidden shadow-sm">
+<!-- Subtle paper texture overlay specifically for the canvas -->
+<div %3e%3c="" %3e%3cfeturbulence="" %3e%3cfilter="" 0="" 200="" 200"="" basefrequency="0.8" class="absolute inset-0 opacity-[0.03] pointer-events-none" filter="url(%23noiseFilter2)" filter%3e%3crect="" height="100%25" id="noiseFilter2" numoctaves="4" stitchtiles="stitch" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=" svg%3e');"="" type="fractalNoise" width="100%25" xmlns="http://www.w3.org/2000/svg"></div>
+<!-- Upload State UI (Active by default based on radio) -->
+<div class="flex flex-col items-center text-center z-10 w-full h-full justify-center border-2 border-dashed border-outline-variant hover:border-primary transition-colors cursor-pointer group" id="upload-ui">
+<div class="w-24 h-24 mb-6 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant group-hover:text-primary transition-colors" style="font-variation-settings: 'FILL' 0;">add_photo_alternate</span>
+</div>
+<span class="font-label-caps text-label-caps text-primary tracking-widest uppercase mb-2">Drag &amp; Drop Seal</span>
+<span class="font-body-md text-sm text-on-surface-variant">or click to browse files</span>
+<!-- Simulated successful upload (Hidden initially) -->
+<div class="hidden absolute inset-0 bg-white flex items-center justify-center z-20" id="seal-preview">
+<div class="w-48 h-48 seal-glow relative">
+<img alt="Seal Preview" class="w-full h-full object-contain mix-blend-multiply" data-alt="A striking, minimalist digital illustration of a traditional square Hanko (seal) in vibrant Cinnabar red against a stark white background. The seal features elegant, stylized abstract characters. High contrast, sharp architectural precision, Zen-Modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbrSn6zaDezbwfUVFGqYWtfuPS_FL0oKOmVi5xwZC9OUiiTC7SxB3qBTVWoOnzWvhI5jrTLLPnzj_4J4oS7qp-uqCyVK0vBtrODxdaBljGqyTS2MNO7oDVWjWtk4qVcyWj9ZgS_2JT3qHH8uCzNlnqJpbTg9VpeJphTFZ3-RIgo8Y4G5pKcXXsrJtAktVVqHgz8fDZjgqAb0Cyg78Y2XDpzOeLDsKUGnuHm_5x8RIJkrNInqxh6Oc4"/>
+</div>
+<button class="absolute top-4 right-4 p-2 bg-surface rounded-full border border-outline-variant hover:bg-surface-variant transition-colors" id="remove-seal">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+</div>
+<p class="font-label-caps text-[10px] text-on-surface-variant tracking-widest uppercase mt-6 text-center">
+                    Preview of your impression on standard Washi canvas
+                </p>
+</div>
+</div>
+<!-- Sticky Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 lg:left-64 right-0 p-6 md:p-8 bg-surface/90 backdrop-blur-sm border-t border-outline-variant flex justify-end z-30">
+<div class="max-w-container-max mx-auto w-full flex justify-between items-center">
+<button class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest hover:text-primary transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+                    Back to Commercial
+                </button>
+<button class="bg-secondary text-white font-label-caps text-label-caps uppercase tracking-widest py-4 px-10 hover:bg-secondary-container transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3" id="finalize-btn">
+                    Finalize Onboarding
+                    <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+</div>
+</div>
+</main>
+<script>
+        // Simple interactions for the UI prototype
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadUi = document.getElementById('upload-ui');
+            const sealPreview = document.getElementById('seal-preview');
+            const removeSealBtn = document.getElementById('remove-seal');
+            const finalizeBtn = document.getElementById('finalize-btn');
+            
+            // Simulate upload click showing the seal preview
+            uploadUi.addEventListener('click', (e) => {
+                if (e.target === removeSealBtn || removeSealBtn.contains(e.target)) return;
+                sealPreview.classList.remove('hidden');
+            });
+            
+            // Remove seal preview
+            removeSealBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sealPreview.classList.add('hidden');
+            });
+            
+            // Celebratory Animation logic
+            finalizeBtn.addEventListener('click', () => {
+                createConfetti();
+                
+                // Visual feedback on button
+                const originalText = finalizeBtn.innerHTML;
+                finalizeBtn.innerHTML = `
+                    Authenticating...
+                    <span class="material-symbols-outlined text-sm animate-spin">refresh</span>
+                `;
+                finalizeBtn.disabled = true;
+                
+                setTimeout(() => {
+                    finalizeBtn.innerHTML = `
+                        Welcome to Thi Bút
+                        <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+                    `;
+                    finalizeBtn.classList.remove('bg-secondary');
+                    finalizeBtn.classList.add('bg-primary');
+                }, 1500);
+            });
+            
+            function createConfetti() {
+                const colors = ['#b71032', '#1a1c1c', '#e4e2dd', '#da3148']; // Secondary, Primary, Surface variant, secondary container
+                const confettiCount = 100;
+                
+                for (let i = 0; i < confettiCount; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.classList.add('confetti-piece');
+                    
+                    // Randomize properties
+                    const left = Math.random() * 100;
+                    const width = Math.random() * 8 + 4;
+                    const height = Math.random() * 15 + 10;
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    const animationDuration = Math.random() * 3 + 2;
+                    const animationDelay = Math.random() * 0.5;
+                    
+                    confetti.style.left = `${left}vw`;
+                    confetti.style.width = `${width}px`;
+                    confetti.style.height = `${height}px`;
+                    confetti.style.backgroundColor = color;
+                    confetti.style.animationDuration = `${animationDuration}s`;
+                    confetti.style.animationDelay = `${animationDelay}s`;
+                    
+                    document.body.appendChild(confetti);
+                    
+                    // Clean up
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, (animationDuration + animationDelay) * 1000);
+                }
+            }
+        });
+    </script>
+</body></html>

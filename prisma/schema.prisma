@@ -1,0 +1,1435 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════════════════════════════
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  CLOSED
+  PENDING
+}
+
+enum CreatorStatus {
+  DRAFT
+  ONBOARDING
+  ACTIVE
+  RESTRICTED
+  SUSPENDED
+}
+
+enum DesignStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  PAUSED
+  REJECTED
+  ARCHIVED
+  TAKEDOWN
+}
+
+enum Visibility {
+  PRIVATE
+  UNLISTED
+  PUBLIC
+}
+
+enum AssetType {
+  ORIGINAL
+  WORKING
+  DERIVATIVE
+  CUTOUT
+  THUMBNAIL
+  PREVIEW
+  MOCKUP
+  PRINT_MASTER
+  SOURCE_VECTOR
+}
+
+enum LicenseType {
+  PERSONAL_PRODUCT
+  PERSONAL_DIGITAL
+  COMMERCIAL
+  EXTENDED_COMMERCIAL
+  EXCLUSIVE
+}
+
+enum PersonalizationMode {
+  NAME
+  QUOTE
+  STORY
+  CREATOR_ART
+}
+
+enum PersonalizationStatus {
+  DRAFT
+  ANALYZING
+  READY_FOR_STYLE
+  GENERATING
+  READY
+  SELECTED
+  CHECKED_OUT
+  EXPIRED
+  FAILED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  PARTIALLY_FULFILLED
+  FULFILLED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  PARTIALLY_REFUNDED
+  REFUNDED
+  DISPUTED
+}
+
+enum CreatorEarningStatus {
+  PENDING
+  ELIGIBLE
+  TRANSFERRED
+  REVERSED
+  HELD
+}
+
+enum CartStatus {
+  ACTIVE
+  CHECKOUT
+  CONVERTED
+  ABANDONED
+  EXPIRED
+}
+
+enum AIJobType {
+  TRANSLATION
+  TRANSLITERATION
+  INTERPRETATION
+  CALLIGRAPHY
+  IMAGE_EDIT
+  BACKGROUND_REMOVAL
+  COMPOSITION
+  MOCKUP
+  MODERATION
+  PRINT_RENDER
+}
+
+enum AIJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum LayerType {
+  IMAGE
+  THIBUT_ART
+  TEXT
+}
+
+enum AIUsageEntryType {
+  PLAN_GRANT
+  PURCHASE
+  USAGE
+  REFUND
+  ADJUSTMENT
+  EXPIRATION
+}
+
+enum StyleFamily {
+  VIETNAMESE
+  JAPANESE_INSPIRED
+  CHINESE_INSPIRED
+  KOREAN_INSPIRED
+  PAN_ASIAN
+  MODERN
+}
+
+enum StylePackStatus {
+  ACTIVE
+  INACTIVE
+  COMING_SOON
+}
+
+enum InterpretationType {
+  ORIGINAL
+  PHONETIC
+  TRANSLITERATION
+  SCRIPT_ADAPTATION
+  SINO_VIETNAMESE
+  LITERAL
+  NATURAL
+  POETIC
+  IDIOMATIC
+}
+
+enum CandidateStatus {
+  GENERATING
+  READY
+  SELECTED
+  EXPIRED
+}
+
+enum ProductMockupStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ESCALATED
+}
+
+enum FulfillmentStatus {
+  PENDING
+  PROCESSING
+  IN_PRODUCTION
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  FAILED
+}
+
+enum CreatorTransferStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum CreatorPlanCode {
+  FREE
+  CREATOR
+  CREATOR_PLUS
+  STUDIO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  PAUSED
+}
+
+enum LedgerAccountType {
+  PLATFORM_CASH
+  CREATOR_PAYABLE
+  AI_REVENUE
+  FULFILLMENT_PAYABLE
+  PLATFORM_REVENUE
+  PLATFORM_AI_REVENUE
+  PLATFORM_PRODUCT_REVENUE
+  PLATFORM_MARKETPLACE_REVENUE
+  REFUND_LIABILITY
+  STRIPE_CLEARING
+  TAX_PAYABLE
+}
+
+enum CulturalInputType {
+  PERSON_NAME
+  FAMILY_NAME
+  WORD
+  PHRASE
+  QUOTE
+  IDIOM
+  UNKNOWN
+}
+
+enum TextTreatment {
+  KEEP_ORIGINAL
+  TRANSLATE
+}
+
+enum CulturalStyle {
+  VIETNAMESE_THU_PHAP
+  JAPANESE_SHODO
+  CHINESE_CALLIGRAPHY
+  KOREAN_BRUSH
+}
+
+enum VerificationStatus {
+  GENERATED
+  AUTO_VALIDATED
+  HUMAN_VERIFIED
+  REJECTED
+  DEPRECATED
+}
+
+enum KnowledgeSource {
+  VERIFIED_KNOWLEDGE
+  DICTIONARY
+  TRANSLITERATION_ENGINE
+  AI
+  ADMIN
+  MOCK
+}
+
+enum GeneratedDesignStatus {
+  READY
+  FAILED
+  ARCHIVED
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IDENTITY
+// ═══════════════════════════════════════════════════════════════
+
+model User {
+  id          String     @id @default(uuid())
+  email       String?    @unique
+  phoneNumber String?    @unique
+  name        String?
+  avatarUrl   String?
+  status      UserStatus @default(ACTIVE)
+
+  roles    UserRole[]
+  creator  CreatorProfile?
+  sessions PersonalizationSession[]
+  carts    Cart[]
+  orders   Order[]
+  aiUsage  AIUsageEntry[]
+  deviceVerifications DeviceVerification[]
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  userCompositions UserComposition[]
+}
+
+model Role {
+  id    String     @id @default(uuid())
+  code  String     @unique
+  name  String
+  users UserRole[]
+}
+
+model UserRole {
+  userId    String
+  roleId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      Role     @relation(fields: [roleId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@id([userId, roleId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CREATOR
+// ═══════════════════════════════════════════════════════════════
+
+model CreatorProfile {
+  id              String        @id @default(uuid())
+  userId          String        @unique
+  user            User          @relation(fields: [userId], references: [id])
+  slug            String        @unique
+  displayName     String
+  bio             String?
+  stripeAccountId String?       @unique
+  status          CreatorStatus @default(DRAFT)
+
+  designs      Design[]
+  earnings     CreatorEarning[]
+  subscription CreatorSubscription?
+  transfers    CreatorTransfer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Creator subscription plan (§54-55)
+model CreatorPlan {
+  id                String          @id @default(uuid())
+  code              CreatorPlanCode @unique
+  name              String
+  activeDesignLimit Int
+  monthlyAICredits  Int
+  priceMinor        BigInt
+  currency          String          @default("USD")
+  active            Boolean         @default(true)
+
+  subscriptions CreatorSubscription[]
+
+  createdAt DateTime @default(now())
+}
+
+model CreatorSubscription {
+  id                     String             @id @default(uuid())
+  creatorId              String             @unique
+  creator                CreatorProfile     @relation(fields: [creatorId], references: [id])
+  planId                 String
+  plan                   CreatorPlan        @relation(fields: [planId], references: [id])
+  providerSubscriptionId String?            @unique
+  status                 SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean            @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAXONOMY
+// ═══════════════════════════════════════════════════════════════
+
+// Hierarchical categories (§18) — Animals → Dragon, Koi, Tiger
+model Category {
+  id        String     @id @default(uuid())
+  parentId  String?
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryTree")
+  slug      String     @unique
+  name      String
+  active    Boolean    @default(true)
+  sortOrder Int        @default(0)
+
+  designs Design[]
+}
+
+// Tags (§19)
+model Tag {
+  id      String      @id @default(uuid())
+  slug    String      @unique
+  name    String
+  designs DesignTag[]
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DESIGN
+// ═══════════════════════════════════════════════════════════════
+
+model Design {
+  id          String         @id @default(uuid())
+  creatorId   String
+  creator     CreatorProfile @relation(fields: [creatorId], references: [id])
+  slug        String         @unique
+  title       String
+  description String?
+  status      DesignStatus   @default(DRAFT)
+  visibility  Visibility     @default(PRIVATE)
+  categoryId  String?
+  category    Category?      @relation(fields: [categoryId], references: [id])
+
+  versions       DesignVersion[]
+  licenses       LicenseOffer[]
+  tags           DesignTag[]
+  products       DesignProduct[]
+  metrics        DesignMetricDaily[]
+  sessions       PersonalizationSession[]
+  policyVersions DesignPolicyVersion[]
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([creatorId, status])
+  @@index([status, visibility, publishedAt])
+  @@index([categoryId])
+}
+
+model DesignTag {
+  designId String
+  tagId    String
+  design   Design @relation(fields: [designId], references: [id])
+  tag      Tag    @relation(fields: [tagId], references: [id])
+
+  @@id([designId, tagId])
+}
+
+// Versioned design — immutable once referenced by an order (§INV-003)
+model DesignVersion {
+  id            String               @id @default(uuid())
+  designId      String
+  design        Design               @relation(fields: [designId], references: [id])
+  versionNumber Int
+  assets        DesignVersionAsset[]
+
+  personalizationVersions PersonalizationVersion[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([designId, versionNumber])
+}
+
+model Asset {
+  id              String @id @default(uuid())
+  objectKey       String @unique
+  mimeType        String
+  sha256          String
+  width           Int?
+  height          Int?
+  sizeBytes       Int?
+  storageProvider String @default("vercel-blob") // vercel-blob | r2 | s3
+
+  designAssets           DesignVersionAsset[]
+  stylePackPreview       StylePack?                 @relation("StylePackPreview")
+  compositionPreview     CompositionTemplate?       @relation("CompositionPreview")
+  candidateAsset         PersonalizationCandidate[] @relation("CandidateAsset")
+  candidatePreview       PersonalizationCandidate[] @relation("CandidatePreview")
+  printVersionAsset      PersonalizationVersion[]   @relation("PrintAsset")
+  mockupAsset            ProductMockup[]
+  compositionBackgrounds UserComposition[]          @relation("BackgroundAsset")
+  compositionLayerAssets UserCompositionLayer[]     @relation("LayerAsset")
+  
+  compositionPreviewAssets UserComposition[] @relation("CompositionPreviewAsset")
+  compositionMergedAssets  UserComposition[] @relation("CompositionMergedAsset")
+  generatedBackgrounds     GeneratedBackground[] @relation("GeneratedBackgroundAsset")
+
+  createdAt DateTime @default(now())
+
+  @@index([sha256])
+}
+
+model DesignVersionAsset {
+  id              String        @id @default(uuid())
+  designVersionId String
+  designVersion   DesignVersion @relation(fields: [designVersionId], references: [id])
+  assetId         String
+  asset           Asset         @relation(fields: [assetId], references: [id])
+  type            AssetType
+
+  @@unique([designVersionId, assetId, type])
+}
+
+// Versioned permission policy snapshot (§15)
+model DesignPolicyVersion {
+  id                     String  @id @default(uuid())
+  designId               String
+  design                 Design  @relation(fields: [designId], references: [id])
+  versionNumber          Int
+  allowName              Boolean @default(true)
+  allowQuote             Boolean @default(true)
+  allowTranslation       Boolean @default(true)
+  allowCalligraphy       Boolean @default(true)
+  allowRecolor           Boolean @default(false)
+  allowCrop              Boolean @default(false)
+  allowBackgroundRemoval Boolean @default(true)
+  allowAIRestyle         Boolean @default(false)
+  allowDerivative        Boolean @default(false)
+  allowCommercialUse     Boolean @default(false)
+  allowModelTraining     Boolean @default(false) // INV-010: defaults FALSE
+
+  createdAt DateTime @default(now())
+
+  @@unique([designId, versionNumber])
+}
+
+// Marketplace analytics aggregate (§20)
+model DesignMetricDaily {
+  id       String   @id @default(uuid())
+  designId String
+  design   Design   @relation(fields: [designId], references: [id])
+  date     DateTime @db.Date
+
+  views                    Int    @default(0)
+  uniqueViews              Int    @default(0)
+  personalizationStarts    Int    @default(0)
+  personalizationCompletes Int    @default(0)
+  favorites                Int    @default(0)
+  addToCarts               Int    @default(0)
+  orders                   Int    @default(0)
+  units                    Int    @default(0)
+  grossRevenueMinor        BigInt @default(0)
+  refunds                  Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([designId, date])
+  @@index([designId, date])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LICENSING
+// ═══════════════════════════════════════════════════════════════
+
+model LicenseOffer {
+  id                   String      @id @default(uuid())
+  designId             String
+  design               Design      @relation(fields: [designId], references: [id])
+  type                 LicenseType
+  priceMinor           BigInt
+  currency             String
+  active               Boolean     @default(true)
+  maxPhysicalUnits     Int?
+  allowDigitalDownload Boolean     @default(false)
+  allowResale          Boolean     @default(false)
+  allowCommercialUse   Boolean     @default(false)
+  termsVersion         Int         @default(1)
+
+  grants LicenseGrant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Immutable license snapshot frozen at checkout (§17, INV-004)
+model LicenseGrant {
+  id              String       @id @default(uuid())
+  orderItemId     String       @unique
+  orderItem       OrderItem    @relation(fields: [orderItemId], references: [id])
+  licenseOfferId  String
+  licenseOffer    LicenseOffer @relation(fields: [licenseOfferId], references: [id])
+  buyerId         String
+  creatorId       String
+  designId        String
+  designVersionId String
+  licenseType     LicenseType
+  priceMinor      BigInt
+  currency        String
+
+  // Immutable permission snapshot frozen at time of purchase
+  allowName          Boolean
+  allowQuote         Boolean
+  allowTranslation   Boolean
+  allowCalligraphy   Boolean
+  allowAIRestyle     Boolean
+  allowCommercial    Boolean
+  allowModelTraining Boolean @default(false) // INV-010
+
+  termsSnapshot       Json // Full terms text snapshot
+  permissionsSnapshot Json // Full permissions snapshot
+
+  grantedAt DateTime  @default(now())
+  revokedAt DateTime?
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STYLE PACKS & COMPOSITIONS
+// ═══════════════════════════════════════════════════════════════
+
+// DB-driven style packs (§23) — not hardcoded arrays
+model StylePack {
+  id               String          @id @default(uuid())
+  slug             String          @unique
+  name             String
+  family           StyleFamily
+  description      String?
+  status           StylePackStatus @default(ACTIVE)
+  previewAssetId   String?         @unique
+  previewAsset     Asset?          @relation("StylePackPreview", fields: [previewAssetId], references: [id])
+  systemConfigJson Json?
+
+  candidates PersonalizationCandidate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// DB-driven composition templates (§24)
+model CompositionTemplate {
+  id                 String  @id @default(uuid())
+  slug               String  @unique
+  name               String
+  supportedPlacement String?
+  layoutSchemaJson   Json?
+  previewAssetId     String? @unique
+  previewAsset       Asset?  @relation("CompositionPreview", fields: [previewAssetId], references: [id])
+  active             Boolean @default(true)
+
+  candidates PersonalizationCandidate[]
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PERSONALIZATION FLOW
+// ═══════════════════════════════════════════════════════════════
+
+model PersonalizationSession {
+  id                       String                @id @default(uuid())
+  userId                   String?
+  user                     User?                 @relation(fields: [userId], references: [id])
+  designId                 String?
+  design                   Design?               @relation(fields: [designId], references: [id])
+  designVersionId          String?
+  mode                     PersonalizationMode
+  inputText                String
+  inputLanguage            String?
+  targetLanguage           String?
+  textTreatment            TextTreatment?
+  culturalStyle            CulturalStyle?
+  selectedInterpretationId String?
+  status                   PersonalizationStatus @default(DRAFT)
+  intent                   Json?
+
+  interpretations Interpretation[]
+  candidates      PersonalizationCandidate[]
+  versions        PersonalizationVersion[]
+  aiJobs          AIJob[]
+
+  expiresAt        DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  userCompositions UserComposition[]
+
+  @@index([userId, status])
+}
+
+// Cultural interpretation result (§22)
+model Interpretation {
+  id           String                 @id @default(uuid())
+  sessionId    String
+  session      PersonalizationSession @relation(fields: [sessionId], references: [id])
+  type         InterpretationType
+  language     String
+  text         String
+  romanization String?
+  meaning      String?
+  confidence   Float?
+  warning      String?
+  recommended  Boolean                @default(false)
+
+  candidates PersonalizationCandidate[]
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+}
+
+// AI-generated candidates (§25) — buyer picks one of 6
+model PersonalizationCandidate {
+  id                    String                 @id @default(uuid())
+  sessionId             String
+  session               PersonalizationSession @relation(fields: [sessionId], references: [id])
+  interpretationId      String?
+  interpretation        Interpretation?        @relation(fields: [interpretationId], references: [id])
+  stylePackId           String?
+  stylePack             StylePack?             @relation(fields: [stylePackId], references: [id])
+  compositionTemplateId String?
+  compositionTemplate   CompositionTemplate?   @relation(fields: [compositionTemplateId], references: [id])
+  assetId               String?
+  asset                 Asset?                 @relation("CandidateAsset", fields: [assetId], references: [id])
+  previewAssetId        String?
+  previewAsset          Asset?                 @relation("CandidatePreview", fields: [previewAssetId], references: [id])
+  generationJobId       String?
+  status                CandidateStatus        @default(GENERATING)
+  selected              Boolean                @default(false)
+
+  personalizationVersions PersonalizationVersion[]
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId, status])
+}
+
+// Immutable snapshot frozen when buyer approves a candidate (§26, INV-003)
+model PersonalizationVersion {
+  id                     String                    @id @default(uuid())
+  sessionId              String
+  session                PersonalizationSession    @relation(fields: [sessionId], references: [id])
+  candidateId            String?
+  candidate              PersonalizationCandidate? @relation(fields: [candidateId], references: [id])
+  designVersionId        String?
+  designVersion          DesignVersion?            @relation(fields: [designVersionId], references: [id])
+  versionNumber          Int
+  inputSnapshot          Json // Immutable input at time of approval
+  interpretationSnapshot Json // Immutable interpretation
+  styleSnapshot          Json // Immutable style/composition
+  printAssetId           String?
+  printAsset             Asset?                    @relation("PrintAsset", fields: [printAssetId], references: [id])
+
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([sessionId, versionNumber])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AI JOBS & CREDITS
+// ═══════════════════════════════════════════════════════════════
+
+// Tracks all AI operations with cost and status (§28)
+model AIJob {
+  id               String                  @id @default(uuid())
+  userId           String?
+  creatorId        String?
+  sessionId        String?
+  session          PersonalizationSession? @relation(fields: [sessionId], references: [id])
+  type             AIJobType
+  provider         String // "openai" | "fal-ai" | "replicate"
+  model            String // e.g. "gpt-4.1" | "flux-kontext-pro"
+  status           AIJobStatus             @default(QUEUED)
+  inputJson        Json?
+  outputJson       Json?
+  estimatedCredits Int?
+  actualCredits    Int?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  failedAt         DateTime?
+  errorCode        String?
+  errorMessage     String?
+
+  usageEntries AIUsageEntry[]
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, type, status])
+  @@index([sessionId])
+}
+
+// AI credit ledger — never store user.aiCredits = 123 (§29)
+model AIUsageEntry {
+  id            String           @id @default(uuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id])
+  aiJobId       String?
+  aiJob         AIJob?           @relation(fields: [aiJobId], references: [id])
+  type          AIUsageEntryType
+  credits       Int
+  balanceAfter  Int
+  referenceType String?
+  referenceId   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PRODUCT CATALOG (Thi Bút's internal abstraction — §30-35)
+// Never expose Printful products directly
+// ═══════════════════════════════════════════════════════════════
+
+model CatalogProduct {
+  id                 String  @id @default(uuid())
+  slug               String  @unique
+  name               String
+  category           String // "tee" | "hoodie" | "mug" | "canvas" | "tote"
+  description        String?
+  status             String  @default("ACTIVE")
+  defaultMarkupMinor BigInt  @default(0)
+
+  variants       CatalogVariant[]
+  designProducts DesignProduct[]
+  printAreas     PrintArea[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CatalogVariant {
+  id              String         @id @default(uuid())
+  productId       String
+  product         CatalogProduct @relation(fields: [productId], references: [id])
+  sku             String         @unique
+  color           String?
+  colorHex        String?
+  size            String?
+  active          Boolean        @default(true)
+  baseRetailMinor BigInt
+
+  providerVariants ProviderVariant[]
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  mockups          ProductMockup[]
+
+  createdAt DateTime @default(now())
+
+  @@index([productId, active])
+}
+
+// Fulfillment provider registry (§32)
+model FulfillmentProviderRecord {
+  id       String  @id @default(uuid())
+  code     String  @unique // "PRINTFUL" | "PRINTIFY" | "GELATO"
+  name     String
+  active   Boolean @default(true)
+  priority Int     @default(0)
+
+  providerVariants ProviderVariant[]
+}
+
+// Maps Thi Bút catalog → provider external IDs (§33)
+model ProviderVariant {
+  id                String                    @id @default(uuid())
+  providerId        String
+  provider          FulfillmentProviderRecord @relation(fields: [providerId], references: [id])
+  catalogVariantId  String
+  catalogVariant    CatalogVariant            @relation(fields: [catalogVariantId], references: [id])
+  externalProductId String
+  externalVariantId String
+  costMinor         BigInt
+  currency          String
+  active            Boolean                   @default(true)
+  metadataJson      Json?
+  lastSyncedAt      DateTime?
+
+  @@unique([providerId, catalogVariantId])
+  @@index([providerId, active])
+}
+
+// Links a Design to which catalog products it's available on (§34)
+model DesignProduct {
+  id                 String         @id @default(uuid())
+  designId           String
+  design             Design         @relation(fields: [designId], references: [id])
+  catalogProductId   String
+  catalogProduct     CatalogProduct @relation(fields: [catalogProductId], references: [id])
+  active             Boolean        @default(true)
+  defaultPlacement   String?
+  creatorMarkupMinor BigInt         @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([designId, catalogProductId])
+}
+
+// Print area specifications per product placement (§35)
+model PrintArea {
+  id               String         @id @default(uuid())
+  catalogProductId String
+  catalogProduct   CatalogProduct @relation(fields: [catalogProductId], references: [id])
+  placement        String // FRONT_CENTER | LEFT_CHEST | BACK_CENTER | SLEEVE_LEFT
+  widthPx          Int
+  heightPx         Int
+  safeWidthPx      Int
+  safeHeightPx     Int
+  dpi              Int            @default(300)
+  schemaJson       Json?
+
+  @@unique([catalogProductId, placement])
+}
+
+// Customer-facing preview mockups (§36) — NOT production assets
+model ProductMockup {
+  id                       String              @id @default(uuid())
+  personalizationVersionId String?
+  catalogVariantId         String
+  catalogVariant           CatalogVariant      @relation(fields: [catalogVariantId], references: [id])
+  assetId                  String
+  asset                    Asset               @relation(fields: [assetId], references: [id])
+  angle                    String? // "front" | "back" | "left" | "right"
+  provider                 String?
+  status                   ProductMockupStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  @@index([personalizationVersionId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CART & CHECKOUT (§37-39)
+// ═══════════════════════════════════════════════════════════════
+
+model Cart {
+  id       String     @id @default(uuid())
+  userId   String
+  user     User       @relation(fields: [userId], references: [id])
+  currency String     @default("USD")
+  status   CartStatus @default(ACTIVE)
+
+  items  CartItem[]
+  quotes PriceQuote[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expiresAt DateTime?
+
+  @@index([userId, status])
+}
+
+model CartItem {
+  id                       String         @id @default(uuid())
+  cartId                   String
+  cart                     Cart           @relation(fields: [cartId], references: [id])
+  creatorId                String
+  designId                 String
+  designVersionId          String
+  personalizationVersionId String?
+  catalogVariantId         String
+  catalogVariant           CatalogVariant @relation(fields: [catalogVariantId], references: [id])
+  licenseOfferId           String?
+  quantity                 Int            @default(1)
+
+  // Informational only — checkout recalculates authoritative price
+  unitArtworkMinor         BigInt
+  unitPersonalizationMinor BigInt
+  unitProductMinor         BigInt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Short-lived immutable price quote before payment (§39)
+model PriceQuote {
+  id                   String @id @default(uuid())
+  cartId               String
+  cart                 Cart   @relation(fields: [cartId], references: [id])
+  currency             String
+  subtotalMinor        BigInt
+  artworkMinor         BigInt
+  personalizationMinor BigInt
+  productMinor         BigInt
+  shippingMinor        BigInt @default(0)
+  taxMinor             BigInt @default(0)
+  discountMinor        BigInt @default(0)
+  totalMinor           BigInt
+  pricingVersion       Int    @default(1)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([cartId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ORDERS & PAYMENTS (§40-44)
+// ═══════════════════════════════════════════════════════════════
+
+model Order {
+  id                String            @id @default(uuid())
+  orderNumber       String            @unique
+  buyerId           String
+  buyer             User              @relation(fields: [buyerId], references: [id])
+  currency          String
+  status            OrderStatus       @default(PENDING_PAYMENT)
+  paymentStatus     PaymentStatus     @default(PENDING)
+  fulfillmentStatus FulfillmentStatus @default(PENDING)
+  subtotalMinor     BigInt
+  discountMinor     BigInt            @default(0)
+  shippingMinor     BigInt
+  taxMinor          BigInt
+  totalMinor        BigInt
+
+  items    OrderItem[]
+  payments Payment[]
+
+  placedAt    DateTime?
+  cancelledAt DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([buyerId, status])
+}
+
+model OrderItem {
+  id                       String                  @id @default(uuid())
+  orderId                  String
+  order                    Order                   @relation(fields: [orderId], references: [id])
+  creatorId                String
+  designId                 String
+  designVersionId          String
+  personalizationVersionId String?
+  personalizationVersion   PersonalizationVersion? @relation(fields: [personalizationVersionId], references: [id])
+  catalogProductId         String?
+  catalogVariantId         String?
+  catalogVariant           CatalogVariant?         @relation(fields: [catalogVariantId], references: [id])
+  quantity                 Int
+
+  // Financial snapshot — never recalculate from current prices (INV-008)
+  artworkRevenueMinor         BigInt
+  personalizationRevenueMinor BigInt
+  productRevenueMinor         BigInt
+  fulfillmentCostMinor        BigInt @default(0)
+  creatorRoyaltyMinor         BigInt
+  platformRevenueMinor        BigInt
+  totalMinor                  BigInt
+
+  licenseGrant LicenseGrant?
+  earning      CreatorEarning?
+  snapshot     OrderItemSnapshot?
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([creatorId])
+}
+
+// Historical accuracy snapshot (§42) — protects against product/seller changes
+model OrderItemSnapshot {
+  orderItemId         String    @id
+  orderItem           OrderItem @relation(fields: [orderItemId], references: [id])
+  designTitle         String
+  creatorName         String
+  productName         String?
+  variantName         String?
+  color               String?
+  size                String?
+  licenseTermsJson    Json
+  personalizationJson Json?
+  printPlacementJson  Json?
+  pricingJson         Json
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  orderId           String
+  order             Order         @relation(fields: [orderId], references: [id])
+  provider          String        @default("stripe")
+  providerPaymentId String?
+  providerChargeId  String?       @unique
+  amountMinor       BigInt
+  currency          String
+  status            PaymentStatus @default(PENDING)
+
+  authorizedAt DateTime?
+  capturedAt   DateTime?
+  failedAt     DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([orderId])
+}
+
+model Refund {
+  id               String  @id @default(uuid())
+  orderId          String
+  paymentId        String?
+  providerRefundId String? @unique
+  amountMinor      BigInt
+  reason           String?
+  status           String  @default("PENDING")
+
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CREATOR EARNINGS & PAYOUTS (§45, §51-53)
+// ═══════════════════════════════════════════════════════════════
+
+model CreatorEarning {
+  id                String               @id @default(uuid())
+  creatorId         String
+  creator           CreatorProfile       @relation(fields: [creatorId], references: [id])
+  orderItemId       String               @unique
+  orderItem         OrderItem            @relation(fields: [orderItemId], references: [id])
+  grossLicenseMinor BigInt
+  adjustmentMinor   BigInt               @default(0)
+  netCreatorMinor   BigInt
+  currency          String
+  status            CreatorEarningStatus @default(PENDING)
+
+  transferAllocations CreatorTransferAllocation[]
+
+  eligibleAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([creatorId, status])
+}
+
+// Stripe Connect transfer (§51)
+model CreatorTransfer {
+  id                 String                @id @default(uuid())
+  creatorId          String
+  creator            CreatorProfile        @relation(fields: [creatorId], references: [id])
+  provider           String                @default("stripe")
+  providerTransferId String?               @unique
+  amountMinor        BigInt
+  currency           String
+  status             CreatorTransferStatus @default(PENDING)
+
+  allocations CreatorTransferAllocation[]
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  failedAt    DateTime?
+
+  @@index([creatorId, status])
+}
+
+// Links a transfer to the earnings it settled (§52)
+model CreatorTransferAllocation {
+  transferId       String
+  transfer         CreatorTransfer @relation(fields: [transferId], references: [id])
+  creatorEarningId String
+  earning          CreatorEarning  @relation(fields: [creatorEarningId], references: [id])
+  amountMinor      BigInt
+
+  @@id([transferId, creatorEarningId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DOUBLE-ENTRY LEDGER (§46-50, INV-009)
+// SUM(amountMinor) per LedgerTransaction MUST equal 0
+// ═══════════════════════════════════════════════════════════════
+
+model LedgerAccount {
+  id           String            @id @default(uuid())
+  code         String            @unique
+  name         String
+  type         LedgerAccountType
+  ownerType    String? // "PLATFORM" | "CREATOR" | "BUYER"
+  ownerId      String?
+  balanceMinor BigInt            @default(0)
+  currency     String            @default("USD")
+
+  postings LedgerPosting[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerType, ownerId])
+}
+
+model LedgerTransaction {
+  id            String  @id @default(uuid())
+  type          String
+  description   String
+  referenceType String? // "ORDER" | "PAYOUT" | "REFUND" | "SUBSCRIPTION"
+  referenceId   String?
+  currency      String  @default("USD")
+
+  postings LedgerPosting[]
+
+  createdAt DateTime @default(now())
+  postedAt  DateTime @default(now())
+
+  @@index([referenceType, referenceId])
+}
+
+// Each transaction MUST have postings that SUM to zero (INV-009)
+model LedgerPosting {
+  id            String            @id @default(uuid())
+  transactionId String
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id])
+  accountId     String
+  account       LedgerAccount     @relation(fields: [accountId], references: [id])
+  amountMinor   BigInt // Positive = debit, Negative = credit
+  currency      String
+
+  createdAt DateTime @default(now())
+
+  @@index([transactionId])
+  @@index([accountId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WEBHOOKS & MODERATION
+// ═══════════════════════════════════════════════════════════════
+
+model WebhookEvent {
+  id              String    @id @default(uuid())
+  provider        String
+  externalEventId String
+  eventType       String
+  payloadJson     Json
+  status          String    @default("PENDING")
+  receivedAt      DateTime  @default(now())
+  processedAt     DateTime?
+
+  @@unique([provider, externalEventId])
+  @@index([provider, status])
+}
+
+model ModerationCase {
+  id          String           @id @default(uuid())
+  subjectType String // "DESIGN" | "USER" | "ORDER"
+  subjectId   String
+  type        String // "AUTOMATED" | "REPORTED" | "MANUAL"
+  status      ModerationStatus @default(PENDING)
+  notes       String?
+  resolvedAt  DateTime?
+  resolvedBy  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([subjectType, subjectId])
+  @@index([status])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REUSABLE KNOWLEDGE & CACHING
+// ═══════════════════════════════════════════════════════════════
+
+model PhraseKnowledge {
+  id                 String             @id @default(uuid())
+  normalizedInput    String
+  displayInput       String
+  inputType          CulturalInputType
+  sourceLanguage     String?
+  targetLanguage     String
+  interpretationType InterpretationType
+  renderedText       String
+  romanization       String?
+  meaning            String?
+  explanation        String?
+  confidence         Float?
+  verificationStatus VerificationStatus
+  source             KnowledgeSource
+  engineVersion      String?
+  usageCount         Int                @default(0)
+  lastUsedAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  generatedDesigns GeneratedDesign[]
+
+  @@index([normalizedInput, inputType, targetLanguage])
+  @@index([verificationStatus])
+  @@index([usageCount])
+}
+
+model GeneratedDesign {
+  id                String          @id @default(uuid())
+  phraseKnowledgeId String
+  phraseKnowledge   PhraseKnowledge @relation(fields: [phraseKnowledgeId], references: [id])
+  stylePackId       String
+  rendererVersion   String
+
+  variations GeneratedDesignVariation[]
+
+  usageCount Int       @default(0)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([phraseKnowledgeId, stylePackId, rendererVersion])
+}
+
+model GeneratedDesignVariation {
+  id                String          @id @default(uuid())
+  generatedDesignId String
+  generatedDesign   GeneratedDesign @relation(fields: [generatedDesignId], references: [id])
+
+  variationIndex Int
+  variationNote  String // e.g. "expressive brush", "controlled brush"
+
+  renderedText String
+  assetId      String // The actual transparent SVG/PNG brush art
+  provider     String // "gemini" | "fal-ai" | "placeholder"
+
+  status GeneratedDesignStatus @default(READY)
+}
+
+// Composition becomes its own entity, separate from the brush art
+model Composition {
+  id              String @id @default(uuid())
+  name            String // e.g. "Vertical", "Centered", "LeftChest"
+  layoutRulesJson Json // Stores placement rules, seal positioning
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMPOSITION EDITOR
+// ═══════════════════════════════════════════════════════════════
+
+model UserComposition {
+  id        String                  @id @default(uuid())
+  userId    String?
+  user      User?                   @relation(fields: [userId], references: [id])
+  sessionId String?
+  session   PersonalizationSession? @relation(fields: [sessionId], references: [id])
+
+  canvasWidth       Int
+  canvasHeight      Int
+  
+  backgroundSourceType String @default("NONE") // NONE | UPLOAD | GENERATED
+  backgroundAssetId String?
+  backgroundAsset   Asset?  @relation("BackgroundAsset", fields: [backgroundAssetId], references: [id])
+
+  mode String @default("GENERIC") // GENERIC | PRODUCT
+  
+  previewAssetId String?
+  previewAsset   Asset? @relation("CompositionPreviewAsset", fields: [previewAssetId], references: [id])
+  
+  mergedAssetId String?
+  mergedAsset   Asset? @relation("CompositionMergedAsset", fields: [mergedAssetId], references: [id])
+
+  layers UserCompositionLayer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserCompositionLayer {
+  id            String          @id @default(uuid())
+  compositionId String
+  composition   UserComposition @relation(fields: [compositionId], references: [id])
+
+  type    LayerType
+  assetId String?
+  asset   Asset?    @relation("LayerAsset", fields: [assetId], references: [id])
+  text    String? // For plain text layers
+
+  x        Float
+  y        Float
+  width    Float
+  height   Float
+  scaleX   Float @default(1.0)
+  scaleY   Float @default(1.0)
+  rotation Float @default(0.0)
+
+  color   String?
+  opacity Float   @default(1.0)
+  zIndex  Int     @default(0)
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BACKGROUND GENERATION
+// ═══════════════════════════════════════════════════════════════
+
+model BackgroundPreset {
+  id             String   @id @default(uuid())
+  key            String   @unique
+  name           String
+  category       String
+  description    String?
+  promptTemplate String
+  defaultMood    String?
+  defaultPalette String?
+  defaultIntensity String?
+  previewUrl     String?
+  sortOrder      Int      @default(0)
+  enabled        Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GeneratedBackground {
+  id             String  @id @default(uuid())
+  compositionId  String?
+  
+  presetKey      String
+  mood           String?
+  palette        String?
+  intensity      String?
+  promptNote     String?
+
+  provider       String
+  model          String
+  promptVersion  Int     @default(1)
+
+  assetId        String
+  asset          Asset   @relation("GeneratedBackgroundAsset", fields: [assetId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEVICE VERIFICATION (AUTH)
+// ═══════════════════════════════════════════════════════════════
+
+model DeviceVerification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  code      String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, code])
+}

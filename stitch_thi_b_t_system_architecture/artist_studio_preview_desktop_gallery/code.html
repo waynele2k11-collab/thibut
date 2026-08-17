@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Artist Studio Preview - Way of the Brush</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed-dim": "#ffb3b4",
+                    "outline-variant": "#c7c6ca",
+                    "surface-container-low": "#f5f3ee",
+                    "on-error": "#ffffff",
+                    "surface-container-highest": "#e4e2dd",
+                    "on-primary": "#ffffff",
+                    "inverse-surface": "#30312e",
+                    "on-primary-fixed": "#1b1b1c",
+                    "on-error-container": "#93000a",
+                    "primary": "#000000",
+                    "primary-fixed": "#e5e2e3",
+                    "surface": "#fbf9f4",
+                    "inverse-on-surface": "#f2f1ec",
+                    "on-tertiary-container": "#838484",
+                    "outline": "#76777b",
+                    "error": "#ba1a1a",
+                    "on-primary-container": "#858384",
+                    "surface-variant": "#e4e2dd",
+                    "inverse-primary": "#c8c6c7",
+                    "on-primary-fixed-variant": "#474647",
+                    "primary-fixed-dim": "#c8c6c7",
+                    "surface-container-high": "#eae8e3",
+                    "secondary-container": "#da3148",
+                    "secondary": "#b71032",
+                    "primary-container": "#1b1b1c",
+                    "on-tertiary-fixed": "#1a1c1c",
+                    "surface-tint": "#5f5e5f",
+                    "tertiary-container": "#1a1c1c",
+                    "on-secondary-container": "#fffbff",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed-variant": "#920023",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed": "#ffdad9",
+                    "background": "#fbf9f4",
+                    "surface-container": "#f0eee9",
+                    "on-secondary-fixed": "#40000a",
+                    "on-tertiary-fixed-variant": "#454747",
+                    "on-surface": "#1b1c19",
+                    "on-surface-variant": "#46474a",
+                    "error-container": "#ffdad6",
+                    "on-secondary": "#ffffff",
+                    "on-background": "#1b1c19",
+                    "tertiary-fixed-dim": "#c6c6c6",
+                    "tertiary": "#000000",
+                    "surface-bright": "#fbf9f4",
+                    "surface-dim": "#dbdad5",
+                    "tertiary-fixed": "#e2e2e2"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "container-max": "1280px",
+                    "section-gap": "120px",
+                    "margin-mobile": "24px",
+                    "gutter": "24px",
+                    "margin-desktop": "64px",
+                    "unit": "8px"
+            },
+            "fontFamily": {
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "headline-sm": [
+                            "Playfair Display"
+                    ],
+                    "headline-md": [
+                            "Playfair Display"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "display-lg-mobile": [
+                            "Playfair Display"
+                    ],
+                    "label-caps": [
+                            "Inter"
+                    ],
+                    "display-lg": [
+                            "Playfair Display"
+                    ]
+            },
+            "fontSize": {
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-sm": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-lg-mobile": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-caps": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.0",
+                                    "letterSpacing": "0.1em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        /* Subtle paper texture */
+        .bg-texture {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+            background-color: theme('colors.background');
+        }
+    </style>
+</head>
+<body class="bg-texture text-on-surface antialiased min-h-screen flex flex-col font-body-md">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-margin-desktop py-unit max-w-container-max mx-auto bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-on-surface-variant transition-colors duration-300 ease-in-out hidden md:flex">
+<div class="font-headline-md text-headline-md tracking-tighter text-primary dark:text-primary-fixed hover:opacity-80 transition-opacity cursor-pointer">
+            WAY OF THE BRUSH
+        </div>
+<nav class="flex items-center gap-8">
+<a class="text-primary dark:text-primary-fixed border-b-2 border-primary dark:border-primary-fixed pb-1 hover:opacity-80 transition-opacity font-body-md text-body-md" href="#">Gallery</a>
+<a class="text-on-surface-variant dark:text-on-tertiary-container hover:text-primary dark:hover:text-primary-fixed transition-colors font-body-md text-body-md hover:opacity-80 transition-opacity" href="#">Philosophy</a>
+<a class="text-on-surface-variant dark:text-on-tertiary-container hover:text-primary dark:hover:text-primary-fixed transition-colors font-body-md text-body-md hover:opacity-80 transition-opacity" href="#">Licensing</a>
+<a class="text-on-surface-variant dark:text-on-tertiary-container hover:text-primary dark:hover:text-primary-fixed transition-colors font-body-md text-body-md hover:opacity-80 transition-opacity" href="#">Stewardship</a>
+</nav>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<button aria-label="shopping_bag" class="text-primary dark:text-primary-fixed hover:opacity-80 transition-opacity duration-300 ease-in-out">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">shopping_bag</span>
+</button>
+<button aria-label="person" class="text-primary dark:text-primary-fixed hover:opacity-80 transition-opacity duration-300 ease-in-out">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">person</span>
+</button>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2 rounded font-label-caps text-label-caps uppercase hover:opacity-90 transition-opacity tracking-wider">
+                Curate Space
+            </button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-[80px] md:pt-[100px] flex flex-col items-center">
+<!-- Section 1: Hero / Philosophy (Cinematic, Ma) -->
+<section class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop min-h-[70vh] flex flex-col md:flex-row items-center justify-center gap-gutter mb-section-gap">
+<div class="md:w-1/2 flex flex-col items-start gap-8 z-10 pr-0 md:pr-12">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-[0.2em]">Artist Studio</span>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary leading-tight">
+                    Master Hakuin
+                </h1>
+<p class="font-headline-sm text-headline-sm text-on-surface max-w-lg italic border-l-2 border-outline-variant pl-6 py-2">
+                    "Embracing the silence between the strokes. The unpainted space is as vital as the ink itself."
+                </p>
+</div>
+<div class="md:w-1/2 w-full mt-12 md:mt-0 relative h-[500px]">
+<!-- Large abstract brush stroke image -->
+<div class="bg-cover bg-center w-full h-full object-cover" data-alt="A macro, cinematic shot of black sumi ink spread across textured, high-quality white washi paper. The brush stroke is powerful, dynamic, and abstract, utilizing negative space heavily. The lighting is soft and directional, highlighting the texture of the paper and the subtle gradient of the ink from deep black to translucent grey. A minimalist, zen-modern aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCMXJvw7fJwHHo5CdK0k4RSpauVFr_dMd1gtDyCrb4CkwOQzxMHvr982aFpP3KoSbh-afnA21cF0JDYMHXuVAyxlfk_X9SU4OqvY7mDk3_5w29JplIZD848THoMo3DPLoDkHMwXMammsF7HK0oJSVXspt92t-HGohchQAgSsvjA2EO19uLduc5Q457iL1zoPkb05limO9Dl8j6-LI29ujCLaorG1Jm-uAHBzBY_gLQsdhh5SEDL9iWM')"></div>
+<!-- The Seal Overlay positioned asymmetrically -->
+<div class="absolute -bottom-8 -left-8 md:bottom-12 md:-left-16 bg-surface p-4 border border-outline-variant flex items-center gap-4 shadow-sm">
+<div class="w-16 h-16 bg-cover bg-center border border-outline-variant" data-alt="A close-up of a traditional square Japanese Hanko (seal) stamped in vibrant cinnabar red ink on white textured paper. The seal features elegant, archaic characters. The edges of the stamp are slightly uneven, showing authentic hand-pressed pressure. Minimalist framing." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBFrjTbTCmqXxERju5Q6iqw7c2tKhpskedmsFNcFw6FPIiA8LrN59XC8LJFJz2U_gWbhfqsWUfH0K0Iml9ufOf4Bf2XPwCZzG8EIP6n_Lg9qFqTKkYjolYoLotO4xhUFzO_0VSXNA7Pa9nbDV343JEh3jXriDMepCsqHTv3QMK9_P6cCz4pZ_Z6tJ2LYTE_LE8qW-7YnyUfMLiiYJC-bj_AFI-K0orZqvUgq_vk-qfiOCfuLC55Fs29')"></div>
+<div>
+<p class="font-label-caps text-label-caps uppercase text-on-surface">Cryptographic Hanko</p>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">Verified Provenance</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Divider -->
+<div class="w-24 h-px bg-outline-variant mx-auto mb-section-gap opacity-50"></div>
+<!-- Section 2: The Portfolio (Minimalist Asymmetric Grid) -->
+<section class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop mb-section-gap">
+<div class="flex justify-between items-end mb-12 border-b border-outline-variant pb-4">
+<h2 class="font-headline-md text-headline-md text-primary">Ink &amp; Paper Gallery</h2>
+<a class="font-label-caps text-label-caps uppercase text-on-surface-variant hover:text-primary transition-colors flex items-center gap-2" href="#">
+                    View All Works
+                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<!-- Bento-style Asymmetric Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Featured Large Piece (Spans 8 cols) -->
+<div class="md:col-span-8 group cursor-pointer">
+<div class="relative w-full h-[600px] bg-surface-container overflow-hidden border border-outline-variant/30">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="A large, impressive calligraphy piece hanging in a minimalist gallery setting. The character is fluid and expressive, painted in deep black ink on pristine white scroll paper. The lighting is pristine and museum-quality, casting soft, diffused shadows. The composition is highly asymmetrical, emphasizing empty space (Ma)." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA7iOwiGhrb95F_RuDrPDZx5ARvwfVuZ9Ykk-ciM1S4wbTRtSKpHzGOlwUx_ONUSJhvmOfia1hrzsi2jhp4l4mlKDuF0dHNKzujsnQrKYXpf3aMPw9wYpswQ6LfJHmKll-PuSqsAk0oP3p38EAurT4k_Fhzkao97WZU8wMWJOoLg2ODiWghAVQYyB712Zok2E3gCH-fbbRgMtjopAsg4aoBTGMbDsRJLoBU5YHwIMMIf6abpg6aY85Y')"></div>
+</div>
+<div class="mt-6 flex justify-between items-start">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2 group-hover:text-on-surface-variant transition-colors">Enso Cycle I</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Sumi Ink on Vintage Washi, 2023</p>
+</div>
+<span class="font-label-caps text-label-caps uppercase text-primary border border-primary px-4 py-2 hover:bg-primary hover:text-on-primary transition-colors">View Details</span>
+</div>
+</div>
+<!-- Secondary Pieces Stacked (Spans 4 cols) -->
+<div class="md:col-span-4 flex flex-col gap-gutter justify-between">
+<!-- Piece 2 -->
+<div class="group cursor-pointer flex-1">
+<div class="relative w-full h-[280px] bg-surface-container overflow-hidden border border-outline-variant/30">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="A detail shot of a Zen calligraphy painting focusing on a single, sharp vertical brush stroke. The ink shows 'flying white' (kasure) texture where the brush moved quickly over the rough paper. Neutral, balanced lighting, showcasing the tactile qualities of the materials." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBdOj63XAwD6rpjxLAkxQKU86w1o2JzeoyT5OdD75V7F9AKv31_PvDluebLRN7GAIYA-mhpLhC_O2YstIZzPLrkJKqYtv-ZbOoGs9wyOV0TJTmu8qNozPWe11IiFuMF-UCoResPnlO_48sTb_6JtU3X3bJrAojRKTj9d_R97H0cwlhxNC3twBqZN2a6DIN2lgj0DtRYPNwOB_4fzQCR-EqR4UR8D7xF-Asrf9IBLijfKDxQuMbChmt_')"></div>
+</div>
+<div class="mt-4 flex justify-between items-center">
+<div>
+<h3 class="font-body-lg text-body-lg text-primary font-semibold">Bamboo Whisper</h3>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">east</span>
+</div>
+</div>
+<!-- Piece 3 -->
+<div class="group cursor-pointer flex-1">
+<div class="relative w-full h-[280px] bg-surface-container overflow-hidden border border-outline-variant/30">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="An abstract ink wash landscape painting. Soft, diffused layers of grey ink suggest misty mountains, rendered on pale, textured paper. The mood is calm and contemplative. The lighting is bright and clean, emphasizing the minimalist aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDb9PnDdBhA9h9SAwtjn4_jNfVaVU-OMbpsxJA6tF1emfzRodzLJUQ-sD7GAQefDwvlQfg2dtdI_nEc1kPAR_47aY10LWtxysUCnnnqHaX-W2aFeS81MK4sO9ny8dGT44K-sb-5XweSCpniDaj5myUyUxejVdTo3fLZa3dXBHkGZSmNHvbHF0ghBUgui2EnfCDb-Czksf5vq1zouFgPRbsXxDQztRNJe3wTj5GeZxK0kTgowoOJnCDx')"></div>
+</div>
+<div class="mt-4 flex justify-between items-center">
+<div>
+<h3 class="font-body-lg text-body-lg text-primary font-semibold">Misty Valley</h3>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">east</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Divider -->
+<div class="w-24 h-px bg-outline-variant mx-auto mb-section-gap opacity-50"></div>
+<!-- Section 3 & 4: Stewardship & Licensing / Call to Action -->
+<section class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop mb-section-gap grid grid-cols-1 md:grid-cols-2 gap-24">
+<!-- Left: Stewardship & Covenant -->
+<div class="flex flex-col justify-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-[0.2em] mb-4">Covenant of Honor</span>
+<h2 class="font-headline-md text-headline-md text-primary mb-6">Materials &amp; Provenance</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-8 leading-relaxed">
+                    Every stroke is an irreproducible event. I use only archival pine-soot ink from Nara, hand-ground on a century-old Suzuri stone, applied to heritage Washi crafted by living national treasures. 
+                </p>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-12 leading-relaxed">
+                    Each physical work is bound to a cryptographic token, ensuring the lineage of ink and paper is forever verifiable on-chain.
+                </p>
+<!-- Licensing Tiers -->
+<div class="space-y-4 border-l border-outline-variant pl-6">
+<h3 class="font-body-md text-body-md uppercase font-semibold tracking-wider text-primary mb-4">Available Tiers</h3>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">check</span>
+<span class="font-body-md text-body-md">Private Collection (Physical + Token)</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">check</span>
+<span class="font-body-md text-body-md">Social Stewardship (Digital Display)</span>
+</div>
+<div class="flex items-center gap-4 text-outline-variant opacity-50">
+<span class="material-symbols-outlined text-sm">close</span>
+<span class="font-body-md text-body-md">Commercial Licensing (Currently Closed)</span>
+</div>
+</div>
+</div>
+<!-- Right: The Seal & Call to Action -->
+<div class="bg-surface-container-low p-12 flex flex-col items-center justify-center text-center border border-outline-variant/20">
+<div class="mb-10 w-32 h-32 relative">
+<div class="w-full h-full bg-cover bg-center rounded-sm" data-alt="A perfectly top-down shot of a large, intricate traditional Hanko seal carved from stone, resting on a clean white surface next to a vivid red ink paste tin. The aesthetic is clean, well-lit, and highly detailed, emphasizing the physical tools of the calligrapher." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBkJ6yikxLP6YlH6iKpvlzKTzyWXBbAsoo3Q9GLJWHm7kBZxyaehhkqb3zQ5fv_ebQFjxwr7rPO89KZnneoQC5jxXi5vU0-rLwwirh6GmjxYUk2USR1v7oB4SYQo6IMEASLuL6nSSjoUNwuzmOIZjHtYGdNbt1yRyT1XHGNqGcFd61_UUPrH38IZc4M9kuQ598Z5JzzmBlabv8sd0YhlNm12WV4QQVXGjQI_i4iduuNHNRxuLZErzHm')"></div>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-4">Commission a Unique Work</h3>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-sm mb-10">
+                    Collaborate with Master Hakuin to translate your philosophy into a singular expression of brush and ink.
+                </p>
+<button class="bg-secondary text-on-secondary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-secondary-container hover:text-on-secondary-container transition-colors tracking-widest flex items-center gap-3">
+<span class="material-symbols-outlined text-sm">mail</span>
+                    Inquire for Commission
+                </button>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container dark:bg-surface-container-low border-t border-outline-variant dark:border-on-surface-variant mt-auto">
+<div class="w-full py-section-gap px-margin-desktop flex flex-col md:flex-row justify-between items-start gap-gutter max-w-container-max mx-auto">
+<div class="flex flex-col gap-4 max-w-sm">
+<div class="font-headline-sm text-headline-sm text-primary dark:text-primary-fixed">
+                    WAY OF THE BRUSH
+                </div>
+<p class="font-body-md text-body-md text-on-surface-variant dark:text-on-tertiary-container mt-2">
+                    © 2024 Way of the Brush. All Rights Reserved. Honoring the lineage of Ink &amp; Paper.
+                </p>
+</div>
+<nav class="flex flex-col md:flex-row gap-8 md:gap-12 mt-8 md:mt-0">
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-tertiary-container hover:text-secondary dark:hover:text-secondary-fixed transition-colors ease-in-out duration-200" href="#">The Way</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-tertiary-container hover:text-secondary dark:hover:text-secondary-fixed transition-colors ease-in-out duration-200" href="#">Artisan Ethos</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-tertiary-container hover:text-secondary dark:hover:text-secondary-fixed transition-colors ease-in-out duration-200" href="#">Privacy</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-tertiary-container hover:text-secondary dark:hover:text-secondary-fixed transition-colors ease-in-out duration-200" href="#">Terms</a>
+</nav>
+</div>
+</footer>
+</body></html>

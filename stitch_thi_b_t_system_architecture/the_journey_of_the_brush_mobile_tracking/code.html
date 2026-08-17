@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thi Bút - The Journey of the Brush</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@400;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed-variant": "#474647",
+                      "on-primary-fixed": "#1b1b1c",
+                      "secondary": "#b71032",
+                      "primary": "#000000",
+                      "background": "#fbf9f4",
+                      "tertiary-fixed-dim": "#c6c6c6",
+                      "surface-container-lowest": "#ffffff",
+                      "on-surface": "#1b1c19",
+                      "on-secondary-fixed": "#40000a",
+                      "surface-tint": "#5f5e5f",
+                      "surface-dim": "#dbdad5",
+                      "primary-container": "#1b1b1c",
+                      "surface-bright": "#fbf9f4",
+                      "surface-container": "#f0eee9",
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#858384",
+                      "tertiary-fixed": "#e2e2e2",
+                      "inverse-surface": "#30312e",
+                      "surface-variant": "#e4e2dd",
+                      "on-secondary-fixed-variant": "#920023",
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "outline": "#76777b",
+                      "on-background": "#1b1c19",
+                      "tertiary-container": "#1a1c1c",
+                      "surface-container-high": "#eae8e3",
+                      "tertiary": "#000000",
+                      "error": "#ba1a1a",
+                      "inverse-primary": "#c8c6c7",
+                      "outline-variant": "#c7c6ca",
+                      "secondary-fixed": "#ffdad9",
+                      "on-tertiary-fixed-variant": "#454747",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-container": "#838484",
+                      "primary-fixed": "#e5e2e3",
+                      "inverse-on-surface": "#f2f1ec",
+                      "on-tertiary": "#ffffff",
+                      "surface": "#fbf9f4",
+                      "primary-fixed-dim": "#c8c6c7",
+                      "on-secondary-container": "#fffbff",
+                      "surface-container-low": "#f5f3ee",
+                      "on-surface-variant": "#46474a",
+                      "on-secondary": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "surface-container-highest": "#e4e2dd",
+                      "secondary-container": "#da3148",
+                      "secondary-fixed-dim": "#ffb3b4",
+                      "error-container": "#ffdad6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "section-gap": "120px",
+                      "margin-desktop": "64px",
+                      "unit": "8px",
+                      "container-max": "1280px",
+                      "margin-mobile": "24px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Playfair Display"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Playfair Display"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "display-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen relative pb-24 md:pb-0 pt-20">
+<!-- Pattern Overlay for Texture -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] z-0" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-background dark:bg-background">
+<div class="flex justify-between items-center px-gutter py-4 w-full max-w-container-max mx-auto transition-all duration-300 ease-in-out">
+<button class="text-outline dark:text-outline-variant hover:opacity-70 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">menu</span>
+</button>
+<h1 class="font-headline-md text-headline-md-mobile md:text-headline-md text-primary dark:text-primary-fixed italic tracking-tight">
+                Thi Bút
+            </h1>
+<button class="text-outline dark:text-outline-variant hover:opacity-70 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">shopping_bag</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="relative z-10 max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-section-gap">
+<!-- Header Section -->
+<section class="text-center mb-section-gap">
+<h2 class="font-display-lg-mobile md:font-display-lg text-primary mb-4">The Journey of the Brush</h2>
+<p class="font-body-lg text-on-surface-variant max-w-2xl mx-auto">Tracking the path of your commissioned artwork, from the artisan's hand to your sanctuary.</p>
+</section>
+<!-- Journey Map & Details Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-12 gap-gutter mb-section-gap">
+<!-- Journey Map Column -->
+<div class="md:col-span-7 flex flex-col gap-gutter">
+<!-- Status Card -->
+<div class="border border-surface-variant bg-surface-container-lowest p-8 md:p-12">
+<h3 class="font-label-caps text-label-caps text-outline mb-6">Current Location</h3>
+<p class="font-headline-md text-headline-md-mobile md:text-headline-md text-primary mb-12">Resting at Kyoto Fulfillment Center</p>
+<!-- Progress Tracker -->
+<div class="relative flex justify-between items-center w-full">
+<div class="absolute left-0 top-1/2 w-full h-[1px] bg-surface-variant -z-10 transform -translate-y-1/2"></div>
+<div class="absolute left-0 top-1/2 w-1/2 h-[1px] bg-primary -z-10 transform -translate-y-1/2 transition-all duration-1000 ease-in-out"></div>
+<!-- Step 1 -->
+<div class="flex flex-col items-center gap-2 bg-surface-container-lowest px-2">
+<div class="w-10 h-10 rounded-full border border-primary bg-primary text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">brush</span>
+</div>
+<span class="font-label-caps text-label-caps text-primary">Studio</span>
+</div>
+<!-- Step 2 (Active) -->
+<div class="flex flex-col items-center gap-2 bg-surface-container-lowest px-2">
+<div class="w-10 h-10 rounded-full border border-primary bg-surface-container-lowest text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">local_shipping</span>
+</div>
+<span class="font-label-caps text-label-caps text-primary">In Transit</span>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center gap-2 bg-surface-container-lowest px-2">
+<div class="w-10 h-10 rounded-full border border-surface-variant bg-surface-container-lowest text-outline flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">home</span>
+</div>
+<span class="font-label-caps text-label-caps text-outline">Doorstep</span>
+</div>
+</div>
+</div>
+<!-- Cultural Context Card -->
+<div class="bg-surface-container-low p-8 md:p-12">
+<div class="flex items-start gap-4 mb-4">
+<span class="material-symbols-outlined text-primary text-[24px]">spa</span>
+<h3 class="font-headline-sm text-headline-sm text-primary">Kiri Wood Preservation</h3>
+</div>
+<p class="font-body-md text-on-surface-variant leading-relaxed">
+                        Your scroll is currently protected within a bespoke Kiri (Paulownia) wood box. Chosen for its exceptional moisture-resistant properties and breathability, Kiri wood has been the traditional standard for preserving priceless Japanese art and calligraphy across centuries.
+                    </p>
+</div>
+</div>
+<!-- Artwork & Delivery Details Column -->
+<div class="md:col-span-5 flex flex-col gap-gutter">
+<!-- Artwork Preview -->
+<div class="border border-surface-variant bg-surface-container-lowest p-6 flex flex-col items-center">
+<div class="w-full aspect-[3/4] mb-6 overflow-hidden bg-surface-container flex items-center justify-center relative">
+<img class="object-cover w-full h-full opacity-90 transition-opacity hover:opacity-100 duration-500" data-alt="A highly detailed, serene photograph of traditional Japanese calligraphy depicting an Enso (Zen Circle). Painted with rich, deep black sumi ink on textured white washi paper. The lighting is soft and natural, emphasizing the texture of the paper and the dynamic brushstrokes. Minimalist zen aesthetic, top-down view." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDU0gmRddYTSYxOy6Q4WX2n1L-Rl2QPv8n5y3BzkgWvgcDbmne0Fk1UgoXfCtmKqUqeUVprjC7SzTj3iu7XrVnFEJROb3b8oVYCzNdu7L-GE5Q_WhRKdCUK3RvuDCOTRtATXBBKmoFC_YZX8LphWNwQQXLt1LW5vGGE1Pzca_X1BnvVWWi4EMTYuXbjH16KiaV9gHq1D1j4JnWR89zGVnkkY_4CdZT5HURkl_i3z1H8kWjsf_pw8pts"/>
+</div>
+<div class="text-center w-full">
+<h4 class="font-headline-sm text-headline-sm text-primary mb-2">Enso Moment</h4>
+<p class="font-body-md text-on-surface-variant mb-6">Master Hoshino</p>
+<!-- Digital Twin Button -->
+<button class="w-full border border-primary text-primary py-3 px-6 font-label-caps text-label-caps tracking-widest hover:bg-primary hover:text-on-primary transition-colors duration-300 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">workspace_premium</span>
+                            DIGITAL TWIN
+                        </button>
+</div>
+</div>
+<!-- Delivery Details -->
+<div class="border border-surface-variant p-6 flex flex-col gap-4">
+<h3 class="font-label-caps text-label-caps text-outline border-b border-surface-variant pb-2">Logistics</h3>
+<div class="flex justify-between items-center py-2">
+<span class="font-body-md text-on-surface-variant">Carrier</span>
+<span class="font-body-md text-primary font-semibold">FedEx Int. Artisan</span>
+</div>
+<div class="flex justify-between items-center py-2">
+<span class="font-body-md text-on-surface-variant">Est. Arrival</span>
+<span class="font-body-md text-primary font-semibold">Oct 12 - 14, 2023</span>
+</div>
+<div class="flex justify-between items-center py-2">
+<span class="font-body-md text-on-surface-variant">Tracking</span>
+<a class="font-body-md text-primary underline hover:opacity-70 transition-opacity" href="#">FDX-8839-ZN</a>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only based on Journey intent matching 'Journey') -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface-container-low dark:bg-surface-container-highest border-t border-surface-variant dark:border-outline-variant md:hidden">
+<div class="fixed bottom-0 left-0 w-full flex justify-around items-center py-3 px-4">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-tertiary-container hover:text-primary dark:hover:text-primary-fixed active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">grid_view</span>
+<span class="font-label-caps text-label-caps">Gallery</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-tertiary-container hover:text-primary dark:hover:text-primary-fixed active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">brush</span>
+<span class="font-label-caps text-label-caps">Artists</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim font-bold hover:text-primary dark:hover:text-primary-fixed active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+<span class="font-label-caps text-label-caps">Journey</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-tertiary-container hover:text-primary dark:hover:text-primary-fixed active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

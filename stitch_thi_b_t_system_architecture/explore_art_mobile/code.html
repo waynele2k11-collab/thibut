@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thi Bút - Explore Art</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary": "#b71032",
+                      "surface-container-highest": "#e4e2dd",
+                      "inverse-surface": "#30312e",
+                      "on-secondary-container": "#fffbff",
+                      "tertiary-fixed-dim": "#c6c6c6",
+                      "on-background": "#1b1c19",
+                      "secondary-fixed": "#ffdad9",
+                      "primary-fixed-dim": "#c8c6c7",
+                      "tertiary-fixed": "#e2e2e2",
+                      "primary-container": "#1b1b1c",
+                      "on-surface-variant": "#46474a",
+                      "inverse-on-surface": "#f2f1ec",
+                      "secondary-fixed-dim": "#ffb3b4",
+                      "on-error-container": "#93000a",
+                      "surface-container": "#f0eee9",
+                      "on-secondary-fixed": "#40000a",
+                      "surface": "#fbf9f4",
+                      "surface-variant": "#e4e2dd",
+                      "on-tertiary-fixed-variant": "#454747",
+                      "background": "#fbf9f4",
+                      "error-container": "#ffdad6",
+                      "on-error": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "surface-container-high": "#eae8e3",
+                      "on-tertiary": "#ffffff",
+                      "primary": "#000000",
+                      "on-primary-fixed-variant": "#474647",
+                      "tertiary-container": "#1a1c1c",
+                      "on-surface": "#1b1c19",
+                      "surface-container-low": "#f5f3ee",
+                      "secondary-container": "#da3148",
+                      "surface-tint": "#5f5e5f",
+                      "on-tertiary-container": "#838484",
+                      "surface-container-lowest": "#ffffff",
+                      "inverse-primary": "#c8c6c7",
+                      "surface-bright": "#fbf9f4",
+                      "on-primary-fixed": "#1b1b1c",
+                      "on-primary-container": "#858384",
+                      "primary-fixed": "#e5e2e3",
+                      "outline": "#76777b",
+                      "error": "#ba1a1a",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "tertiary": "#000000",
+                      "surface-dim": "#dbdad5",
+                      "on-secondary-fixed-variant": "#920023",
+                      "outline-variant": "#c7c6ca"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "section-gap": "120px",
+                      "margin-desktop": "64px",
+                      "margin-mobile": "24px",
+                      "gutter": "24px",
+                      "unit": "8px",
+                      "container-max": "1280px"
+              },
+              "fontFamily": {
+                      "display-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "headline-sm": [
+                              "Playfair Display"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-sm": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        /* Subtle paper texture overlay */
+        .texture-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+        
+        /* Hide scrollbar for filter bar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="antialiased font-body-md text-body-md overflow-x-hidden min-h-screen flex flex-col">
+<div class="texture-overlay"></div>
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-container-low w-full top-0 sticky border-b border-outline-variant/30 flat no shadows z-40">
+<div class="flex items-center justify-between px-margin-mobile h-16 w-full">
+<button class="text-on-surface-variant hover:opacity-70 transition-opacity active:scale-95 duration-200 p-2 -ml-2 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-display-lg-mobile text-display-lg-mobile tracking-tighter text-primary dark:text-primary-fixed-dim absolute left-1/2 transform -translate-x-1/2">
+                Thi Bút
+            </h1>
+<button class="text-on-surface-variant hover:opacity-70 transition-opacity active:scale-95 duration-200 p-2 -mr-2 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+</div>
+</header>
+<main class="flex-grow flex flex-col">
+<!-- Filter Bar -->
+<section class="w-full pt-6 pb-2 px-margin-mobile bg-surface sticky top-16 z-30">
+<div class="flex items-center gap-3 overflow-x-auto no-scrollbar py-2">
+<button class="flex-shrink-0 flex items-center gap-1 border border-outline-variant rounded px-3 py-1.5 text-on-surface hover:bg-surface-container transition-colors font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[16px]" data-icon="tune">tune</span>
+                    FILTER
+                </button>
+<div class="h-6 w-px bg-outline-variant/50 mx-1 flex-shrink-0"></div>
+<button class="flex-shrink-0 bg-primary text-on-primary rounded px-4 py-1.5 font-label-caps text-label-caps tracking-wider transition-colors">
+                    ALL
+                </button>
+<button class="flex-shrink-0 bg-surface-container text-on-surface rounded px-4 py-1.5 font-label-caps text-label-caps tracking-wider hover:bg-surface-container-high transition-colors">
+                    CHARACTERS
+                </button>
+<button class="flex-shrink-0 bg-surface-container text-on-surface rounded px-4 py-1.5 font-label-caps text-label-caps tracking-wider hover:bg-surface-container-high transition-colors">
+                    ABSTRACT
+                </button>
+<button class="flex-shrink-0 bg-surface-container text-on-surface rounded px-4 py-1.5 font-label-caps text-label-caps tracking-wider hover:bg-surface-container-high transition-colors">
+                    PHRASES
+                </button>
+<button class="flex-shrink-0 bg-surface-container text-on-surface rounded px-4 py-1.5 font-label-caps text-label-caps tracking-wider hover:bg-surface-container-high transition-colors">
+                    SUMI-E
+                </button>
+</div>
+</section>
+<!-- Artwork Gallery -->
+<section class="w-full px-margin-mobile py-8 flex flex-col gap-16">
+<!-- Art Card 1 -->
+<article class="flex flex-col gap-6 group cursor-pointer">
+<div class="relative w-full aspect-[4/5] bg-surface-container-low border border-outline-variant/30 p-4 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-[1.01]">
+<div class="absolute inset-0 p-8">
+<img alt="Dragon Prosperity Calligraphy" class="w-full h-full object-contain filter contrast-125 saturate-0 mix-blend-multiply opacity-90 transition-transform duration-700 group-hover:scale-105" data-alt="A striking minimalist calligraphy piece featuring the bold black ink character for 'Dragon' centered on textured white rice paper. The Zen-Modern aesthetic is emphasized by vast negative space (Ma). The lighting is bright, soft, and even, creating a calm, premium gallery feel in a light mode design. Accents of subtle cinnabar red stamp marks provide high contrast against the pristine white and deep sumi ink." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrDiupfg3kD5vM_oY5yBEiqHTyW0zWa30oDFuxcFJgcqCXNFENVwDGIe31wumBQm28VRlgy4LkkfaIMMFVgDKZTD61ygR8ufYuHZO6JEVQGu6_DNF0SI_2zyWHU6c0dpU89KCIxpgyejKSw77G-i4BDq4-jOM7FzSov8qoHLYM7HjWp6vZVkgKhTMQLZE_3BQZ0FbG53PLH_mMl-ty8kb8PNnUPZHef_Zk1pzPeHwSjQjK8NatK0E1"/>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-start gap-4">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-primary mb-1">Dragon Prosperity</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Master Wei</p>
+</div>
+<p class="font-body-md text-body-md text-primary whitespace-nowrap">From $120</p>
+</div>
+<div class="w-12 h-px bg-outline-variant/50 my-2"></div>
+<button class="self-start text-primary font-label-caps text-label-caps tracking-widest flex items-center gap-2 group/btn mt-1">
+                        PERSONALIZE 
+                        <span class="material-symbols-outlined text-[16px] transition-transform group-hover/btn:translate-x-1" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Art Card 2 -->
+<article class="flex flex-col gap-6 group cursor-pointer">
+<div class="relative w-full aspect-[4/5] bg-surface-container-low border border-outline-variant/30 p-4 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-[1.01]">
+<div class="absolute inset-0 p-8">
+<img alt="Still Water Bloom Calligraphy" class="w-full h-full object-contain filter contrast-125 saturate-0 mix-blend-multiply opacity-90 transition-transform duration-700 group-hover:scale-105" data-alt="An elegant, fluid calligraphy stroke representing 'Still Water' on premium white washi paper. The brushstrokes are dynamic yet serene, fading slightly at the edges to suggest motion. The composition is highly asymmetrical, resting in the lower right quadrant, maximizing negative space in a true Zen-Modern style. The high-key lighting ensures a pure white background typical of luxury light-mode interfaces." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmKbfmwJTG7OYN5pseqL6FPc3owQf-Zj5kdiFO_xdAjUxIUNmU2TZKsCQSk9W4GwZsMyQzdbJmyG3Pf-x_qfTlc1qlLAE7QDfuVyO3PfjP0XskuPvd0KoVtJdlQrtX3Sv3Va4OSPIIu6JnWU7J0ghghB8IKrI4CbZLfjP7SYRVi7CZZcpOvJertt9QlmPI2k914QExZaknFCoOAieqSCbi37jLrf9nE-zm8ne5NmwviBNUsTwtrQ0H"/>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-start gap-4">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-primary mb-1">Still Water Bloom</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Artist Lin</p>
+</div>
+<p class="font-body-md text-body-md text-primary whitespace-nowrap">From $85</p>
+</div>
+<div class="w-12 h-px bg-outline-variant/50 my-2"></div>
+<button class="self-start text-primary font-label-caps text-label-caps tracking-widest flex items-center gap-2 group/btn mt-1">
+                        PERSONALIZE 
+                        <span class="material-symbols-outlined text-[16px] transition-transform group-hover/btn:translate-x-1" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Art Card 3 -->
+<article class="flex flex-col gap-6 group cursor-pointer">
+<div class="relative w-full aspect-[4/5] bg-surface-container-low border border-outline-variant/30 p-4 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-[1.01]">
+<div class="absolute inset-0 p-8">
+<img alt="Endurance Calligraphy" class="w-full h-full object-contain filter contrast-125 saturate-0 mix-blend-multiply opacity-90 transition-transform duration-700 group-hover:scale-105" data-alt="A powerful, abstract sumi-e painting of a single bamboo stalk executed with rapid, thick black ink strokes on stark white paper. The minimalist design focuses entirely on the contrast between the dark ink and the bright paper, embodying a Zen-Modern aesthetic. The layout is tall and narrow, leaving vast margins. The lighting is pristine and shadowless, suitable for a high-end e-commerce gallery in light mode." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCN5rmeYBjV9ePYpCREHTpx_JeVg9rZ9uW5Xui4QM3FwHHRHTkUKD-91rGxet4EWdvUiELF23CMm4zJOCTHu8BI69dU0MDF7jD-clRgkXJSTfNjkBt_CiT9pqUejtwI1n0PegZGXJBP5HLWf7ZojvlmR1JB8KYwVEmMJuDLRLJxSSCXi3Tz_jAIZAAs6z7ez3t3NLqeh0JZ7ptd1t_PRGCL9kNr1IqDSFRQzCSxF1JDMSStFapI-Ieq"/>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-start gap-4">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-primary mb-1">Endurance</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Master Wei</p>
+</div>
+<p class="font-body-md text-body-md text-primary whitespace-nowrap">From $150</p>
+</div>
+<div class="w-12 h-px bg-outline-variant/50 my-2"></div>
+<button class="self-start text-primary font-label-caps text-label-caps tracking-widest flex items-center gap-2 group/btn mt-1">
+                        PERSONALIZE 
+                        <span class="material-symbols-outlined text-[16px] transition-transform group-hover/btn:translate-x-1" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</article>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface dark:bg-surface-dim w-full py-unit-8 border-t border-outline-variant/20 flat no shadows flex flex-col items-center gap-4 px-margin-mobile py-12 mt-section-gap">
+<div class="flex flex-col items-center gap-6 w-full">
+<span class="font-label-caps text-label-caps text-primary tracking-widest">THI BÚT</span>
+<nav class="flex flex-wrap justify-center gap-x-8 gap-y-4 w-full">
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-secondary transition-colors cursor-pointer" href="#">Support</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-secondary transition-colors cursor-pointer" href="#">Privacy</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-secondary transition-colors cursor-pointer" href="#">Terms</a>
+</nav>
+<div class="w-full h-px bg-outline-variant/20 my-2"></div>
+<p class="font-body-md text-body-md text-on-surface-variant/70 text-sm text-center">
+                © 2024 Thi Bút. All rights reserved.
+            </p>
+</div>
+</footer>
+</body></html>

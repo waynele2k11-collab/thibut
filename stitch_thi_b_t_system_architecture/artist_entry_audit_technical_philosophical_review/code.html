@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Artist Entry Audit - Technical &amp; Philosophical Review</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#cac6c2",
+                      "secondary-fixed": "#ffdad9",
+                      "on-secondary-container": "#fffbff",
+                      "on-background": "#1b1c19",
+                      "surface-container-lowest": "#ffffff",
+                      "inverse-surface": "#30312e",
+                      "on-surface-variant": "#46474a",
+                      "secondary-container": "#da3148",
+                      "surface-container-highest": "#e4e2dd",
+                      "secondary-fixed-dim": "#ffb3b4",
+                      "inverse-primary": "#c8c6c7",
+                      "tertiary-container": "#1c1b19",
+                      "primary-container": "#1b1b1c",
+                      "outline-variant": "#c7c6ca",
+                      "surface-container-high": "#eae8e3",
+                      "surface-bright": "#fbf9f4",
+                      "on-error": "#ffffff",
+                      "surface": "#fbf9f4",
+                      "outline": "#76777b",
+                      "inverse-on-surface": "#f2f1ec",
+                      "surface-variant": "#e4e2dd",
+                      "secondary": "#b71032",
+                      "surface-container-low": "#f5f3ee",
+                      "on-tertiary-fixed-variant": "#484644",
+                      "tertiary-fixed": "#e6e2de",
+                      "stewardship-verified": "#2e7d32",
+                      "on-primary-fixed-variant": "#474647",
+                      "stewardship-revision": "#c62828",
+                      "background": "#fbf9f4",
+                      "on-tertiary": "#ffffff",
+                      "surface-container": "#f0eee9",
+                      "surface-tint": "#5f5e5f",
+                      "stewardship-review": "#1a237e",
+                      "on-error-container": "#93000a",
+                      "on-secondary": "#ffffff",
+                      "primary-fixed": "#e5e2e3",
+                      "on-tertiary-fixed": "#1c1b19",
+                      "data-grid-border": "rgba(199, 198, 202, 0.3)",
+                      "primary-fixed-dim": "#c8c6c7",
+                      "error-container": "#ffdad6",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-container": "#868380",
+                      "error": "#ba1a1a",
+                      "on-primary-container": "#858384",
+                      "on-primary-fixed": "#1b1b1c",
+                      "tertiary": "#000000",
+                      "surface-dim": "#dbdad5",
+                      "on-surface": "#1b1c19",
+                      "on-secondary-fixed": "#40000a",
+                      "primary": "#000000",
+                      "on-secondary-fixed-variant": "#920023"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "data-row-height": "48px",
+                      "margin-admin": "32px",
+                      "sidebar-width": "280px",
+                      "unit": "8px"
+              },
+              "fontFamily": {
+                      "label-utility": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Playfair Display"
+                      ]
+              },
+              "fontSize": {
+                      "label-utility": [
+                              "11px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background h-full font-body-md overflow-hidden flex selection:bg-secondary selection:text-white">
+<!-- SideNavBar -->
+<nav class="bg-tertiary-container dark:bg-primary-container text-tertiary-fixed dark:text-primary-fixed fixed left-0 top-0 h-full w-sidebar-width border-r border-outline-variant/30 flex flex-col z-40">
+<div class="p-6 border-b border-outline-variant/30">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden">
+<img alt="Curator Profile" class="w-full h-full object-cover" data-alt="A macro shot of a traditional Japanese ink brush resting on handmade washi paper, emphasizing the texture of the bristles and the slight pooling of rich black Sumi ink. The lighting is soft and focused, creating a meditative, scholarly atmosphere suitable for a curation portal avatar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJOwVhCx3aOpdJQhGk85xGuFIIQA7vBDC3TWI_kjKtQquS85TxfRUCyVZi5Y1lgGAGuIVp139AnfLdxRcL4L6tODOxYoaS6UU6htl3KzEjKRGMxFD0xmW0661Xdy8kZunlaOCI3djqABQZ5y3IlIxyM_lmACSrRW-CE_ShaTzee87bkG0vOH0oQWVWQUk9uVTN9O3Abn7cv5HPBYdSyuMxJVbxY0E-epMF6TdBz98bY6B5xkTdtbC5"/>
+</div>
+<div>
+<h2 class="font-label-caps text-label-caps text-tertiary-fixed">Stewardship Portal</h2>
+<p class="font-label-utility text-label-utility text-tertiary-fixed-dim mt-1">Archival Authority</p>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary py-2 px-4 rounded font-label-utility text-label-utility flex items-center justify-center gap-2 hover:bg-inverse-surface transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined text-[16px]">add</span>
+                New Entry Audit
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto py-4">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center text-tertiary-fixed-dim py-3 px-6 hover:bg-white/5 hover:text-tertiary-fixed transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3">pending_actions</span>
+<span class="font-label-caps text-label-caps">New Submissions</span>
+</a>
+</li>
+<li>
+<a class="flex items-center text-secondary-fixed bg-secondary/10 border-l-4 border-secondary py-3 px-6 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3">biotech</span>
+<span class="font-label-caps text-label-caps">Technical Audit</span>
+</a>
+</li>
+<li>
+<a class="flex items-center text-tertiary-fixed-dim py-3 px-6 hover:bg-white/5 hover:text-tertiary-fixed transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3">psychology</span>
+<span class="font-label-caps text-label-caps">Philosophical Review</span>
+</a>
+</li>
+<li>
+<a class="flex items-center text-tertiary-fixed-dim py-3 px-6 hover:bg-white/5 hover:text-tertiary-fixed transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3">account_tree</span>
+<span class="font-label-caps text-label-caps">Verified Lineages</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="border-t border-outline-variant/30 py-4">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center text-tertiary-fixed-dim py-3 px-6 hover:bg-white/5 hover:text-tertiary-fixed transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center text-tertiary-fixed-dim py-3 px-6 hover:bg-white/5 hover:text-tertiary-fixed transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3">help_outline</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col ml-[280px] h-full overflow-hidden bg-surface relative">
+<!-- TopAppBar -->
+<header class="bg-surface-container dark:bg-surface-container-high border-b border-outline-variant/30 flex justify-between items-center w-full px-margin-admin h-16 z-30 shrink-0">
+<div class="flex items-center">
+<h1 class="font-headline-sm text-headline-sm font-semibold text-primary dark:text-primary-fixed">Thi Bút Curator Admin</h1>
+</div>
+<div class="flex items-center gap-4">
+<!-- Search Bar (on_left in JSON, moved to center/left of actions for layout) -->
+<div class="relative hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="pl-10 pr-4 py-1.5 bg-surface-container-low border border-outline-variant rounded focus:border-primary focus:ring-0 text-body-sm font-body-sm w-64 text-on-surface placeholder:text-on-surface-variant transition-colors" placeholder="Search lineages..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors cursor-pointer duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors cursor-pointer duration-200">
+<span class="material-symbols-outlined">history_edu</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors cursor-pointer duration-200">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<div class="flex-1 overflow-y-auto p-margin-admin pb-32">
+<!-- Breadcrumb & Header -->
+<div class="mb-8">
+<div class="flex items-center text-label-caps font-label-caps text-on-surface-variant mb-2">
+<span>New Submissions</span>
+<span class="material-symbols-outlined text-[14px] mx-2">chevron_right</span>
+<span class="text-primary">Submission #A-7729</span>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-display-lg text-display-lg text-primary mb-1">Silence of the Bamboo Grove</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Artist: Kenjiro Sato • Submitted: Oct 24, 2024</p>
+</div>
+<span class="bg-stewardship-review text-white font-label-utility text-label-utility px-3 py-1 rounded-sm uppercase tracking-wider">Under Review</span>
+</div>
+</div>
+<!-- Bento Grid Layout for Audit -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter mb-12">
+<!-- Left Column: Visual & Digital Twin (Spans 7 cols) -->
+<div class="lg:col-span-7 flex flex-col gap-gutter">
+<!-- Artwork Sample Container -->
+<div class="border border-outline-variant/30 bg-surface-container-lowest p-4 relative group">
+<div class="absolute top-6 left-6 z-10 flex gap-2">
+<span class="bg-surface/80 backdrop-blur text-primary font-label-utility text-label-utility px-2 py-1 border border-outline-variant/50">Primary Scan</span>
+<span class="bg-surface/80 backdrop-blur text-primary font-label-utility text-label-utility px-2 py-1 border border-outline-variant/50 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">zoom_in</span> High Res</span>
+</div>
+<div class="aspect-video w-full relative overflow-hidden bg-surface-container-highest">
+<img alt="Silence of the Bamboo Grove - Scan" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A high-resolution digital scan of a traditional Sumi-e painting depicting a dense bamboo grove. The artwork uses rich, varying tones of black ink on textured, off-white Washi paper. The brushstrokes are expressive and fluid, demonstrating mastery of the medium. The lighting is perfectly even, capturing the subtle variations in paper grain and ink density without glare, presenting a pristine, archival quality image suitable for close technical inspection." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYTrh5HZgWRE5YrC-wjuTNQ-BSAhZoK69Ds8bM3YpR3cz4ssIfwuh71_EMoeUQ8o2DOzWSfV37Zt-_qlDUaT-Y-Src7KAJXiz_ErUqcm1Uw6LRfsU6a4YuDhoiDcOOYuHE3PSROHsEWG__1ru2e4M1_3-t0kOM1_JTSTCb9ec3nohLYrh5s60xLcg8L_MYLHv0QyZhazHBQPR4lhj88gtkaC3KquHzwnOlz2Xcl5cGvEnywZxbbjqI"/>
+</div>
+</div>
+<!-- Digital Twin Metadata -->
+<div class="border border-outline-variant/30 bg-surface-container-lowest p-6">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">data_object</span>
+                            Digital Twin Metadata
+                        </h3>
+<div class="grid grid-cols-2 gap-x-8 gap-y-4 font-body-sm text-body-sm">
+<div class="flex flex-col border-b border-data-grid-border pb-2">
+<span class="text-on-surface-variant font-label-utility text-label-utility mb-1">Color Profile</span>
+<span class="text-primary font-medium">ProPhoto RGB (Uncalibrated warning)</span>
+</div>
+<div class="flex flex-col border-b border-data-grid-border pb-2">
+<span class="text-on-surface-variant font-label-utility text-label-utility mb-1">Resolution</span>
+<span class="text-primary font-medium">12,000 x 8,000 px (300dpi)</span>
+</div>
+<div class="flex flex-col border-b border-data-grid-border pb-2">
+<span class="text-on-surface-variant font-label-utility text-label-utility mb-1">Capture Device</span>
+<span class="text-primary font-medium">Phase One IQ4 150MP</span>
+</div>
+<div class="flex flex-col border-b border-data-grid-border pb-2">
+<span class="text-on-surface-variant font-label-utility text-label-utility mb-1">Illuminant</span>
+<span class="text-primary font-medium">D50 Standard</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Audit Checklists (Spans 5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-gutter">
+<!-- Technical Audit Module -->
+<div class="border border-outline-variant/30 bg-surface-container-lowest p-6 flex-1">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-sm text-headline-sm text-primary flex items-center gap-2">
+<span class="material-symbols-outlined">fact_check</span>
+                                Technical Audit
+                            </h3>
+<span class="text-secondary font-label-utility text-label-utility flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">warning</span> 1 Issue</span>
+</div>
+<div class="space-y-4">
+<!-- Checklist Item 1 -->
+<label class="flex items-start gap-3 p-3 hover:bg-surface-container-low transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<div class="mt-0.5">
+<input checked="" class="rounded-sm border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+</div>
+<div>
+<span class="block font-body-sm text-body-sm font-semibold text-primary">Capture Protocol Verified</span>
+<span class="block font-label-utility text-label-utility text-on-surface-variant mt-1">Lighting and lens data match archival standards.</span>
+</div>
+</label>
+<!-- Checklist Item 2 (Warning) -->
+<label class="flex items-start gap-3 p-3 bg-error-container/20 border border-error/30 cursor-pointer">
+<div class="mt-0.5">
+<input class="rounded-sm border-error text-error focus:ring-error w-4 h-4 cursor-pointer" type="checkbox"/>
+</div>
+<div>
+<span class="block font-body-sm text-body-sm font-semibold text-error">Material Carbon Density</span>
+<span class="block font-label-utility text-label-utility text-on-surface-variant mt-1">Sumi ink density scan shows anomalies in top left quadrant. Potential digital artifacting or inconsistent mix.</span>
+</div>
+</label>
+<!-- Checklist Item 3 -->
+<label class="flex items-start gap-3 p-3 hover:bg-surface-container-low transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<div class="mt-0.5">
+<input class="rounded-sm border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+</div>
+<div>
+<span class="block font-body-sm text-body-sm font-semibold text-primary">Substrate Integrity</span>
+<span class="block font-label-utility text-label-utility text-on-surface-variant mt-1">Washi paper fibers map correctly to Mino paper signature.</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Philosophical Alignment Module -->
+<div class="border border-outline-variant/30 bg-surface-container-lowest p-6 flex-1">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">menu_book</span>
+                            Philosophical Review
+                        </h3>
+<div class="mb-4">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant mb-2">Artist Statement Extract</h4>
+<p class="font-body-sm text-body-sm text-primary italic border-l-2 border-outline-variant/50 pl-4 py-1 bg-surface-container-low/50">
+                                "The void in the upper right is not emptiness, but the unsaid breath between the bamboo stalks. I captured this utilizing only natural rainwater mixed with 40-year aged pine soot ink."
+                            </p>
+</div>
+<div class="space-y-3">
+<label class="flex items-center gap-3 p-2 hover:bg-surface-container-low transition-colors cursor-pointer">
+<input class="rounded-sm border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-primary">Covenant Affirmation Signed</span>
+</label>
+<label class="flex items-center gap-3 p-2 hover:bg-surface-container-low transition-colors cursor-pointer">
+<input class="rounded-sm border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-primary">Intent Aligns with Tradition</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Curatorial Action Bar (Sticky Bottom) -->
+<div class="absolute bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant/30 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20 flex justify-between items-center px-margin-admin">
+<div class="flex items-center gap-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Audit Progress:</span>
+<div class="w-48 h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="w-1/3 h-full bg-primary"></div>
+</div>
+<span class="font-label-utility text-label-utility text-primary">1 of 3 Required Checks</span>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-2 border border-outline-variant text-primary font-label-caps text-label-caps hover:bg-surface-container-low transition-colors">
+                    Decline with Guidance
+                </button>
+<button class="px-6 py-2 bg-stewardship-revision text-white font-label-caps text-label-caps hover:bg-on-secondary-fixed-variant transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">edit_note</span>
+                    Request Revision
+                </button>
+<button class="px-8 py-2 bg-primary text-on-primary font-label-caps text-label-caps hover:bg-inverse-surface transition-colors flex items-center gap-2 opacity-50 cursor-not-allowed" disabled="">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+                    Verify Lineage
+                </button>
+</div>
+</div>
+</main>
+</body></html>

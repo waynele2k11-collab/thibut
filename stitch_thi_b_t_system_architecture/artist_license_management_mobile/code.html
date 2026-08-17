@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>License Management - Artist Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "error": "#ba1a1a",
+                        "background": "#fbf9f4",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed": "#40000a",
+                        "secondary-container": "#da3148",
+                        "on-error-container": "#93000a",
+                        "on-primary-container": "#858384",
+                        "surface": "#fbf9f4",
+                        "tertiary": "#000000",
+                        "outline-variant": "#c7c6ca",
+                        "primary-fixed": "#e5e2e3",
+                        "on-primary-fixed": "#1b1b1c",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#1b1c19",
+                        "surface-container-low": "#f5f3ee",
+                        "surface-variant": "#e4e2dd",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e4e2dd",
+                        "surface-bright": "#fbf9f4",
+                        "on-tertiary": "#ffffff",
+                        "surface-dim": "#dbdad5",
+                        "inverse-surface": "#30312e",
+                        "secondary-fixed-dim": "#ffb3b4",
+                        "on-secondary-container": "#fffbff",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "surface-container-high": "#eae8e3",
+                        "inverse-primary": "#c8c6c7",
+                        "secondary": "#b71032",
+                        "primary": "#000000",
+                        "on-background": "#1b1c19",
+                        "surface-container": "#f0eee9",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-primary-fixed-variant": "#474647",
+                        "secondary-fixed": "#ffdad9",
+                        "inverse-on-surface": "#f2f1ec",
+                        "outline": "#76777b",
+                        "on-surface-variant": "#46474a",
+                        "on-secondary-fixed-variant": "#920023",
+                        "primary-container": "#1b1b1c",
+                        "on-tertiary-container": "#838484",
+                        "tertiary-container": "#1a1c1c",
+                        "surface-tint": "#5f5e5f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "section-gap": "120px",
+                        "container-max": "1280px",
+                        "unit": "8px",
+                        "gutter": "24px",
+                        "margin-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Playfair Display"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "display-lg-mobile": ["Playfair Display"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Playfair Display"],
+                        "headline-md": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .texture-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+        
+        /* Hide scrollbar for horizontal lists but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased pb-24 relative min-h-screen">
+<div class="texture-overlay"></div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-40 bg-background dark:bg-surface flat no shadows transition-transform duration-200">
+<div class="flex items-center justify-between px-margin-mobile h-16 w-full max-w-container-max mx-auto">
+<button class="text-primary dark:text-on-surface hover:opacity-80 transition-opacity active:scale-95 transition-transform duration-200 focus:outline-none">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">brush</span>
+</button>
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary dark:text-on-surface tracking-tight">Artist Hub</h1>
+<button class="text-primary dark:text-on-surface hover:opacity-80 transition-opacity active:scale-95 transition-transform duration-200 focus:outline-none">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 px-margin-mobile max-w-container-max mx-auto grid grid-cols-4 gap-gutter md:hidden">
+<!-- Page Title & Intro -->
+<div class="col-span-4 mb-8">
+<h2 class="font-headline-sm text-headline-sm mb-2 text-primary">License Management</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Oversee your active rights and royalty streams with quiet precision.</p>
+</div>
+<!-- Metric Cards (Bento Style) -->
+<div class="col-span-4 grid grid-cols-2 gap-4 mb-12">
+<!-- Metric 1 -->
+<div class="col-span-1 bg-surface-container-low border border-outline-variant rounded-xl p-4 flex flex-col justify-between h-32">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Active Licenses</span>
+<div>
+<span class="font-display-lg-mobile text-display-lg-mobile block text-primary">42</span>
+<span class="font-body-md text-body-md text-secondary text-sm flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]">trending_up</span> +3 this month
+                    </span>
+</div>
+</div>
+<!-- Metric 2 -->
+<div class="col-span-1 bg-surface-container-low border border-outline-variant rounded-xl p-4 flex flex-col justify-between h-32">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Pending</span>
+<div>
+<span class="font-display-lg-mobile text-display-lg-mobile block text-primary">07</span>
+<span class="font-body-md text-body-md text-on-surface-variant text-sm mt-1 block">Awaiting signature</span>
+</div>
+</div>
+<!-- Metric 3 (Full width) -->
+<div class="col-span-2 bg-primary text-on-primary rounded-xl p-5 flex items-center justify-between">
+<div>
+<span class="font-label-caps text-label-caps text-primary-fixed-dim uppercase tracking-widest block mb-2">Total Royalties (YTD)</span>
+<span class="font-headline-md text-headline-md block">¥1,250,000</span>
+</div>
+<div class="h-12 w-12 rounded-full bg-on-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary">account_balance_wallet</span>
+</div>
+</div>
+</div>
+<!-- Section Divider -->
+<div class="col-span-4 flex items-center mb-8">
+<h3 class="font-headline-sm text-headline-sm text-primary pr-4">Active Rights</h3>
+<div class="h-[1px] bg-outline-variant flex-grow"></div>
+</div>
+<!-- Horizontal Scrollable List: Active Rights -->
+<div class="col-span-4 -mx-margin-mobile px-margin-mobile overflow-x-auto no-scrollbar mb-12">
+<div class="flex gap-4 w-max pb-4">
+<!-- Card 1 -->
+<div class="w-64 border border-outline-variant rounded-xl bg-surface p-4 flex flex-col shrink-0">
+<div class="h-32 mb-4 rounded-lg overflow-hidden relative">
+<div class="bg-cover bg-center w-full h-full" data-alt="A serene, minimalist digital painting of a solitary pine tree on a misty mountain, rendered in muted ink washes with subtle red accents, showcasing a zen-modern aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAbyaz4ZS3lhKB9-TrTArEoYgt6iwBbwj9Bupr1ubBf-qv6o3e1tQCami7xuCDJXHfb7e4uNkD8MVIFjq96ewl_NhF_uJwJzzmrJDx4NqxZ7Y3h2GyFOe4heY3jRUyJ_Biiq2ZrKsUWHygvH67HiXBbR8lu5VfkGdQBYTFsCdJIBHb8LSXQOKQU-9W8GVZFq3yL6B2eL_Tl_gLg6h3IWOfNnkysY-I9QH9s9BzilVz7YUe5LKQjkv1v')"></div>
+<div class="absolute top-2 right-2 bg-surface/90 backdrop-blur-sm px-2 py-1 rounded font-label-caps text-label-caps text-[10px] text-primary">EXCLUSIVE</div>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-[18px] mb-1">Whispering Pines</h4>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant mb-4">Licensed to: ZenLife Corp</p>
+<div class="mt-auto flex justify-between items-center border-t border-outline-variant pt-3">
+<span class="font-body-md text-body-md text-sm text-primary">Expires: Oct 2025</span>
+<button class="text-secondary"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="w-64 border border-outline-variant rounded-xl bg-surface p-4 flex flex-col shrink-0">
+<div class="h-32 mb-4 rounded-lg overflow-hidden relative">
+<div class="bg-cover bg-center w-full h-full" data-alt="An abstract, architectural composition featuring stark geometric shadows cast on rough handmade paper, in high contrast black and white with a single bold stroke of cinnabar red." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBSraAPBlnJHTZsy9Bdh31L-K1lhGltD6t2YHoanIoge4nd6Ak7TtLhA0sSOJRgiSQe84HO_CbQqGyHpHBMV-5-mff7hveZoy1sUJtQx5x3LPmH2mD8eh0B9L_anWbuB77WMlecekI8npQdD3hen2QusrT8kVydivYxIt5yhDMvh4CNxwm5zAHc7BxCkstXiwGKqc6esGf8lCO4HkUTtpIxN9mRB7qYZfOXFCT6R5WtkY_7Cw9v9Ape')"></div>
+<div class="absolute top-2 right-2 bg-surface/90 backdrop-blur-sm px-2 py-1 rounded font-label-caps text-label-caps text-[10px] text-primary">COMMERCIAL</div>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-[18px] mb-1">Structure II</h4>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant mb-4">Licensed to: Studio K</p>
+<div class="mt-auto flex justify-between items-center border-t border-outline-variant pt-3">
+<span class="font-body-md text-body-md text-sm text-primary">Expires: Jan 2026</span>
+<button class="text-secondary"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+</div>
+</div>
+<!-- Add New -->
+<button class="w-24 border border-dashed border-outline rounded-xl flex flex-col items-center justify-center shrink-0 hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-outline mb-2">add</span>
+<span class="font-label-caps text-label-caps text-outline">New</span>
+</button>
+</div>
+</div>
+<!-- Section Divider -->
+<div class="col-span-4 flex items-center mb-8">
+<h3 class="font-headline-sm text-headline-sm text-primary pr-4">License Tiers</h3>
+<div class="h-[1px] bg-outline-variant flex-grow"></div>
+</div>
+<!-- Tabbed Interface for Tiers -->
+<div class="col-span-4 mb-12">
+<!-- Tabs -->
+<div class="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2">
+<button class="px-4 py-2 rounded-full bg-primary text-on-primary font-label-caps text-label-caps shrink-0">Standard</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-label-caps text-label-caps shrink-0">Extended</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-label-caps text-label-caps shrink-0">Exclusive</button>
+</div>
+<!-- Tier Details Card -->
+<div class="bg-surface border border-outline-variant p-6 rounded-xl relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-surface-container-low rounded-bl-full -z-10 opacity-50"></div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary mb-1">Standard License</h4>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant">For non-commercial, personal use.</p>
+</div>
+<span class="font-headline-sm text-headline-sm text-secondary">¥5,000</span>
+</div>
+<ul class="space-y-3 mb-6 font-body-md text-body-md text-sm">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[16px]">check</span> Digital display only</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[16px]">check</span> Personal prints up to A4</li>
+<li class="flex items-center gap-2 text-on-surface-variant"><span class="material-symbols-outlined text-outline-variant text-[16px]">close</span> No merchandise</li>
+</ul>
+<button class="w-full py-3 border border-primary text-primary font-label-caps text-label-caps rounded flex items-center justify-center gap-2 hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">settings</span> Manage Terms
+                </button>
+</div>
+</div>
+<!-- Section Divider -->
+<div class="col-span-4 flex items-center mb-6">
+<h3 class="font-headline-sm text-headline-sm text-primary pr-4">Royalties Setup</h3>
+<div class="h-[1px] bg-outline-variant flex-grow"></div>
+</div>
+<!-- Royalties Settings List -->
+<div class="col-span-4 space-y-4 mb-8">
+<div class="flex items-center justify-between p-4 border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">account_balance</span>
+</div>
+<div>
+<h5 class="font-body-md text-body-md font-semibold text-primary">Payout Account</h5>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant">Bank ending in •••• 4092</p>
+</div>
+</div>
+<button class="text-secondary"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+<div class="flex items-center justify-between p-4 border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">receipt_long</span>
+</div>
+<div>
+<h5 class="font-body-md text-body-md font-semibold text-primary">Tax Information</h5>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant">W-8BEN verified</p>
+</div>
+</div>
+<button class="text-secondary"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+<div class="flex items-center justify-between p-4">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">history</span>
+</div>
+<div>
+<h5 class="font-body-md text-body-md font-semibold text-primary">Payment History</h5>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant">View all past transfers</p>
+</div>
+</div>
+<button class="text-secondary"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 bg-surface dark:bg-surface-container z-50 md:hidden">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-on-surface active:scale-90 transition-transform duration-150 focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim bg-secondary-container/10 rounded-xl px-3 py-1 hover:text-primary dark:hover:text-on-surface active:scale-90 transition-transform duration-150 focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">redeem</span>
+<span class="font-label-caps text-label-caps">Commissions</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-on-surface active:scale-90 transition-transform duration-150 focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">palette</span>
+<span class="font-label-caps text-label-caps">Gallery</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-on-surface active:scale-90 transition-transform duration-150 focus:outline-none">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</button>
+</nav>
+<script>
+        // Simple script to handle horizontal scroll mouse drag if needed (optional enhancement)
+        const scrollContainer = document.querySelector('.overflow-x-auto');
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        if(scrollContainer) {
+            scrollContainer.addEventListener('mousedown', (e) => {
+                isDown = true;
+                startX = e.pageX - scrollContainer.offsetLeft;
+                scrollLeft = scrollContainer.scrollLeft;
+            });
+            scrollContainer.addEventListener('mouseleave', () => {
+                isDown = false;
+            });
+            scrollContainer.addEventListener('mouseup', () => {
+                isDown = false;
+            });
+            scrollContainer.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - scrollContainer.offsetLeft;
+                const walk = (x - startX) * 2;
+                scrollContainer.scrollLeft = scrollLeft - walk;
+            });
+        }
+    </script>
+</body></html>

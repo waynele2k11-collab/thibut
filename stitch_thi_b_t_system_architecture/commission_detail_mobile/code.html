@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thi Bút - Commission Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-bright": "#fbf9f4",
+                      "surface-variant": "#e4e2dd",
+                      "inverse-on-surface": "#f2f1ec",
+                      "on-background": "#1b1c19",
+                      "on-secondary-fixed": "#40000a",
+                      "surface-tint": "#5f5e5f",
+                      "on-primary-container": "#858384",
+                      "tertiary": "#000000",
+                      "on-secondary": "#ffffff",
+                      "surface-container-low": "#f5f3ee",
+                      "secondary-container": "#da3148",
+                      "on-primary": "#ffffff",
+                      "secondary-fixed": "#ffdad9",
+                      "surface-container-high": "#eae8e3",
+                      "surface-dim": "#dbdad5",
+                      "background": "#fbf9f4",
+                      "on-primary-fixed": "#1b1b1c",
+                      "secondary": "#b71032",
+                      "surface-container": "#f0eee9",
+                      "on-surface-variant": "#46474a",
+                      "surface-container-highest": "#e4e2dd",
+                      "primary-container": "#1b1b1c",
+                      "tertiary-container": "#1a1c1c",
+                      "on-tertiary-fixed-variant": "#454747",
+                      "primary-fixed-dim": "#c8c6c7",
+                      "on-primary-fixed-variant": "#474647",
+                      "on-secondary-container": "#fffbff",
+                      "on-secondary-fixed-variant": "#920023",
+                      "surface": "#fbf9f4",
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "error": "#ba1a1a",
+                      "on-tertiary-container": "#838484",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-fixed": "#e2e2e2",
+                      "inverse-primary": "#c8c6c7",
+                      "inverse-surface": "#30312e",
+                      "outline-variant": "#c7c6ca",
+                      "outline": "#76777b",
+                      "primary": "#000000",
+                      "on-tertiary": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed-dim": "#c6c6c6",
+                      "on-surface": "#1b1c19",
+                      "secondary-fixed-dim": "#ffb3b4",
+                      "on-error": "#ffffff",
+                      "primary-fixed": "#e5e2e3"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-mobile": "24px",
+                      "unit": "8px",
+                      "gutter": "24px",
+                      "section-gap": "120px",
+                      "container-max": "1280px",
+                      "margin-desktop": "64px"
+              },
+              "fontFamily": {
+                      "headline-sm": [
+                              "Playfair Display"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "display-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-sm": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            /* Texture: subtle grain overlay to the Paper White background */
+            background-color: theme('colors.surface');
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+        
+        /* Hide scrollbar for clean aesthetic */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .ma-spacing {
+            margin-bottom: theme('spacing.section-gap');
+        }
+        
+        .thin-border {
+            border: 1px solid theme('colors.outline-variant');
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased h-full overflow-hidden flex justify-center items-center">
+<!-- Mobile Device Frame -->
+<div class="relative w-full max-w-[430px] h-[932px] max-h-screen bg-surface border border-outline-variant shadow-2xl overflow-hidden md:rounded-[40px] md:my-8 flex flex-col mx-auto">
+<!-- TopAppBar (Shared Component logic mapped) -->
+<header class="flex justify-between items-center px-margin-mobile h-16 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-surface-variant dark:border-outline-variant flat no shadows">
+<button class="text-primary dark:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors active:scale-95 transition-transform duration-150 p-2 -ml-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-semibold text-primary">Commission Details</h1>
+<div class="text-primary dark:text-primary-fixed font-label-caps text-label-caps uppercase">In Progress</div>
+</header>
+<!-- Main Scrollable Canvas -->
+<main class="flex-1 overflow-y-auto no-scrollbar pb-32">
+<!-- Context Header Section -->
+<section class="px-margin-mobile pt-8 pb-12 bg-surface-container-lowest">
+<div class="flex justify-between items-start mb-6">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-2">Order #TB-8842</p>
+<h2 class="font-display-lg-mobile text-display-lg-mobile text-primary mb-1">Zen Circle Scroll</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Master Wei × E. Sato</p>
+</div>
+</div>
+<!-- Status Timeline -->
+<div class="mt-8 relative">
+<div class="absolute left-3 top-2 bottom-2 w-px bg-surface-variant"></div>
+<div class="flex gap-4 mb-4 relative z-10">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="check">check</span>
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold text-primary">Phase 1: Meaning &amp; Intent</p>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-1">Completed Aug 12</p>
+</div>
+</div>
+<div class="flex gap-4 mb-4 relative z-10">
+<div class="w-6 h-6 rounded-full border-2 border-primary bg-surface flex items-center justify-center shrink-0 mt-1">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold text-primary">Phase 2: Cultural Translation</p>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-1">In Progress</p>
+</div>
+</div>
+<div class="flex gap-4 relative z-10">
+<div class="w-6 h-6 rounded-full border border-outline-variant bg-surface shrink-0 mt-1"></div>
+<div>
+<p class="font-body-md text-body-md text-outline">Phase 3: Execution &amp; Seal</p>
+</div>
+</div>
+</div>
+</section>
+<!-- NavigationDrawer Tabs Logic adapted for mobile horizontal scrolling -->
+<nav class="border-y border-surface-variant bg-surface sticky top-0 z-40 overflow-x-auto no-scrollbar">
+<div class="flex px-margin-mobile gap-6 min-w-max">
+<button class="py-4 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-all duration-300 ease-in-out flex items-center gap-2 border-b-2 border-transparent">
+<span class="material-symbols-outlined text-[20px]" data-icon="chat_bubble">chat_bubble</span>
+                        Conversation
+                    </button>
+<!-- Active State -->
+<button class="py-4 font-body-md text-body-md text-primary font-semibold flex items-center gap-2 border-b-2 border-primary transition-all duration-300 ease-in-out">
+<span class="material-symbols-outlined text-[20px]" data-icon="straighten" data-weight="fill" style="font-variation-settings: 'FILL' 1;">straighten</span>
+                        Design Specs
+                    </button>
+<button class="py-4 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-all duration-300 ease-in-out flex items-center gap-2 border-b-2 border-transparent">
+<span class="material-symbols-outlined text-[20px]" data-icon="rate_review">rate_review</span>
+                        Review
+                    </button>
+</div>
+</nav>
+<!-- Focus Area: Cultural Translation -->
+<section class="px-margin-mobile py-12">
+<h3 class="font-headline-md text-headline-md text-primary mb-8 border-b border-surface-variant pb-4 inline-block">Cultural Workspace</h3>
+<div class="bg-surface-container-low thin-border rounded-lg p-6 mb-8">
+<div class="flex justify-between items-start mb-6">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-1">Focal Character</p>
+<h4 class="font-headline-sm text-headline-sm text-primary">Enso (円相)</h4>
+</div>
+<div class="text-[64px] leading-none text-primary opacity-80 font-serif">禅</div>
+</div>
+<div class="space-y-4">
+<div>
+<p class="font-body-md text-body-md font-semibold text-primary">Literal Meaning</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Circle, cyclical nature.</p>
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold text-primary">Artistic Intent</p>
+<p class="font-body-md text-body-md text-on-surface-variant">To capture the moment when the mind is free to let the body create. Master Wei suggests a semi-cursive (Gyōsho) approach to balance structure with fluid motion.</p>
+</div>
+</div>
+</div>
+<!-- Draft Preview -->
+<div class="mb-12">
+<div class="flex justify-between items-center mb-4">
+<h4 class="font-body-md text-body-md font-semibold text-primary">Current Study (Draft 2)</h4>
+<span class="bg-surface-variant text-on-surface-variant font-label-caps text-label-caps px-2 py-1 rounded">Awaiting Review</span>
+</div>
+<!-- Light-box style container -->
+<div class="bg-surface-container-lowest thin-border p-8 mb-4 flex justify-center items-center min-h-[300px] relative group cursor-pointer hover:bg-surface transition-colors">
+<div class="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-multiply" data-alt="A minimalist, high-key photograph of a traditional Japanese calligraphy practice sheet (hanshi) resting flat on a white wooden table. Black ink forms an incomplete, fluid Enso circle in the center. The lighting is soft and diffused, highlighting the texture of the rice paper and the wetness of the fresh ink. The composition feels serene, meditative, and intensely focused on the tactile qualities of traditional art making." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAQudMGkcKnDt0S1NlDnL9QqCxst-38Ot8YUbKT7XyW9-E1K2RwmrtsLC5bnYwZ1AS1DttAUPlZETaA-BhIwjywwMp2wOkWRB6hscKvbswheUAlwbSF6lp6GRWMNh9UF3IUnAUtZWwBqRuhra4sKTScn0YJiDS1WCVenTmfals9L1TaYfr9k0c3jHui8zDaXXvZzyIWF4LrcS0x3JVSkuddT5SZ3_HJ7rEI3IJxdfeiuLyszS8wBWaC')">
+</div>
+<span class="material-symbols-outlined text-outline-variant text-[48px] relative z-10 group-hover:text-primary transition-colors" data-icon="zoom_in">zoom_in</span>
+</div>
+<div class="flex gap-4">
+<button class="flex-1 border border-primary text-primary bg-transparent py-3 px-4 font-label-caps text-label-caps uppercase tracking-wider text-center hover:bg-surface-container transition-colors">
+                            Request Adj.
+                        </button>
+<button class="flex-1 bg-primary text-on-primary py-3 px-4 font-label-caps text-label-caps uppercase tracking-wider text-center hover:bg-tertiary-container transition-colors">
+                            Approve Draft
+                        </button>
+</div>
+</div>
+<!-- Collaborative Chat Snippet -->
+<div class="thin-border bg-surface rounded-lg overflow-hidden">
+<div class="bg-surface-container-low p-4 border-b border-surface-variant flex items-center justify-between">
+<h4 class="font-body-md text-body-md font-semibold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="forum">forum</span>
+                            Studio Thread
+                        </h4>
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+</div>
+<div class="p-6 space-y-6 bg-surface-bright">
+<!-- Artist Message -->
+<div class="flex gap-4">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center shrink-0">
+<span class="font-label-caps text-label-caps text-primary">W</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mb-1">Master Wei • 2h ago</p>
+<p class="font-body-md text-body-md text-primary">I noticed a slight hesitation in the lower curve of the first draft. In Draft 2, I have adjusted the pressure to maintain the flow (Ki) through the entirety of the stroke. How does the weight feel to you?</p>
+</div>
+</div>
+<!-- Client Action -->
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border-b border-surface-variant focus:border-primary focus:ring-0 px-0 py-3 font-body-md text-body-md text-primary transition-colors" placeholder="Reply to Master Wei..." type="text"/>
+<button class="absolute right-0 top-1/2 -translate-y-1/2 text-primary p-2">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<div class="h-20"></div> <!-- Spacer for Bottom Nav -->
+</main>
+<!-- Shared Component: BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full md:absolute z-50 flex justify-around items-center h-20 pb-safe px-4 bg-surface dark:bg-surface border-t border-surface-variant dark:border-outline-variant flat no shadows">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" data-icon="brush">brush</span>
+<span class="font-label-caps text-label-caps text-[10px]">Studio</span>
+</button>
+<!-- Active State Navigation mapped from JSON logic (Intent match: Commissions) -->
+<button class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed font-bold bg-surface-variant/30 rounded-lg px-3 py-1 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" data-icon="history_edu" data-weight="fill" style="font-variation-settings: 'FILL' 1;">history_edu</span>
+<span class="font-label-caps text-label-caps text-[10px]">Commissions</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" data-icon="collections_bookmark">collections_bookmark</span>
+<span class="font-label-caps text-label-caps text-[10px]">Library</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" data-icon="settings">settings</span>
+<span class="font-label-caps text-label-caps text-[10px]">Settings</span>
+</button>
+</nav>
+</div>
+</body></html>

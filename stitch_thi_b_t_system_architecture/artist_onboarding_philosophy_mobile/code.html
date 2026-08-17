@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Artist Onboarding - Philosophy</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#da3148",
+                        "secondary-fixed": "#ffdad9",
+                        "inverse-on-surface": "#f2f1ec",
+                        "tertiary-container": "#1a1c1c",
+                        "surface-variant": "#e4e2dd",
+                        "surface-tint": "#5f5e5f",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "on-primary-fixed-variant": "#474647",
+                        "on-surface-variant": "#46474a",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#ffb3b4",
+                        "surface-container": "#f0eee9",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "surface-bright": "#fbf9f4",
+                        "on-secondary-fixed": "#40000a",
+                        "primary": "#000000",
+                        "on-primary-fixed": "#1b1b1c",
+                        "on-tertiary-container": "#838484",
+                        "on-surface": "#1b1c19",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "background": "#fbf9f4",
+                        "surface-container-highest": "#e4e2dd",
+                        "surface-container-low": "#f5f3ee",
+                        "surface": "#fbf9f4",
+                        "outline-variant": "#c7c6ca",
+                        "outline": "#76777b",
+                        "secondary": "#b71032",
+                        "primary-container": "#1b1b1c",
+                        "surface-dim": "#dbdad5",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#000000",
+                        "surface-container-high": "#eae8e3",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "inverse-surface": "#30312e",
+                        "error-container": "#ffdad6",
+                        "on-background": "#1b1c19",
+                        "on-primary-container": "#858384",
+                        "primary-fixed": "#e5e2e3",
+                        "inverse-primary": "#c8c6c7",
+                        "on-secondary-container": "#fffbff",
+                        "on-secondary-fixed-variant": "#920023"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "margin-mobile": "24px",
+                        "section-gap": "120px",
+                        "gutter": "24px",
+                        "unit": "8px",
+                        "container-max": "1280px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Playfair Display"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "headline-sm": ["Playfair Display"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Playfair Display"],
+                        "display-lg-mobile": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.05"/%3E%3C/svg%3E');
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen relative flex flex-col">
+<!-- Progress Header -->
+<header class="fixed top-0 w-full z-50 bg-background/90 backdrop-blur-sm border-b border-outline-variant/30 px-margin-mobile py-4 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary cursor-pointer" data-icon="arrow_back">arrow_back</span>
+</div>
+<div class="flex items-center gap-1">
+<div class="w-12 h-1 bg-primary rounded-full"></div>
+<div class="w-12 h-1 bg-surface-variant rounded-full"></div>
+<div class="w-12 h-1 bg-surface-variant rounded-full"></div>
+</div>
+<div class="w-6"></div> <!-- Spacer for balance -->
+</header>
+<!-- Main Narrative Canvas -->
+<main class="flex-grow pt-24 pb-32 px-margin-mobile flex flex-col gap-12 max-w-[480px] mx-auto">
+<!-- Opening Statement -->
+<section class="text-center mt-12 animate-fade-in-up">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary mb-6">The Way of the Brush</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+                Before ink touches paper, intention must be clear. We are seeking artists who understand that every stroke carries the weight of spirit.
+            </p>
+</section>
+<!-- Visual Anchor 1 -->
+<section class="relative aspect-square w-full bg-surface-variant rounded-none border border-outline-variant/30 overflow-hidden">
+<img class="w-full h-full object-cover grayscale opacity-90 mix-blend-multiply" data-alt="Close up of a traditional calligraphy brush resting on an ink stone. The scene is lit with soft, high-key light against a minimalist white background. Subtle textures of washi paper are visible. Zen-modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD406RLVlwCMh_3eAOjiDZrYMj2q8iFU3xv_qdja64YrL_Vh6dRx_Yw46DsH2I3cR0K8ZzbB7GXxJOWNN_QX3ks2y8ZVescrxTH9-CtCoke4c2rkKlgJF8fq1mewMbxryoBg2CYTRQ7z37vCAyMiSxiBqqa_bIIXjRmIc14tBNv5D4nuqSk392xXwSj3-MZEVy0cxCMAXZyGmvvMfFRspEvyEffcFyMLZP-mUa7-oZTjTvk7rTCxsbi"/>
+</section>
+<!-- Narrative Block 2 -->
+<section class="text-center animate-fade-in-up" style="animation-delay: 0.2s;">
+<h2 class="font-headline-sm text-headline-sm text-primary mb-4">Embracing Ma (間)</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                We believe in the power of negative space. The silence between the strokes is as vital as the ink itself. This platform is a sanctuary from digital noise.
+            </p>
+</section>
+<!-- Visual Anchor 2 -->
+<section class="relative aspect-[3/4] w-full bg-surface-container-highest rounded-none border border-outline-variant/30 overflow-hidden p-6 flex items-center justify-center">
+<div class="w-full h-full bg-surface shadow-sm border border-outline-variant/50 relative">
+<img class="absolute inset-0 w-full h-full object-contain p-8 mix-blend-darken" data-alt="A singular, bold sumi-ink brush stroke representing the concept of 'void' or 'space' on a pristine sheet of textured white paper. Stark contrast, minimalist composition, zen aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmCAAhcUv7j8SGUetfrEz9CfT05O9t68Dgd4HdtXb2JKkIFuhRBsJVZ-kqBLsv3EcQFB-VlMQpzbsyr0Jhgmz9E9R4MjZSU-Ie0E-aZh_ygsHDx7dxignEuKin_rF1ruLZJ5lkJxIw8dX27SWmNs_urQBz0NKmqBIwx9qs7sZTqVsrorWav5UkzqOnMCGHPmsTgwns0eK-Hczws7t2mG3InSEGVlT_4BmblXxPkTqonlqZCriXhSHm"/>
+</div>
+</section>
+<!-- Narrative Block 3 -->
+<section class="text-center mb-12 animate-fade-in-up" style="animation-delay: 0.4s;">
+<h2 class="font-headline-sm text-headline-sm text-primary mb-4">Mastery Takes Time</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                We value the patient pursuit of excellence. If you honor tradition while pushing boundaries, you have found your studio.
+            </p>
+</section>
+</main>
+<!-- Sticky Footer Action -->
+<footer class="fixed bottom-0 w-full bg-background/95 backdrop-blur-md border-t border-outline-variant/30 p-margin-mobile z-50">
+<button class="w-full bg-primary-container text-on-primary font-label-caps text-label-caps uppercase py-4 rounded-DEFAULT hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span>I Affirm This Philosophy</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</footer>
+<style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+        }
+    </style>
+</body></html>

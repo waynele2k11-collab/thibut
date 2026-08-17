@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thi Bút Curator Admin - Verified Lineages</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Playfair+Display:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#cac6c2",
+                      "secondary-fixed": "#ffdad9",
+                      "on-secondary-container": "#fffbff",
+                      "on-background": "#1b1c19",
+                      "surface-container-lowest": "#ffffff",
+                      "inverse-surface": "#30312e",
+                      "on-surface-variant": "#46474a",
+                      "secondary-container": "#da3148",
+                      "surface-container-highest": "#e4e2dd",
+                      "secondary-fixed-dim": "#ffb3b4",
+                      "inverse-primary": "#c8c6c7",
+                      "tertiary-container": "#1c1b19",
+                      "primary-container": "#1b1b1c",
+                      "outline-variant": "#c7c6ca",
+                      "surface-container-high": "#eae8e3",
+                      "surface-bright": "#fbf9f4",
+                      "on-error": "#ffffff",
+                      "surface": "#fbf9f4",
+                      "outline": "#76777b",
+                      "inverse-on-surface": "#f2f1ec",
+                      "surface-variant": "#e4e2dd",
+                      "secondary": "#b71032",
+                      "surface-container-low": "#f5f3ee",
+                      "on-tertiary-fixed-variant": "#484644",
+                      "tertiary-fixed": "#e6e2de",
+                      "stewardship-verified": "#2e7d32",
+                      "on-primary-fixed-variant": "#474647",
+                      "stewardship-revision": "#c62828",
+                      "background": "#fbf9f4",
+                      "on-tertiary": "#ffffff",
+                      "surface-container": "#f0eee9",
+                      "surface-tint": "#5f5e5f",
+                      "stewardship-review": "#1a237e",
+                      "on-error-container": "#93000a",
+                      "on-secondary": "#ffffff",
+                      "primary-fixed": "#e5e2e3",
+                      "on-tertiary-fixed": "#1c1b19",
+                      "data-grid-border": "rgba(199, 198, 202, 0.3)",
+                      "primary-fixed-dim": "#c8c6c7",
+                      "error-container": "#ffdad6",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-container": "#868380",
+                      "error": "#ba1a1a",
+                      "on-primary-container": "#858384",
+                      "on-primary-fixed": "#1b1b1c",
+                      "tertiary": "#000000",
+                      "surface-dim": "#dbdad5",
+                      "on-surface": "#1b1c19",
+                      "on-secondary-fixed": "#40000a",
+                      "primary": "#000000",
+                      "on-secondary-fixed-variant": "#920023"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "data-row-height": "48px",
+                      "margin-admin": "32px",
+                      "sidebar-width": "280px",
+                      "unit": "8px"
+              },
+              "fontFamily": {
+                      "label-utility": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Playfair Display"
+                      ]
+              },
+              "fontSize": {
+                      "label-utility": [
+                              "11px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col md:flex-row antialiased">
+<!-- SideNavBar (Desktop Only) -->
+<nav class="hidden md:flex flex-col bg-tertiary-container text-tertiary-fixed fixed left-0 top-0 h-full w-sidebar-width border-r border-outline-variant/30 z-20">
+<div class="p-margin-admin border-b border-outline-variant/30">
+<div class="flex items-center gap-4 mb-6">
+<img class="w-12 h-12 rounded-full object-cover border border-outline-variant" data-alt="A minimalist, corporate avatar representing an authoritative archivist or curator. High contrast black and white with a subtle red accent. The aesthetic is clean, professional, and slightly severe, fitting a digital scriptorium." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXqQuda_pN-VbcnoG726vGgMUutNd68RB6PxTFMpJu__T5mdk1_HHuJpXI8suLcHsaiNa0fpJwW665mPPFlRneowv7cVzOLL3suQ29fw17KN1LRyKbcF-zU4-JGf2crg-gJ33Wvj8FxvZSgMQWcVMJ-gviEyJdfiBihh_w0xQmPdlFay4vzUe-qWnXtejDmRRQnlm6W9FfqgsFC-MSIFewLE7G5UIIywZcy8KcVizWKRfH4dLt9obd"/>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-tertiary-fixed">Stewardship Portal</h2>
+<p class="font-label-utility text-label-utility text-tertiary-fixed-dim mt-1">Archival Authority</p>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary font-label-caps text-label-caps py-3 rounded-DEFAULT hover:bg-inverse-surface transition-colors">
+                New Entry Audit
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto py-6">
+<ul class="space-y-2">
+<li>
+<a class="flex items-center text-tertiary-fixed-dim py-3 px-6 hover:bg-white/5 hover:text-tertiary-fixed transition-all duration-150 ease-in-out font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined mr-4">pending_actions</span>
+                        New Submissions
+                    </a>
+</li>
+<li>
+<a class="flex items-center text-tertiary-fixed-dim py-3 px-6 hover:bg-white/5 hover:text-tertiary-fixed transition-all duration-150 ease-in-out font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined mr-4">biotech</span>
+                        Technical Audit
+                    </a>
+</li>
+<li>
+<a class="flex items-center text-tertiary-fixed-dim py-3 px-6 hover:bg-white/5 hover:text-tertiary-fixed transition-all duration-150 ease-in-out font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined mr-4">psychology</span>
+                        Philosophical Review
+                    </a>
+</li>
+<li>
+<a class="flex items-center text-secondary-fixed bg-secondary/10 border-l-4 border-secondary py-3 px-6 duration-150 ease-in-out font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined mr-4">account_tree</span>
+                        Verified Lineages
+                    </a>
+</li>
+</ul>
+</div>
+<div class="mt-auto border-t border-outline-variant/30 py-4">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center text-tertiary-fixed-dim py-2 px-6 hover:bg-white/5 hover:text-tertiary-fixed transition-all duration-150 ease-in-out font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined mr-4">settings</span>
+                        Settings
+                    </a>
+</li>
+<li>
+<a class="flex items-center text-tertiary-fixed-dim py-2 px-6 hover:bg-white/5 hover:text-tertiary-fixed transition-all duration-150 ease-in-out font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined mr-4">help_outline</span>
+                        Support
+                    </a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col md:ml-sidebar-width min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface-container flex justify-between items-center w-full px-margin-admin h-16 border-b border-outline-variant/30 sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<span class="font-headline-sm text-headline-sm font-semibold text-primary">Thi Bút Curator Admin</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 cursor-pointer rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 cursor-pointer rounded-full">
+<span class="material-symbols-outlined">history_edu</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 cursor-pointer rounded-full md:hidden">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 cursor-pointer rounded-full hidden md:block">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 p-margin-admin overflow-y-auto">
+<!-- Page Header -->
+<div class="flex justify-between items-end mb-12">
+<div>
+<h1 class="font-display-lg text-display-lg text-primary mb-2">Verified Lineages</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                        The definitive archival registry of authenticated masters and their validated seals. This ledger serves as the source of truth for public curation.
+                    </p>
+</div>
+<!-- Filter/Search Bar -->
+<div class="flex items-center gap-4">
+<div class="flex items-center border border-outline-variant rounded-DEFAULT bg-surface px-4 py-2 hover:border-outline focus-within:border-primary transition-colors">
+<span class="material-symbols-outlined text-outline mr-2 text-[20px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 font-body-sm text-body-sm text-on-surface placeholder-outline-variant outline-none w-64" placeholder="Search lineages..." type="text"/>
+</div>
+<button class="flex items-center gap-2 border border-outline-variant rounded-DEFAULT bg-surface px-4 py-2 hover:bg-surface-container-low transition-colors font-label-caps text-label-caps text-on-surface">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                        Filters
+                    </button>
+</div>
+</div>
+<!-- Bento Grid / Gallery -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Lineage Card 1 -->
+<article class="group border border-outline-variant/30 rounded-lg overflow-hidden bg-surface-container-lowest hover:border-outline-variant transition-all duration-300 flex flex-col">
+<div class="relative h-48 bg-surface-container-low flex items-center justify-center border-b border-outline-variant/30">
+<img class="w-32 h-32 object-contain opacity-90 group-hover:opacity-100 transition-opacity" data-alt="A stylized, highly detailed red ink hanko (seal) stamped onto textured, off-white handmade paper. The seal features intricate, archaic calligraphy surrounded by a subtle, geometric red border. The lighting is soft and focused, emphasizing the tactile quality of the paper and the sharp contrast of the red ink. A quiet, authoritative archival aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0cWrdMU5dvgY4IbSilFZh33UteXNAt1TuLcNEBO3bAi4oZ8uTvFZUZL7wMAZXglLV8nkQWyaSlb-kk9cAR0aulGw14hgR_0umgkObl9MjmWRtixMZLCU30WOX5rVoZG2xOoEnAR8tvjHy0M17vz5jK-16a8hRWHUOFaSZlo8Y8rC61TAjquFt9FOaWXf0gtSij_IvOPRV140waYDToa7-i7TjomyjQc1S3a1YscOdgsfyVQDiCBpL"/>
+<div class="absolute top-4 right-4">
+<span class="inline-flex items-center px-2 py-1 rounded bg-stewardship-verified text-on-primary font-label-utility text-label-utility">
+                                 VERIFIED
+                             </span>
+</div>
+</div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="mb-4">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-1">Elias Thorne</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant">School of Minimalist Calligraphy</p>
+</div>
+<div class="space-y-2 mt-auto pt-4 border-t border-outline-variant/30">
+<div class="flex justify-between items-center">
+<span class="font-label-utility text-label-utility text-outline">Covenant Struck</span>
+<span class="font-body-sm text-body-sm text-on-surface">Oct 12, 2023</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label-utility text-label-utility text-outline">Authenticated Works</span>
+<span class="font-body-sm text-body-sm text-on-surface">47</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Lineage Card 2 -->
+<article class="group border border-outline-variant/30 rounded-lg overflow-hidden bg-surface-container-lowest hover:border-outline-variant transition-all duration-300 flex flex-col">
+<div class="relative h-48 bg-surface-container-low flex items-center justify-center border-b border-outline-variant/30">
+<img class="w-32 h-32 object-contain opacity-90 group-hover:opacity-100 transition-opacity" data-alt="A stylized, modern, abstract hanko (seal) stamped in deep crimson ink on pristine white archival paper. The design is a minimalist composition of overlapping geometric lines forming a distinct sigil. The macro shot captures the slight bleed of the ink into the paper fibers. High contrast, sterile, corporate-archival aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl9XQOnUtGKSfXL3uudEzXqvkT_rKHI5_lU3snwaPJpDwOCHksgfqBbi62ChEZI9vKvWIKeJyEtuOlnXGMIYKAdD0L1WRUxmxASzrwN24ltoZN6brsiAmbiVHysgOZ6OfP0Bi0p4MQx5Uv5XWFqaOixQmIf0t5TjPOu-SPO1-oev7Prz_fbhnYusF8reEE378y9-tejANgGFVmkughtsYwH70Jwf_FW2ttje4LgjzaRV0gLpIax9vI"/>
+<div class="absolute top-4 right-4">
+<span class="inline-flex items-center px-2 py-1 rounded bg-stewardship-verified text-on-primary font-label-utility text-label-utility">
+                                 VERIFIED
+                             </span>
+</div>
+</div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="mb-4">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-1">Mei Lin</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Neo-Constructivist Lineage</p>
+</div>
+<div class="space-y-2 mt-auto pt-4 border-t border-outline-variant/30">
+<div class="flex justify-between items-center">
+<span class="font-label-utility text-label-utility text-outline">Covenant Struck</span>
+<span class="font-body-sm text-body-sm text-on-surface">Jan 05, 2024</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label-utility text-label-utility text-outline">Authenticated Works</span>
+<span class="font-body-sm text-body-sm text-on-surface">112</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Lineage Card 3 -->
+<article class="group border border-outline-variant/30 rounded-lg overflow-hidden bg-surface-container-lowest hover:border-outline-variant transition-all duration-300 flex flex-col">
+<div class="relative h-48 bg-surface-container-low flex items-center justify-center border-b border-outline-variant/30">
+<img class="w-32 h-32 object-contain opacity-90 group-hover:opacity-100 transition-opacity" data-alt="A classic, heavy red cinnabar seal stamped on slightly yellowed parchment. The seal contains complex, traditional seal script characters. The lighting highlights the thick, raised texture of the paste ink against the rough surface of the paper. A deeply historical and authoritative visual, conveying centuries of lineage." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7SfUuMB3ky2iCVN1zhS86-IASRZu1Bui1H2nWLxSf7wRfLr1dWIXY7vmKD5jmiBu1y0P69lcaZEtWZQz0k88yZViw0cbdfRGGnv_Hu6D3NOSrP0X7o5ArFeU9tzFwyVgDv_wnKheR85n0Puxr6nx8jekCxH3t99iUxbd9t4icExxpzAnCBoqGqnfa9HnQs08hr1kweSNBp5_AMgS5GKLO_96dA16kGqRXmfMq9wszkZgmo1d6OGBt"/>
+<div class="absolute top-4 right-4">
+<span class="inline-flex items-center px-2 py-1 rounded bg-stewardship-verified text-on-primary font-label-utility text-label-utility">
+                                 VERIFIED
+                             </span>
+</div>
+</div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="mb-4">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-1">Kaito Sato</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Imperial Archival Form</p>
+</div>
+<div class="space-y-2 mt-auto pt-4 border-t border-outline-variant/30">
+<div class="flex justify-between items-center">
+<span class="font-label-utility text-label-utility text-outline">Covenant Struck</span>
+<span class="font-body-sm text-body-sm text-on-surface">Nov 22, 2022</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label-utility text-label-utility text-outline">Authenticated Works</span>
+<span class="font-body-sm text-body-sm text-on-surface">304</span>
+</div>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest flex justify-between items-center px-margin-admin py-4 w-full border-t border-outline-variant/30 mt-auto">
+<div class="font-label-caps text-label-caps text-primary">Thi Bút Curator Admin</div>
+<div class="flex gap-6">
+<a class="font-label-utility text-label-utility text-on-surface-variant hover:text-secondary transition-opacity duration-200" href="#">Archival Standards</a>
+<a class="font-label-utility text-label-utility text-on-surface-variant hover:text-secondary transition-opacity duration-200" href="#">Data Integrity</a>
+<a class="font-label-utility text-label-utility text-on-surface-variant hover:text-secondary transition-opacity duration-200" href="#">Ethical Guidelines</a>
+</div>
+<div class="font-label-utility text-label-utility text-on-surface-variant">
+                Thi Bút Internal Covenants © 2024
+            </div>
+</footer>
+</div>
+</body></html>

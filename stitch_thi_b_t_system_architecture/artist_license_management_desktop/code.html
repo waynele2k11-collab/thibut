@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sumi &amp; Paper - Artist License Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "primary-fixed-dim": "#c8c6c7",
+                      "error": "#ba1a1a",
+                      "background": "#fbf9f4",
+                      "on-secondary": "#ffffff",
+                      "on-secondary-fixed": "#40000a",
+                      "secondary-container": "#da3148",
+                      "on-error-container": "#93000a",
+                      "on-primary-container": "#858384",
+                      "surface": "#fbf9f4",
+                      "tertiary": "#000000",
+                      "outline-variant": "#c7c6ca",
+                      "primary-fixed": "#e5e2e3",
+                      "on-primary-fixed": "#1b1b1c",
+                      "on-primary": "#ffffff",
+                      "on-surface": "#1b1c19",
+                      "surface-container-low": "#f5f3ee",
+                      "surface-variant": "#e4e2dd",
+                      "on-error": "#ffffff",
+                      "surface-container-highest": "#e4e2dd",
+                      "surface-bright": "#fbf9f4",
+                      "on-tertiary": "#ffffff",
+                      "surface-dim": "#dbdad5",
+                      "inverse-surface": "#30312e",
+                      "secondary-fixed-dim": "#ffb3b4",
+                      "on-secondary-container": "#fffbff",
+                      "error-container": "#ffdad6",
+                      "tertiary-fixed-dim": "#c6c6c6",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-fixed-variant": "#454747",
+                      "surface-container-high": "#eae8e3",
+                      "inverse-primary": "#c8c6c7",
+                      "secondary": "#b71032",
+                      "primary": "#000000",
+                      "on-background": "#1b1c19",
+                      "surface-container": "#f0eee9",
+                      "tertiary-fixed": "#e2e2e2",
+                      "on-primary-fixed-variant": "#474647",
+                      "secondary-fixed": "#ffdad9",
+                      "inverse-on-surface": "#f2f1ec",
+                      "outline": "#76777b",
+                      "on-surface-variant": "#46474a",
+                      "on-secondary-fixed-variant": "#920023",
+                      "primary-container": "#1b1b1c",
+                      "on-tertiary-container": "#838484",
+                      "tertiary-container": "#1a1c1c",
+                      "surface-tint": "#5f5e5f"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "64px",
+                      "section-gap": "120px",
+                      "container-max": "1280px",
+                      "unit": "8px",
+                      "gutter": "24px",
+                      "margin-mobile": "24px"
+              },
+              "fontFamily": {
+                      "headline-sm": [
+                              "Playfair Display"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "display-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ]
+              },
+              "fontSize": {
+                      "headline-sm": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+            color: theme('colors.on-background');
+        }
+        
+        .paper-card {
+            background-color: theme('colors.surface-container-lowest');
+            border: 1px solid theme('colors.outline-variant');
+        }
+        
+        .btn-ink {
+            background-color: theme('colors.primary');
+            color: theme('colors.on-primary');
+            transition: all 0.3s ease;
+        }
+        .btn-ink:hover {
+            opacity: 0.9;
+        }
+        
+        .btn-outline {
+            border: 1px solid theme('colors.primary');
+            color: theme('colors.primary');
+            transition: all 0.3s ease;
+        }
+        .btn-outline:hover {
+            background-color: theme('colors.surface-container-low');
+        }
+        
+        .btn-seal {
+            background-color: theme('colors.secondary');
+            color: theme('colors.on-secondary');
+        }
+        
+        .thin-divider {
+            height: 1px;
+            background-color: theme('colors.outline-variant');
+            width: 80%;
+            margin: 0 auto;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-body-md text-body-md text-on-surface">
+<!-- TopNavBar -->
+<header class="w-full top-0 sticky bg-surface dark:bg-background z-50 border-b border-outline-variant/30">
+<div class="flex justify-between items-center px-margin-desktop py-unit max-w-container-max mx-auto h-20">
+<div class="flex items-center gap-12">
+<a class="font-headline-md text-headline-md text-primary dark:text-on-background tracking-tight" href="#">Sumi &amp; Paper</a>
+<nav class="hidden md:flex gap-8">
+<a class="font-body-md text-body-md uppercase tracking-widest text-on-surface-variant dark:text-on-surface-variant/70 hover:text-primary transition-colors duration-300" href="#">Explore</a>
+<a class="font-body-md text-body-md uppercase tracking-widest text-primary dark:text-on-background font-bold border-b-2 border-primary pb-1 hover:text-primary transition-colors duration-300" href="#">Creator Studio</a>
+<a class="font-body-md text-body-md uppercase tracking-widest text-on-surface-variant dark:text-on-surface-variant/70 hover:text-primary transition-colors duration-300" href="#">Personalization Lab</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<button aria-label="Search" class="text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+<button aria-label="Shopping Cart" class="text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+</button>
+<button aria-label="Account" class="text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-16">
+<!-- Page Header -->
+<div class="mb-section-gap max-w-3xl">
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-6">License Management</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Oversee your active rights ledger, configure usage tiers, and establish provenance rules for your archival works.</p>
+</div>
+<!-- Summary Metrics -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-section-gap">
+<div class="paper-card p-8 flex flex-col items-start relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
+<span class="material-symbols-outlined text-9xl" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-2">Total Active Licenses</span>
+<span class="font-headline-md text-headline-md text-primary">142</span>
+<div class="mt-4 flex items-center gap-2 text-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+<span>+12 this month</span>
+</div>
+</div>
+<div class="paper-card p-8 flex flex-col items-start relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
+<span class="material-symbols-outlined text-9xl" data-icon="account_balance" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-2">License Revenue</span>
+<span class="font-headline-md text-headline-md text-primary">$45,200</span>
+<div class="mt-4 flex items-center gap-2 text-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+<span>+8.4% this quarter</span>
+</div>
+</div>
+<div class="paper-card p-8 flex flex-col items-start relative overflow-hidden group border-primary/20 bg-surface-container-low">
+<div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-500 text-secondary">
+<span class="material-symbols-outlined text-9xl" data-icon="pending_actions" style="font-variation-settings: 'FILL' 1;">pending_actions</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-2">Pending Requests</span>
+<span class="font-headline-md text-headline-md text-primary">7</span>
+<div class="mt-6">
+<button class="btn-outline px-4 py-2 font-label-caps text-label-caps w-full text-center">Review Pending</button>
+</div>
+</div>
+</div>
+<div class="thin-divider mb-section-gap"></div>
+<!-- License Tiers Configuration -->
+<div class="mb-section-gap">
+<div class="mb-12 flex justify-between items-end border-b border-outline-variant/30 pb-4">
+<h2 class="font-headline-sm text-headline-sm text-primary">License Tiers</h2>
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-2">
+<span class="font-label-caps text-label-caps">Edit Defaults</span>
+<span class="material-symbols-outlined text-sm" data-icon="tune">tune</span>
+</button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Tier 1 -->
+<div class="paper-card p-8 flex flex-col">
+<div class="mb-6">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2">Private Collection</h3>
+<p class="text-sm text-on-surface-variant">Archival &amp; Personal Use</p>
+</div>
+<div class="flex-grow space-y-4 mb-8">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check">check</span>
+<span class="text-sm">Personal display rights</span>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check">check</span>
+<span class="text-sm">High-res archival download</span>
+</div>
+<div class="flex items-start gap-3 text-on-surface-variant/50">
+<span class="material-symbols-outlined text-sm mt-1" data-icon="close">close</span>
+<span class="text-sm line-through">Commercial reproduction</span>
+</div>
+<div class="flex items-start gap-3 text-on-surface-variant/50">
+<span class="material-symbols-outlined text-sm mt-1" data-icon="close">close</span>
+<span class="text-sm line-through">Public digital display</span>
+</div>
+</div>
+<div class="border-t border-outline-variant/30 pt-4 mt-auto">
+<div class="flex justify-between items-center mb-4">
+<span class="font-label-caps text-label-caps">Base Fee</span>
+<span class="font-body-md text-body-md">15% of artwork value</span>
+</div>
+<button class="btn-outline w-full py-3 font-label-caps text-label-caps">Configure Tier</button>
+</div>
+</div>
+<!-- Tier 2 -->
+<div class="paper-card p-8 flex flex-col relative border-primary shadow-sm bg-surface-container-lowest">
+<div class="absolute top-0 right-0 bg-primary text-on-primary px-3 py-1 font-label-caps text-xs">Most Popular</div>
+<div class="mb-6">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2">Digital Display</h3>
+<p class="text-sm text-on-surface-variant">Social &amp; Personal Galleries</p>
+</div>
+<div class="flex-grow space-y-4 mb-8">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check">check</span>
+<span class="text-sm">Everything in Private</span>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check">check</span>
+<span class="text-sm">Social media posting rights</span>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check">check</span>
+<span class="text-sm">Virtual gallery exhibition</span>
+</div>
+<div class="flex items-start gap-3 text-on-surface-variant/50">
+<span class="material-symbols-outlined text-sm mt-1" data-icon="close">close</span>
+<span class="text-sm line-through">Commercial reproduction</span>
+</div>
+</div>
+<div class="border-t border-outline-variant/30 pt-4 mt-auto">
+<div class="flex justify-between items-center mb-4">
+<span class="font-label-caps text-label-caps">Base Fee</span>
+<span class="font-body-md text-body-md">25% of artwork value</span>
+</div>
+<button class="btn-ink w-full py-3 font-label-caps text-label-caps">Configure Tier</button>
+</div>
+</div>
+<!-- Tier 3 -->
+<div class="paper-card p-8 flex flex-col">
+<div class="mb-6">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2">Commercial Stewardship</h3>
+<p class="text-sm text-on-surface-variant">Brand &amp; Editorial Use</p>
+</div>
+<div class="flex-grow space-y-4 mb-8">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check">check</span>
+<span class="text-sm">Full reproduction rights</span>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check">check</span>
+<span class="text-sm">Editorial &amp; promotional use</span>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check">check</span>
+<span class="text-sm">Derivative works permitted</span>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check">check</span>
+<span class="text-sm">Priority provenance tracking</span>
+</div>
+</div>
+<div class="border-t border-outline-variant/30 pt-4 mt-auto">
+<div class="flex justify-between items-center mb-4">
+<span class="font-label-caps text-label-caps">Base Fee</span>
+<span class="font-body-md text-body-md">Custom / Negotiated</span>
+</div>
+<button class="btn-outline w-full py-3 font-label-caps text-label-caps">Configure Tier</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Active Rights Ledger -->
+<div class="mb-section-gap">
+<div class="mb-12 border-b border-outline-variant/30 pb-4">
+<h2 class="font-headline-sm text-headline-sm text-primary">Active Rights Ledger</h2>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/50">
+<th class="py-4 px-4 font-label-caps text-label-caps text-on-surface-variant font-normal">Artwork / Commission</th>
+<th class="py-4 px-4 font-label-caps text-label-caps text-on-surface-variant font-normal">Collector</th>
+<th class="py-4 px-4 font-label-caps text-label-caps text-on-surface-variant font-normal">License Tier</th>
+<th class="py-4 px-4 font-label-caps text-label-caps text-on-surface-variant font-normal">Date Issued</th>
+<th class="py-4 px-4 font-label-caps text-label-caps text-on-surface-variant font-normal text-right">Actions</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-outline-variant/20 hover:bg-surface-container-low transition-colors group">
+<td class="py-6 px-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-dim rounded-sm overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover grayscale opacity-80" data-alt="A minimalist black and white ink wash painting of a single bamboo branch on textured rice paper. The style is traditional sumi-e, conveying a sense of calm and precision. The lighting is soft and natural, emphasizing the texture of the paper." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBX5VlKHxpej88rUwYoIoeHsFr10XZc5BLfE4idVfYPwBPpGvYYzHwprZ42bL4Aa3hFLctrFqft9A9g8fR4ExpKynoRs96HAPgKILm-3-zyFpS2KjmjI7cjWZAuHsByEo_pwRyH3NyO3asHGyt2V2iP98O_odjJtfM-jGiY7ZBNmZrt6mc-VNVIhdmx-bT9JOAdtSG8pF_b0jEbL1hMKxH9vxMGYTrxBaA5D6TXrDHkkdkCsJ7KY_Xl"/>
+</div>
+<div>
+<p class="font-medium text-primary">Midnight Bamboo #4</p>
+<p class="text-xs text-on-surface-variant font-mono">TXN-8A9F-22B</p>
+</div>
+</div>
+</td>
+<td class="py-6 px-4">E. Sterling</td>
+<td class="py-6 px-4">
+<span class="bg-surface-dim px-3 py-1 rounded-sm text-xs font-label-caps">Private Collection</span>
+</td>
+<td class="py-6 px-4 text-sm text-on-surface-variant">Oct 12, 2024</td>
+<td class="py-6 px-4 text-right">
+<button class="text-primary hover:text-secondary text-sm flex items-center gap-1 justify-end w-full opacity-0 group-hover:opacity-100 transition-opacity">
+<span>View Certificate</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/20 hover:bg-surface-container-low transition-colors group">
+<td class="py-6 px-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-dim rounded-sm overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover grayscale opacity-80" data-alt="A minimalist abstract ink brush stroke on white paper, forming a dramatic, sweeping arc. The stroke is thick and textured, showing the bristle marks of a large brush. The mood is energetic and spontaneous." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYYVGOqu1snVH-7-lMZTkLNY3V5uQUow_ESyGRgbguWtpVpLjoSXLtn0xOPNJ9NGeVS6zvvu9Yf2hM6mOsPUzuqVKMo6jZ591v73Egu6YJODgso9Wce5E4CX66M3B53sb4B4IAPgn9IBmAiP5zqkVVGyLFfy8Ilfm5YuZhBoR5QHSAZZ500vW6YFWpp6QnegfxrQsdLtatCpf6POU08nA5jfhEPZxiC7YOXXOrscurj8GjcBl5xWAC"/>
+</div>
+<div>
+<p class="font-medium text-primary">Enso Variation II</p>
+<p class="text-xs text-on-surface-variant font-mono">TXN-3C1D-99X</p>
+</div>
+</div>
+</td>
+<td class="py-6 px-4">Gallery Aoyama</td>
+<td class="py-6 px-4">
+<span class="bg-surface-dim px-3 py-1 rounded-sm text-xs font-label-caps">Commercial</span>
+</td>
+<td class="py-6 px-4 text-sm text-on-surface-variant">Sep 28, 2024</td>
+<td class="py-6 px-4 text-right">
+<button class="text-primary hover:text-secondary text-sm flex items-center gap-1 justify-end w-full opacity-0 group-hover:opacity-100 transition-opacity">
+<span>View Certificate</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/20 hover:bg-surface-container-low transition-colors group">
+<td class="py-6 px-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-dim rounded-sm overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover grayscale opacity-80" data-alt="A serene landscape painting done in sparse black ink washes on a tall, narrow vertical scroll format. Mountains fade into mist in the distance. The aesthetic is extremely minimalist and quiet, evocative of traditional East Asian landscapes." src="https://lh3.googleusercontent.com/aida-public/AB6AXuABKj5iXgKHcWsPbbqyx-Jl6q8v_bKZ1b__GJet-mGeGIQ9U3Eo5Qak5C9MWx4vJef6mFBlTR2pnYN2BWpIzWc_bFE3O4D6gDp42RHAzqwnmc2JbkrxwKEiCjuYEmUpUpLdOI38fGzDMybyHjWWbJ0RBvp_Br2RNtI9IXzIAn_ip1ijdfWZM2C7VCw3wNotX75rjyYEWjLOTWYNHqjf_hIwcLZpB2mTwkqPGZg_q7sYYtCSfpNacp5X"/>
+</div>
+<div>
+<p class="font-medium text-primary">Misty Peak Study</p>
+<p class="text-xs text-on-surface-variant font-mono">TXN-7Y2K-41M</p>
+</div>
+</div>
+</td>
+<td class="py-6 px-4">J. Chen</td>
+<td class="py-6 px-4">
+<span class="bg-surface-dim px-3 py-1 rounded-sm text-xs font-label-caps">Digital Display</span>
+</td>
+<td class="py-6 px-4 text-sm text-on-surface-variant">Sep 15, 2024</td>
+<td class="py-6 px-4 text-right">
+<button class="text-primary hover:text-secondary text-sm flex items-center gap-1 justify-end w-full opacity-0 group-hover:opacity-100 transition-opacity">
+<span>View Certificate</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-6 flex justify-center">
+<button class="btn-outline px-6 py-2 font-label-caps text-label-caps">View Full Ledger</button>
+</div>
+</div>
+<div class="thin-divider mb-section-gap"></div>
+<!-- Provenance & Royalties -->
+<div class="mb-section-gap max-w-4xl mx-auto">
+<div class="mb-12 text-center">
+<h2 class="font-headline-sm text-headline-sm text-primary mb-4">Provenance &amp; Royalties</h2>
+<p class="text-on-surface-variant">Configure automated resale rights and perpetual royalties on secondary markets to ensure your legacy is maintained.</p>
+</div>
+<div class="paper-card p-10">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+<div>
+<h3 class="font-headline-sm text-lg text-primary mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="history_edu">history_edu</span>
+                            Resale Royalty Rate
+                        </h3>
+<p class="text-sm text-on-surface-variant mb-6">Set the percentage you will receive automatically upon any verified secondary sale of your registered works.</p>
+<div class="flex items-center gap-4 mb-4">
+<input class="w-full h-1 bg-surface-dim rounded-lg appearance-none cursor-pointer accent-primary" max="20" min="0" type="range" value="10"/>
+<span class="font-headline-md text-primary w-16 text-right">10%</span>
+</div>
+<div class="flex justify-between text-xs text-on-surface-variant font-label-caps">
+<span>0%</span>
+<span>Standard (10%)</span>
+<span>Max (20%)</span>
+</div>
+</div>
+<div class="border-l-0 md:border-l border-outline-variant/30 md:pl-12 pt-8 md:pt-0 border-t md:border-t-0 mt-8 md:mt-0">
+<h3 class="font-headline-sm text-lg text-primary mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="policy">policy</span>
+                            Provenance Enforcement
+                        </h3>
+<div class="space-y-4">
+<label class="flex items-start gap-3 cursor-pointer group">
+<input checked="" class="mt-1 w-4 h-4 text-primary bg-surface border-outline-variant focus:ring-primary focus:ring-2 rounded-sm cursor-pointer" type="checkbox"/>
+<div>
+<span class="block text-sm font-medium text-primary">Require Digital Certificate Transfer</span>
+<span class="block text-xs text-on-surface-variant mt-1">Secondary sales must include the original digital COA.</span>
+</div>
+</label>
+<label class="flex items-start gap-3 cursor-pointer group">
+<input checked="" class="mt-1 w-4 h-4 text-primary bg-surface border-outline-variant focus:ring-primary focus:ring-2 rounded-sm cursor-pointer" type="checkbox"/>
+<div>
+<span class="block text-sm font-medium text-primary">Public Registry Listing</span>
+<span class="block text-xs text-on-surface-variant mt-1">Allow collectors to publicly verify authenticity.</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+<div class="mt-10 pt-8 border-t border-outline-variant/30 flex justify-end">
+<button class="btn-ink px-8 py-3 font-label-caps text-label-caps">Save Configuration</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full mt-section-gap bg-surface-container dark:bg-surface-container-low border-t border-outline-variant/20">
+<div class="flex flex-col md:flex-row justify-between items-start px-margin-desktop py-section-gap max-w-container-max mx-auto">
+<div class="mb-8 md:mb-0">
+<div class="font-headline-sm text-headline-sm text-primary mb-4">Sumi &amp; Paper</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant">© 2024 Sumi &amp; Paper. The Art of Ma.</div>
+</div>
+<div class="flex flex-col md:flex-row gap-8 md:gap-16">
+<nav class="flex flex-col gap-4">
+<a class="font-label-caps text-label-caps text-on-surface dark:text-on-surface hover:text-secondary transition-colors opacity-80 hover:opacity-100 transition-opacity" href="#">Cultural Guides</a>
+<a class="font-label-caps text-label-caps text-on-surface dark:text-on-surface hover:text-secondary transition-colors opacity-80 hover:opacity-100 transition-opacity" href="#">Artist Residency</a>
+</nav>
+<nav class="flex flex-col gap-4">
+<a class="font-label-caps text-label-caps text-on-surface dark:text-on-surface hover:text-secondary transition-colors opacity-80 hover:opacity-100 transition-opacity" href="#">Support</a>
+<a class="font-label-caps text-label-caps text-on-surface dark:text-on-surface hover:text-secondary transition-colors opacity-80 hover:opacity-100 transition-opacity" href="#">Shipping Policy</a>
+<a class="font-label-caps text-label-caps text-on-surface dark:text-on-surface hover:text-secondary transition-colors opacity-80 hover:opacity-100 transition-opacity" href="#">Legal Information</a>
+</nav>
+</div>
+</div>
+</footer>
+</body></html>

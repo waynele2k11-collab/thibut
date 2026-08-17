@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Journey of the Brush - Tracking</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Playfair+Display:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#76777b",
+                        "on-primary-fixed-variant": "#474647",
+                        "on-secondary-fixed-variant": "#920023",
+                        "secondary": "#b71032",
+                        "inverse-primary": "#c8c6c7",
+                        "secondary-fixed": "#ffdad9",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "tertiary": "#000000",
+                        "surface-dim": "#dbdad5",
+                        "secondary-fixed-dim": "#ffb3b4",
+                        "tertiary-fixed": "#e2e2e2",
+                        "background": "#fbf9f4",
+                        "on-secondary-container": "#fffbff",
+                        "outline-variant": "#c7c6ca",
+                        "surface-container-highest": "#e4e2dd",
+                        "surface-container-high": "#eae8e3",
+                        "on-primary-fixed": "#1b1b1c",
+                        "primary": "#000000",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#f5f3ee",
+                        "on-secondary-fixed": "#40000a",
+                        "on-surface": "#1b1c19",
+                        "primary-fixed": "#e5e2e3",
+                        "secondary-container": "#da3148",
+                        "on-surface-variant": "#46474a",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "on-primary-container": "#858384",
+                        "on-background": "#1b1c19",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#fbf9f4",
+                        "surface-container": "#f0eee9",
+                        "surface-tint": "#5f5e5f",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "primary-container": "#1b1b1c",
+                        "tertiary-container": "#1a1c1c",
+                        "on-primary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "inverse-on-surface": "#f2f1ec",
+                        "inverse-surface": "#30312e",
+                        "surface-variant": "#e4e2dd",
+                        "surface": "#fbf9f4",
+                        "on-tertiary-container": "#838484",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "margin-mobile": "24px",
+                        "gutter": "24px",
+                        "margin-desktop": "64px",
+                        "section-gap": "120px",
+                        "container-max": "1280px"
+                    },
+                    "fontFamily": {
+                        "display-lg-mobile": ["Playfair Display"],
+                        "display-lg": ["Playfair Display"],
+                        "headline-sm": ["Playfair Display"],
+                        "body-lg": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "headline-md": ["Playfair Display"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .texture-overlay {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col relative selection:bg-surface-variant selection:text-primary">
+<!-- Texture Overlay for Zen-Modern aesthetic -->
+<div class="fixed inset-0 texture-overlay z-0"></div>
+<!-- TopNavBar -->
+<nav class="bg-background w-full top-0 sticky border-b border-outline-variant/30 z-50">
+<div class="flex justify-between items-center px-margin-desktop py-unit max-w-container-max mx-auto">
+<div class="font-display-lg text-display-lg tracking-tighter text-primary">Brush &amp; Ma</div>
+<div class="hidden md:flex gap-8">
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-300" href="#">Gallery</a>
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-300" href="#">Artists</a>
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-300" href="#">Archives</a>
+</div>
+<div class="flex gap-4">
+<button aria-label="account_balance_wallet" class="text-primary hover:text-secondary transition-colors duration-300">
+<span class="material-symbols-outlined font-headline-sm text-headline-sm" style="font-variation-settings: 'FILL' 0;">account_balance_wallet</span>
+</button>
+<button aria-label="shopping_bag" class="text-primary hover:text-secondary transition-colors duration-300">
+<span class="material-symbols-outlined font-headline-sm text-headline-sm" style="font-variation-settings: 'FILL' 0;">shopping_bag</span>
+</button>
+</div>
+</div>
+</nav>
+<main class="flex-grow z-10 w-full max-w-container-max mx-auto px-margin-desktop pt-margin-desktop pb-section-gap">
+<!-- Header Section -->
+<header class="mb-section-gap text-center md:text-left mt-margin-desktop">
+<h1 class="font-display-lg text-display-lg text-primary mb-4">The Journey of the Brush</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl md:ml-0 mx-auto">
+                Tracing the path of your commissioned artwork from the Master's sanctuary in Kyoto, across oceans, to its new home.
+            </p>
+</header>
+<!-- Journey Timeline -->
+<section class="mb-section-gap">
+<div class="relative w-full max-w-4xl mx-auto">
+<!-- Connecting Line -->
+<div class="absolute top-1/2 left-8 right-8 h-px bg-outline-variant/50 -translate-y-1/2 hidden md:block"></div>
+<!-- Progress Line -->
+<div class="absolute top-1/2 left-8 w-[66%] h-[2px] bg-primary -translate-y-1/2 hidden md:block transition-all duration-1000 ease-in-out"></div>
+<div class="flex flex-col md:flex-row justify-between relative z-10 gap-8 md:gap-0">
+<!-- Phase 1 -->
+<div class="flex flex-col items-center group">
+<div class="w-16 h-16 rounded-full bg-surface-container-high border border-outline-variant/30 flex items-center justify-center mb-4 text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">brush</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest text-center">In the Studio</span>
+</div>
+<!-- Phase 2 -->
+<div class="flex flex-col items-center group">
+<div class="w-16 h-16 rounded-full bg-surface-container-high border border-outline-variant/30 flex items-center justify-center mb-4 text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest text-center">Kiri Packaging</span>
+</div>
+<!-- Phase 3 (Active) -->
+<div class="flex flex-col items-center group">
+<div class="w-16 h-16 rounded-full bg-primary border-2 border-primary flex items-center justify-center mb-4 text-on-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">flight_takeoff</span>
+</div>
+<span class="font-label-caps text-label-caps text-primary font-bold uppercase tracking-widest text-center">Int. Transit</span>
+</div>
+<!-- Phase 4 (Pending) -->
+<div class="flex flex-col items-center group">
+<div class="w-16 h-16 rounded-full bg-surface border border-outline-variant/30 flex items-center justify-center mb-4 text-outline-variant group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">visibility</span>
+</div>
+<span class="font-label-caps text-label-caps text-outline-variant uppercase tracking-widest text-center">The Unveiling</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Content Split -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter items-start">
+<!-- Left Column: Feature & Logistics (Cols 1-5) -->
+<div class="md:col-span-5 flex flex-col gap-margin-desktop">
+<!-- Logistics Card -->
+<div class="bg-surface-container-low border border-outline-variant/30 p-8 flex flex-col gap-6">
+<h2 class="font-headline-sm text-headline-sm text-primary mb-2">Transit Details</h2>
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-center border-b border-outline-variant/20 pb-4">
+<span class="font-body-md text-body-md text-on-surface-variant">Carrier</span>
+<span class="font-body-md text-body-md text-primary font-medium">FedEx Int. Artisan</span>
+</div>
+<div class="flex justify-between items-center border-b border-outline-variant/20 pb-4">
+<span class="font-body-md text-body-md text-on-surface-variant">Estimated Arrival</span>
+<span class="font-body-md text-body-md text-primary font-medium">Oct 24, 2024</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Tracking ID</span>
+<span class="font-label-caps text-label-caps text-primary font-bold tracking-widest">FDX-8839-ZN</span>
+</div>
+</div>
+</div>
+<!-- Feature Section -->
+<div class="flex flex-col gap-4">
+<h3 class="font-headline-sm text-headline-sm text-primary">The Art of Preservation</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                        Enclosed in bespoke Paulownia (Kiri) wood, your artwork is shielded from humidity and temperature fluctuations during its journey. This traditional Japanese method ensures the delicate ink and Washi paper arrive in pristine condition, just as it left the Master's studio.
+                    </p>
+<div class="mt-4 w-full h-48 bg-surface-container-high border border-outline-variant/20 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover opacity-80 mix-blend-multiply" data-alt="A macro, beautifully lit close-up photograph of a finely crafted Paulownia wood box in a serene, minimalist setting. The wood grain is subtle and elegant. Soft, high-key light highlights the natural texture, evoking a calm, luxurious Zen-Modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1Bu7oXXQ1uXHTJEOQNCKujHuoryDqpkKGTg3DJU5ggHSk8Nl7GZwU1XRE0rtsDzBxMMtvAu-CEHoW-zx-aA0HW6Lhx_KXX3gvoYBP5yoKVVte32layexa1Qmkp0rimOw96-ypcTS1ZV9marZqMgmk_mMBASeS9By_SSGpGtC77YFNkOO3q-XFbDw_iDKgLU_xfkDpcnYWBcG-V9G5YyqW0IuhpCm7kOmU51tWVGLqSHhof1PW-pFX"/>
+</div>
+</div>
+</div>
+<!-- Right Column: Preview (Cols 7-12) -->
+<div class="md:col-span-6 md:col-start-7 flex flex-col items-center">
+<!-- Artwork Preview Light-box -->
+<div class="bg-surface-container-lowest border border-outline-variant/20 p-8 md:p-12 w-full flex flex-col items-center shadow-sm relative overflow-hidden group">
+<div class="w-full aspect-[3/4] bg-surface-container-highest mb-8 relative flex items-center justify-center">
+<img class="w-full h-full object-contain absolute inset-0 p-4" data-alt="A stunning piece of traditional Japanese sumi-e calligraphy, specifically an Enso circle, rendered with masterful brushstrokes on textured washi paper. The artwork is presented in a bright, minimalist gallery setting. Deep black ink contrasts sharply with the pristine white paper, embodying the Zen-Modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzlKAMheXvQINVbqpE7-II0bpk9TVuOU65rkxeiljdZI8DsJTj8kYMvNRs72fjJD2akcBteq42XaYuYaZq-xvDYqGHq91Po_HQ9HLEjOcl74WdICnhHecEALO0ZWdNw_kHc0_1nI3VlGCdmvZllbtpRD3oNH30_NNTy1TMH7krjRCKoxvP2HSD3oid0nAKeCrw72jq2uPh8fJu6c9JMtO3zzMXwie0OLZ27ZNfJLLtyWRIDpejWNg6"/>
+<!-- Subtle overlay for digital twin hint -->
+<div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+</div>
+<div class="text-center w-full">
+<h2 class="font-headline-md text-headline-md text-primary mb-2">Enso Moment</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-8 italic">by Master Hiroshi</p>
+<button class="bg-primary text-on-primary w-full py-4 px-8 font-label-caps text-label-caps uppercase tracking-widest hover:bg-inverse-surface transition-colors duration-300 flex items-center justify-center gap-3">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">qr_code_scanner</span>
+                            Access Digital Twin
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-background w-full mt-section-gap border-t border-outline-variant/20 z-10">
+<div class="flex flex-col items-center gap-unit py-margin-desktop px-margin-desktop max-w-container-max mx-auto">
+<div class="font-display-lg text-display-lg text-primary mb-4">Brush &amp; Ma</div>
+<div class="flex flex-wrap justify-center gap-6 mb-8">
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-secondary underline underline-offset-4 opacity-100 hover:opacity-80 transition-opacity" href="#">Provenance Policy</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-secondary underline underline-offset-4 opacity-100 hover:opacity-80 transition-opacity" href="#">Artisanal Care</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-secondary underline underline-offset-4 opacity-100 hover:opacity-80 transition-opacity" href="#">Terms of Honor</a>
+</div>
+<p class="text-on-surface-variant font-body-md text-body-md text-center opacity-70">
+                © 2024 Brush &amp; Ma. The Essence of Ink.
+            </p>
+</div>
+</footer>
+</body></html>

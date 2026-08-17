@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Master Wei - Artist Profile</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error": "#ffffff",
+                        "surface": "#fbf9f4",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#1b1c19",
+                        "on-secondary-container": "#fffbff",
+                        "inverse-primary": "#c8c6c7",
+                        "outline-variant": "#c7c6ca",
+                        "surface-dim": "#dbdad5",
+                        "on-secondary-fixed": "#40000a",
+                        "secondary-container": "#da3148",
+                        "surface-variant": "#e4e2dd",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#920023",
+                        "outline": "#76777b",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e4e2dd",
+                        "primary": "#000000",
+                        "inverse-surface": "#30312e",
+                        "surface-container": "#f0eee9",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "on-primary-fixed-variant": "#474647",
+                        "primary-fixed": "#e5e2e3",
+                        "on-background": "#1b1c19",
+                        "surface-container-low": "#f5f3ee",
+                        "primary-container": "#1b1b1c",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#1b1b1c",
+                        "tertiary": "#000000",
+                        "secondary-fixed": "#ffdad9",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#5f5e5f",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#1a1c1c",
+                        "background": "#fbf9f4",
+                        "surface-container-high": "#eae8e3",
+                        "error": "#ba1a1a",
+                        "surface-bright": "#fbf9f4",
+                        "on-primary-container": "#858384",
+                        "inverse-on-surface": "#f2f1ec",
+                        "on-surface-variant": "#46474a",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "secondary-fixed-dim": "#ffb3b4",
+                        "on-tertiary-container": "#838484",
+                        "secondary": "#b71032"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-desktop": "64px",
+                        "margin-mobile": "24px",
+                        "container-max": "1280px",
+                        "section-gap": "120px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Playfair Display"],
+                        "headline-sm": ["Playfair Display"],
+                        "headline-md": ["Playfair Display"],
+                        "label-caps": ["Inter"],
+                        "display-lg-mobile": ["Playfair Display"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Zen-Modern specific utilities */
+        .washi-texture {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+        .ink-stroke-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(27, 28, 25, 0.8), transparent);
+        }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface washi-texture min-h-screen pb-32">
+<!-- TopAppBar JSON Component -->
+<header class="fixed top-0 w-full z-50 bg-background dark:bg-surface flex items-center justify-between px-margin-mobile h-16 max-w-container-max mx-auto shadow-sm">
+<button class="p-2 hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span aria-hidden="true" class="material-symbols-outlined text-primary dark:text-on-surface" data-icon="brush">brush</span>
+</button>
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary dark:text-on-surface text-center flex-1">Artist Hub</h1>
+<button class="p-2 hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span aria-hidden="true" class="material-symbols-outlined text-primary dark:text-on-surface" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="pt-24 px-margin-mobile max-w-container-max mx-auto flex flex-col gap-section-gap md:px-margin-desktop">
+<!-- Hero Section -->
+<section class="flex flex-col items-center text-center mt-12 md:mt-24">
+<div class="relative w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden mb-8 border-2 border-outline-variant">
+<img class="object-cover w-full h-full grayscale hover:grayscale-0 transition-all duration-700" data-alt="A portrait of an elderly Asian calligraphy master in traditional minimalist robes, standing in a bright, sunlit studio with rice paper and ink. High key lighting, serene expression, sharp focus on the master with a soft, minimalist background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA23lwlWMZph_nU0Tw7LuKJxTSVCo-vogXkllPPuTmZWFSZTPgwOfgEZwRLTkQusnI-u5lS54_PM8JTNFHHPbFYt6wZ8Gi6TbQbjw3gJ1kklOCJVNCJJrmalLo3qItd_-6e963MQipI046IeenTmSR9HzRGY2gKhCCcNXWBdXpL-0ntmMKCB8p-LS3dVU9nSaTkVlEzsrlbWgdHA3PX0qeMRBZKEgSSPx6feTEDdtw1_bWwUp7rn3HF"/>
+</div>
+<h2 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-primary mb-2">Master Wei</h2>
+<p class="font-label-caps text-label-caps text-secondary tracking-widest mb-6">3RD GENERATION CALLIGRAPHER</p>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl mb-12">
+                Preserving the ancient art of Gyosho fluid motion. Master Wei brings three generations of meticulous craftsmanship to every stroke, balancing structural discipline with intuitive flow.
+            </p>
+<div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+<button class="bg-primary text-on-primary px-8 py-4 font-label-caps text-label-caps tracking-widest hover:opacity-90 active:scale-95 transition-all duration-300 w-full sm:w-auto">
+                    COMMISSION AN ORIGINAL
+                </button>
+<button class="border border-outline text-primary px-8 py-4 font-label-caps text-label-caps tracking-widest hover:bg-surface-container active:scale-95 transition-all duration-300 w-full sm:w-auto">
+                    FOLLOW MASTER WEI
+                </button>
+</div>
+</section>
+<!-- Stats Section -->
+<section class="grid grid-cols-3 gap-4 md:gap-12 border-y border-outline-variant py-8 md:py-12">
+<div class="flex flex-col items-center text-center">
+<span class="font-headline-md text-headline-md text-primary mb-1">2.4k</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">WORKS SOLD</span>
+</div>
+<div class="flex flex-col items-center text-center border-x border-outline-variant">
+<span class="font-headline-md text-headline-md text-primary mb-1">45</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">YEARS EXP.</span>
+</div>
+<div class="flex flex-col items-center text-center">
+<span class="font-headline-md text-headline-md text-primary mb-1">4.9</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">AVG. RATING</span>
+</div>
+</section>
+<!-- Philosophy Section -->
+<section class="grid md:grid-cols-2 gap-12 items-center">
+<div class="order-2 md:order-1">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-6">The Philosophy of 'Ma'</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">
+                    In Master Wei's practice, the empty space on the paper—known as 'Ma' (間)—is just as vital as the ink itself. It is the silence between the notes, the breath between words.
+                </p>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                    By emphasizing negative space, each character commands attention, allowing the viewer to experience a profound sense of tranquility and focused energy.
+                </p>
+</div>
+<div class="order-1 md:order-2 aspect-[4/3] bg-surface-container relative p-8">
+<img class="object-cover w-full h-full mix-blend-multiply" data-alt="A close-up shot of a thick, deliberate brush stroke of black sumi ink on textured white washi paper. The composition is highly asymmetrical, emphasizing the vast white negative space around the single stroke. Minimalist, high contrast, elegant." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNgO-53_WdRa_wPpRIYRpiX6ZSgFAragoNaeHbl2N9WXpZucmBYQFnq-7KXGi3TvMo3HUe3hZ7b7t_O_0S5GXMNrC9lGbj6aLo-Ghpqbcue9GBXmzoIlBkYi_UqicG43irnuBmUrfM9osY1bsTv_f2wz5MmIuyyvf62e-NZ7vknvMifsQ4vYgp4KwMV7OhWaOMdLuzR0pA1OS9kPN5oWfgFsQXQnW_8fu_LKtfrWVVx3rXWT4PP1w-"/>
+</div>
+</section>
+<!-- Portfolio Section -->
+<section class="flex flex-col gap-8">
+<div class="flex justify-between items-end mb-4 border-b border-outline-variant pb-4">
+<h3 class="font-headline-sm text-headline-sm text-primary">Selected Works</h3>
+<a class="font-label-caps text-label-caps text-secondary hover:opacity-80 transition-opacity" href="#">VIEW ALL GALLERY</a>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Portfolio Item 1 -->
+<div class="group cursor-pointer">
+<div class="aspect-[3/4] bg-surface-container mb-4 overflow-hidden relative">
+<img class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700" data-alt="A vertical hanging scroll featuring traditional Chinese calligraphy. The characters flow with dynamic energy (Gyosho style) against a pristine white background. The scroll has a subtle, elegant silk border. High resolution, stark contrast." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNVhY_x-_s7RWSiCAesOEqYeUF9rmUWKPNBqHYOPpXdoDT0daFJa7glqetAPGm2EtFYROt9OCynhSG-Zk7xJx8tLjoJ_7-qV-FhXbH997ufrVuunfRl7tN-qhOMrXRjl9N9iGsyGTa4Un-Fn6KSwKs0iZzPh9NROBrezb9LBXjPTAvfLJBvU0RHsEcXDndDtU8g3jI-Ic3i7SX09m2v2rWzgAELweHfQ_p7H-5GVFQvw83PjVftisY"/>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-primary mb-1">Flowing River Scroll</h4>
+<p class="font-label-caps text-label-caps text-on-surface-variant">INK ON RICE PAPER, 2023</p>
+</div>
+<!-- Portfolio Item 2 -->
+<div class="group cursor-pointer">
+<div class="aspect-square bg-surface-container mb-4 overflow-hidden relative mt-0 sm:mt-12">
+<img class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700" data-alt="A highly detailed close-up of a carved cinnabar red stone seal stamping onto white paper. The character is sharp and precise, contrasting beautifully with the organic texture of the red ink paste and the bright white background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBElBig9qoT0B8qCO0M0xScpQbKWnIYTKDWnMCaCYbPHxjUMd5Ah5naH-83-Cxyt_7JDE-eKMxDbFlPu5qIMXUMLpolrXuclnSyYbCCrNbSyPRsWiMj1AOAlYG0--ZIdToxYLd1kaWrY3tbki1RzU6hZF0Px1YFCQVK4ISMiBe8AD5-vs6iHtQIdHo2YCzMrikDZDcwM3MOMBXztFteZvuiwUDmtpo-pFtGuwdvVNOjagPuaMF75x2n"/>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-primary mb-1">Custom Seal Design</h4>
+<p class="font-label-caps text-label-caps text-on-surface-variant">CINNABAR STONE ENGRAVING</p>
+</div>
+<!-- Portfolio Item 3 -->
+<div class="group cursor-pointer sm:col-span-2 lg:col-span-1">
+<div class="aspect-[4/3] lg:aspect-[3/4] bg-surface-container mb-4 overflow-hidden relative lg:mt-24">
+<img class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700" data-alt="A modern, minimalist framing of a single, powerful calligraphic character representing 'Zen'. The frame is thin black metal, creating a stark border against the pure white paper. Displayed in a bright, modern gallery setting with soft, diffused lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCXcMpajqD78SZDGCfkJggt4Ppzi5CORPpKNy2tUj4Pc1fNAr0AVrcGF67-M0dHufRTDX-trGucZh_7zqIZbzC47oAJ-E_rXetRAmHcfSFYKsEqyLTzscuB_BrvXUPURP6D3YtyzCosanYugSA0rKDoXCPHGlPF9JD6WJz3X2NEcLde86dJb-GKAaWoQ5soMr7Qesa-YlMihW3DUDoswmAXVCYNbTdcdabL0Xv_eqNO1rIG8hS9EuW"/>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-primary mb-1">Zen Concept Frame</h4>
+<p class="font-label-caps text-label-caps text-on-surface-variant">MODERN INSTALLATION</p>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar JSON Component -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 bg-surface dark:bg-surface-container border-t border-outline-variant z-50 md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-on-surface active:scale-90 transition-transform duration-150" href="#">
+<span aria-hidden="true" class="material-symbols-outlined mb-1" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps text-[10px]">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-on-surface active:scale-90 transition-transform duration-150" href="#">
+<span aria-hidden="true" class="material-symbols-outlined mb-1" data-icon="pennant">redeem</span>
+<span class="font-label-caps text-label-caps text-[10px]">Commissions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-on-surface active:scale-90 transition-transform duration-150" href="#">
+<span aria-hidden="true" class="material-symbols-outlined mb-1" data-icon="palette">palette</span>
+<span class="font-label-caps text-label-caps text-[10px]">Gallery</span>
+</a>
+<!-- Active Tab: Profile -->
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim bg-secondary-container/10 rounded-xl px-4 py-1 active:scale-90 transition-transform duration-150" href="#">
+<span aria-hidden="true" class="material-symbols-outlined mb-1" data-icon="person" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-caps text-label-caps text-[10px]">Profile</span>
+</a>
+</nav>
+<!-- Spacer for Bottom Nav on Mobile -->
+<div class="h-20 md:hidden"></div>
+</body></html>

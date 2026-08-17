@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cultural Intelligence Analysis - Thi Bút</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary": "#ffffff",
+                      "secondary": "#b71032",
+                      "on-secondary-fixed-variant": "#920023",
+                      "primary-fixed-dim": "#c8c6c7",
+                      "tertiary-fixed-dim": "#c6c6c6",
+                      "on-error-container": "#93000a",
+                      "on-background": "#1b1c19",
+                      "surface": "#fbf9f4",
+                      "primary-container": "#1b1b1c",
+                      "surface-container": "#f0eee9",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-container": "#838484",
+                      "surface-tint": "#5f5e5f",
+                      "inverse-primary": "#c8c6c7",
+                      "outline-variant": "#c7c6ca",
+                      "inverse-surface": "#30312e",
+                      "secondary-container": "#da3148",
+                      "error-container": "#ffdad6",
+                      "on-error": "#ffffff",
+                      "on-secondary-container": "#fffbff",
+                      "on-tertiary-fixed-variant": "#454747",
+                      "tertiary-fixed": "#e2e2e2",
+                      "on-surface": "#1b1c19",
+                      "surface-container-highest": "#e4e2dd",
+                      "outline": "#76777b",
+                      "primary": "#000000",
+                      "on-surface-variant": "#46474a",
+                      "surface-container-high": "#eae8e3",
+                      "surface-container-low": "#f5f3ee",
+                      "tertiary": "#000000",
+                      "tertiary-container": "#1a1c1c",
+                      "surface-dim": "#dbdad5",
+                      "secondary-fixed-dim": "#ffb3b4",
+                      "error": "#ba1a1a",
+                      "secondary-fixed": "#ffdad9",
+                      "on-primary-container": "#858384",
+                      "on-primary-fixed": "#1b1b1c",
+                      "surface-bright": "#fbf9f4",
+                      "on-primary-fixed-variant": "#474647",
+                      "background": "#fbf9f4",
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed": "#40000a",
+                      "inverse-on-surface": "#f2f1ec",
+                      "surface-variant": "#e4e2dd",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-fixed": "#e5e2e3"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "section-gap": "120px",
+                      "gutter": "24px",
+                      "margin-desktop": "64px",
+                      "container-max": "1280px",
+                      "unit": "8px",
+                      "margin-mobile": "24px"
+              },
+              "fontFamily": {
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ],
+                      "headline-sm": [
+                              "Playfair Display"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-sm": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: theme('colors.surface');
+            color: theme('colors.on-surface');
+            /* Subtle texture overlay */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Custom Radio Button Styling */
+        input[type="radio"] {
+            appearance: none;
+            background-color: transparent;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 20px;
+            height: 20px;
+            border: 1px solid theme('colors.outline');
+            border-radius: 50%;
+            display: grid;
+            place-content: center;
+        }
+
+        input[type="radio"]::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em theme('colors.primary');
+        }
+
+        input[type="radio"]:checked::before {
+            transform: scale(1);
+        }
+
+        input[type="radio"]:checked {
+            border-color: theme('colors.primary');
+        }
+        
+        /* Card Selection Transitions */
+        .interp-card {
+            transition: all 0.3s ease;
+        }
+        .interp-card.selected {
+            border-color: theme('colors.primary');
+            background-color: theme('colors.surface-container-lowest');
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col relative pb-32">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-margin-mobile py-4 bg-surface dark:bg-surface sticky top-0 z-40" id="top-app-bar">
+<button aria-label="Back" class="w-10 h-10 flex items-center justify-center hover:opacity-80 transition-opacity active:scale-95 transition-transform rounded-full">
+<span class="material-symbols-outlined text-outline dark:text-outline-variant" data-icon="arrow_back" data-weight="regular">arrow_back</span>
+</button>
+<div class="font-display-lg-mobile text-display-lg-mobile text-primary dark:text-primary-fixed-dim tracking-tight text-center">
+            Thi Bút
+        </div>
+<button aria-label="Cart" class="w-10 h-10 flex items-center justify-center hover:opacity-80 transition-opacity active:scale-95 transition-transform rounded-full">
+<span class="material-symbols-outlined text-outline dark:text-outline-variant" data-icon="shopping_bag" data-weight="regular">shopping_bag</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-grow px-margin-mobile flex flex-col gap-8 pt-8">
+<!-- Header Area -->
+<section class="flex flex-col gap-4 items-center text-center">
+<span class="font-label-caps text-label-caps text-secondary tracking-widest uppercase">Step 1: Meaning</span>
+<h1 class="font-headline-md text-headline-md text-primary">Cultural Intelligence Analysis</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-sm mx-auto">
+                Your input <strong class="text-primary font-semibold">"Never Give Up"</strong> has been analyzed. Select the interpretation that best resonates with your intent.
+            </p>
+</section>
+<!-- Interpretation Cards List -->
+<section class="flex flex-col gap-6 w-full max-w-md mx-auto">
+<!-- Card 1: Literal -->
+<label class="interp-card block border border-outline-variant rounded-lg p-6 cursor-pointer relative bg-surface-container-low hover:bg-surface-container transition-colors" for="interp-literal">
+<div class="absolute top-6 left-6">
+<input class="mt-1" id="interp-literal" name="interpretation" onchange="updateSelection(this)" type="radio" value="literal"/>
+</div>
+<div class="flex flex-col items-center gap-4 pt-2">
+<div class="w-32 h-32 flex items-center justify-center border border-outline-variant rounded bg-surface-container-lowest">
+<!-- Calligraphy Placeholder -->
+<img alt="Akiramenai Calligraphy" class="w-full h-full object-cover rounded opacity-80 mix-blend-multiply" data-alt="A striking digital installation art piece featuring glowing, generative Japanese calligraphy for 'Akiramenai' (Never Give Up) suspended in a vast, minimalist gallery space. The room is illuminated by high-key, soft white lighting that creates a bright, modern light-mode aesthetic. The artwork relies on a sophisticated palette of deep blacks and pristine whites, punctuated by intense accents of vibrant red. The mood is serene yet technologically advanced." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_u2DFe964KTs99sGG39oGI1WoZ78i8RjsIsYR4zdWcjMgznix1wF50xMPPZgcfVFIbu-FUAG7KPRGDCvVWJB9RPWBhE16FKxg7w7t2MBNGJKqRCliuytcvVBwAV7Fz5mM0YKD4zYYU3gWylnHkgftdH10vKx6sK3qkS4yd_YbRhx2WGgjWiihDImcQg5JUXkvU01WBt_O-jSEncpOSAdFCEH1VPU_-WzBwlip38Asesv8AKZPXrSB"/>
+</div>
+<div class="text-center flex flex-col gap-1 w-full pl-8 pr-8">
+<span class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Literal Translation</span>
+<h3 class="font-headline-sm text-headline-sm text-primary">Akiramenai</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 text-sm leading-relaxed">
+                            A direct translation. It straightforwardly communicates the refusal to quit or surrender in everyday language.
+                        </p>
+</div>
+</div>
+</label>
+<!-- Card 2: Idiomatic (Recommended) -->
+<label class="interp-card selected block border border-primary rounded-lg p-6 cursor-pointer relative bg-surface-container-lowest shadow-[0_4px_20px_rgba(0,0,0,0.03)]" for="interp-idiomatic">
+<!-- Recommended Badge -->
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-secondary text-on-secondary px-3 py-1 rounded-full font-label-caps text-label-caps uppercase tracking-wider z-10 whitespace-nowrap shadow-sm">
+                    Recommended Match
+                </div>
+<div class="absolute top-6 left-6">
+<input checked="" class="mt-1" id="interp-idiomatic" name="interpretation" onchange="updateSelection(this)" type="radio" value="idiomatic"/>
+</div>
+<div class="flex flex-col items-center gap-4 pt-4">
+<div class="w-40 h-40 flex items-center justify-center border border-outline-variant rounded bg-surface-container-lowest p-2">
+<!-- Calligraphy Placeholder -->
+<img alt="Shichitenhakki Calligraphy" class="w-full h-full object-cover rounded opacity-90 mix-blend-multiply" data-alt="A striking digital installation art piece featuring glowing, generative Japanese calligraphy for the idiom 'Shichitenhakki' (Fall seven times, stand up eight) suspended in a vast, minimalist gallery space. The room is illuminated by high-key, soft white lighting that creates a bright, modern light-mode aesthetic. The artwork relies on a sophisticated palette of deep blacks and pristine whites, punctuated by intense accents of vibrant red. The mood is serene yet technologically advanced." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEvSR-k8SgqmFeakLfAcWVy7rQHG56JNp9CtZiDuC0AZlSzt9wx-GmFYRtnY2Z9QjJHt-VhN3_sTlIazhcaKCo3l-d-rCmYtryfzlPSsP7jqPmHHVSrTCGN9ObyWzHYZuy8n04RjnylQrcUZF0QEh7bbdyw1oIy7rCmPmQudYYjQNc6cujC8A_3HQgFqm-9_FxLmYcSgyxNdVnH9CwRiutpuXHoh4UERAUsL2TT8Bvpa0LgIgcQlp5"/>
+</div>
+<div class="text-center flex flex-col gap-1 w-full pl-8 pr-8">
+<span class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Yojijukugo (4-Character Idiom)</span>
+<h3 class="font-headline-sm text-headline-sm text-primary">Shichitenhakki</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 text-sm leading-relaxed">
+                            "Fall down seven times, stand up eight." A deeply cultural proverb expressing profound resilience and the continuous effort to overcome adversity.
+                        </p>
+</div>
+</div>
+</label>
+<!-- Card 3: Philosophical -->
+<label class="interp-card block border border-outline-variant rounded-lg p-6 cursor-pointer relative bg-surface-container-low hover:bg-surface-container transition-colors" for="interp-philosophical">
+<div class="absolute top-6 left-6">
+<input class="mt-1" id="interp-philosophical" name="interpretation" onchange="updateSelection(this)" type="radio" value="philosophical"/>
+</div>
+<div class="flex flex-col items-center gap-4 pt-2">
+<div class="w-32 h-32 flex items-center justify-center border border-outline-variant rounded bg-surface-container-lowest">
+<!-- Calligraphy Placeholder -->
+<img alt="Fukutsu Calligraphy" class="w-full h-full object-cover rounded opacity-80 mix-blend-multiply" data-alt="A striking digital installation art piece featuring glowing, generative Japanese calligraphy for 'Fukutsu' (Indomitable spirit) suspended in a vast, minimalist gallery space. The room is illuminated by high-key, soft white lighting that creates a bright, modern light-mode aesthetic. The artwork relies on a sophisticated palette of deep blacks and pristine whites, punctuated by intense accents of vibrant red. The mood is serene yet technologically advanced." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFCZY1Ru4_c3s6eb-mnOGo9Zp6wuzLuvYbbbYBCjV7DKrp4gd4mIgK8tKbtBp280VfqwlnmqLprJ08yZbfKU0Dgj7X4uSOVC6f4G9n_ELn5a0VwAt91PNh3IAS0c5_X34w7L04g0IYqM2kMpXJzBXRefLwSUBr68wm6ZQgLw5mSNG8T59661mfP2jJmKJAWMme2gmhAmqa2hM2h4ndpseSWTrZ0kQXi7SN4NaHqdA5n9i37a5Rc02O"/>
+</div>
+<div class="text-center flex flex-col gap-1 w-full pl-8 pr-8">
+<span class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Philosophical Concept</span>
+<h3 class="font-headline-sm text-headline-sm text-primary">Fukutsu</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 text-sm leading-relaxed">
+                            "Indomitable spirit." Represents an internal, unyielding fortitude and strength of character that cannot be bent or broken.
+                        </p>
+</div>
+</div>
+</label>
+</section>
+<!-- Spacer for fixed footer -->
+<div class="h-8"></div>
+</main>
+<!-- Sticky Bottom Action Area -->
+<div class="fixed bottom-0 left-0 w-full bg-surface/90 backdrop-blur-md border-t border-surface-container-highest px-margin-mobile py-4 z-50 flex gap-4 items-center justify-between pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+<button aria-label="Back to Input" class="w-12 h-12 flex items-center justify-center border border-outline rounded text-primary hover:bg-surface-container-low transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="arrow_back" data-weight="regular">arrow_back</span>
+</button>
+<button class="flex-grow bg-primary text-on-primary font-body-lg text-body-lg h-12 rounded px-6 flex items-center justify-center gap-2 hover:opacity-90 transition-opacity active:scale-95 shadow-sm">
+            Continue to Style
+            <span class="material-symbols-outlined text-sm" data-icon="arrow_forward" data-weight="regular">arrow_forward</span>
+</button>
+</div>
+<!-- Padding for safe area on mobile devices (iOS) -->
+<style>
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 1rem);
+        }
+    </style>
+<script>
+        // Simple script to handle visual state of radio card selection
+        function updateSelection(selectedRadio) {
+            // Remove 'selected' class and reset styles from all cards
+            document.querySelectorAll('.interp-card').forEach(card => {
+                card.classList.remove('selected');
+                card.classList.remove('border-primary');
+                card.classList.remove('bg-surface-container-lowest');
+                card.classList.add('border-outline-variant');
+                card.classList.add('bg-surface-container-low');
+                card.style.boxShadow = 'none';
+            });
+
+            // Add 'selected' class and styles to the closest label of the checked radio
+            const activeCard = selectedRadio.closest('label');
+            if (activeCard) {
+                activeCard.classList.add('selected');
+                activeCard.classList.remove('border-outline-variant');
+                activeCard.classList.remove('bg-surface-container-low');
+                activeCard.classList.add('border-primary');
+                activeCard.classList.add('bg-surface-container-lowest');
+                // The box shadow is applied via CSS class .selected, but explicitly adding here if needed for inline
+            }
+        }
+    </script>
+</body></html>
