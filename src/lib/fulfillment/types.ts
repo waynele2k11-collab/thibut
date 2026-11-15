@@ -12,6 +12,7 @@ export interface ProviderVariant {
   name: string;
   sku: string;
   color: string;
+  colorHex?: string;
   size: string;
   priceMinor: bigint;
   currency: string;
@@ -111,6 +112,9 @@ export interface FulfillmentEvent {
 export interface FulfillmentProvider {
   getProducts(): Promise<ProviderProduct[]>;
   getVariants(productId: string): Promise<ProviderVariant[]>;
+  getCatalogProductDetails(productId: string | number): Promise<any>;
+  generateBlankMockups(productId: string | number, variantIds: number[], placement?: string): Promise<any>;
+  getMockupTaskResult(taskKey: string): Promise<any>;
   getPricing(variantId: string): Promise<ProviderPrice>;
   getPrintAreas(productId: string): Promise<PrintAreaMetadata[]>;
   generateMockups(input: MockupRequest): Promise<MockupJob>;

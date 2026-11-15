@@ -31,7 +31,7 @@ export const InterpretationSchema = z.object({
   ),
   inputAnalysis: z.object({
     detectedLanguage: z.string(),
-    inputType: z.enum(["NAME", "WORD", "PHRASE", "SENTENCE", "STORY"]),
+    inputType: z.enum(["NAME", "WORD", "PHRASE", "SENTENCE", "STORY", "QUOTE", "CREATOR_ART"]),
     intent: z.string().optional(),
     themes: z.array(z.string()).optional(),
   }),
@@ -183,7 +183,7 @@ async function analyzeWithGemini(input: CulturalAnalysisInput): Promise<Interpre
   const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
   const response = await genai.models.generateContent({
-    model: "models/gemini-3-flash-preview",
+    model: "gemini-2.5-flash",
     config: {
       systemInstruction: SYSTEM_PROMPT,
       responseMimeType: "application/json",

@@ -9,7 +9,7 @@ import { culturalIntelligence } from "@/lib/ai/cultural-provider";
 const RequestSchema = z.object({
   inputText: z.string().min(1).max(500),
   culturalStyle: z.enum(["VIETNAMESE_THU_PHAP", "JAPANESE_SHODO", "CHINESE_CALLIGRAPHY", "KOREAN_BRUSH"]),
-  textTreatment: z.enum(["KEEP_ORIGINAL", "TRANSLATE"]),
+  textTreatment: z.enum(["KEEP_ORIGINAL", "TRANSLATE", "PHONETIC"]),
   mode: z.enum(["NAME", "QUOTE", "STORY", "CREATOR_ART"]),
   detectedInputLanguage: z.string().optional(),
 });
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const inputType = interpretationEngine.classifyInput(input.inputText);
-    const targetLang = input.textTreatment === "TRANSLATE" ? STYLE_TO_LANG[input.culturalStyle] : null;
+    const targetLang = STYLE_TO_LANG[input.culturalStyle] || null;
     
     let interpretations: any[] = [];
     

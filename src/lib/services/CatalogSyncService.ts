@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { PrintfulProvider } from "../fulfillment/PrintfulProvider";
-import { FulfillmentProvider } from "../fulfillment/types";
+import { FulfillmentProvider } from "./FulfillmentProvider";
+import { calculatePricing } from "../pricing/engine";
 
 export class CatalogSyncService {
   private provider: FulfillmentProvider;
@@ -26,56 +27,169 @@ export class CatalogSyncService {
   }
 
   /**
-   * Core syncing mechanism to ingest a Printful product and its variants.
-   * This is intended to be called intentionally by the Admin, not indiscriminately
-   * for the entire Printful catalog.
+   * Syncs the entire Printful Store into the local database
    */
-  public async importProduct(externalProductId: string, customCategory: string) {
+  public async syncEntireStore() {
     const providerRecord = await this.getProviderRecord();
+    const storeData = await this.provider.getStoreProducts();
+    const products = storeData.result || [];
 
-    // The current PrintfulProvider implementation fetches ALL products.
-    // In a real scenario, you might just fetch the specific variants directly.
-    const variants = await this.provider.getVariants(externalProductId);
-    
-    if (variants.length === 0) {
-      throw new Error(`No variants found for Product ${externalProductId}`);
-    }
+    for (const p of products) {
+      console.log(`[CatalogSyncService] Processing Store Product: ${p.id} - ${p.name}`);
+      
+      const detailsData = await this.provider.getProductDetails(p.id);
+      const details = detailsData.result;
+      if (!details || !details.sync_variants) continue;
 
-    // Use the first variant's details as the base for the CatalogProduct
-    const baseVariant = variants[0];
-
-    // Create the canonical Thi Bút Catalog Product
-    const catalogProduct = await prisma.catalogProduct.upsert({
-      where: { slug: `product-${externalProductId}` },
-      update: {},
-      create: {
-        slug: `product-${externalProductId}`,
-        name: baseVariant.name.split(" - ")[0] || "Imported Product",
-        category: customCategory,
-        status: "DRAFT", // Admin must explicitly activate it and set markups
-        defaultMarkupMinor: 2500, // Default $25 markup
-      }
-    });
-
-    // Map each external variant to a Thi Bút CatalogVariant and link them via ProviderVariant
-    for (const v of variants) {
-      // 1. Create CatalogVariant (The abstract Thi But representation)
-      const catalogVariant = await prisma.catalogVariant.upsert({
-        where: { sku: `TB-${v.sku}` },
-        update: {
-          baseRetailMinor: v.priceMinor + catalogProduct.defaultMarkupMinor
-        },
+      // Upsert the core product
+      const catalogProduct = await prisma.catalogProduct.upsert({
+        where: { slug: `product-${p.id}` },
+        update: { name: p.name },
         create: {
-          productId: catalogProduct.id,
-          sku: `TB-${v.sku}`,
-          color: v.color,
-          size: v.size,
-          active: false, // Don't expose all 30 colors automatically
-          baseRetailMinor: v.priceMinor + catalogProduct.defaultMarkupMinor,
+          slug: `product-${p.id}`,
+          name: p.name,
+          category: "apparel", // default
+          status: "ACTIVE", 
+          defaultMarkupMinor: BigInt(2500),
         }
       });
 
-      // 2. Create the exact mapping to Printful (ProviderVariant)
+      for (const v of details.sync_variants) {
+        // Upsert variant
+        // Attempt to find fulfillment cost; fallback to 0 to prevent NaN if missing
+        const fulfillmentCostMinor = v.price ? Math.round(parseFloat(v.price) * 100) : 0;
+        const retailPriceMinor = fulfillmentCostMinor > 0 ? calculatePricing(fulfillmentCostMinor).galleryPriceMinor : Math.round(parseFloat(v.retail_price || "0") * 100);
+
+        const catalogVariant = await prisma.catalogVariant.upsert({
+          where: { sku: v.sku || `TB-${v.id}` },
+          update: {
+            color: v.color || v.name.split(" - ")[1] || "Default",
+            size: v.size || "Standard",
+            baseRetailMinor: BigInt(retailPriceMinor)
+          },
+          create: {
+            productId: catalogProduct.id,
+            sku: v.sku || `TB-${v.id}`,
+            color: v.color || v.name.split(" - ")[1] || "Default",
+            size: v.size || "Standard",
+            baseRetailMinor: BigInt(retailPriceMinor),
+            active: true
+          }
+        });
+
+        // Map ProviderVariant
+        await prisma.providerVariant.upsert({
+          where: { 
+            providerId_catalogVariantId: {
+              providerId: providerRecord.id,
+              catalogVariantId: catalogVariant.id
+            }
+          },
+          update: {
+            costMinor: priceMinor, // We just use retail for now
+            lastSyncedAt: new Date(),
+          },
+          create: {
+            providerId: providerRecord.id,
+            catalogVariantId: catalogVariant.id,
+            externalProductId: p.id.toString(),
+            externalVariantId: v.id.toString(),
+            costMinor: BigInt(priceMinor),
+            currency: v.currency || "USD",
+            active: true,
+            lastSyncedAt: new Date(),
+          }
+        });
+
+        // Store Mockup Image
+        const mockupUrl = v.files?.find((f: any) => f.type === "preview")?.preview_url || p.thumbnail_url;
+        if (mockupUrl) {
+          const assetSlug = `mockup-${catalogVariant.sku}`;
+          const asset = await prisma.asset.upsert({
+            where: { objectKey: mockupUrl },
+            update: {},
+            create: {
+              objectKey: mockupUrl,
+              mimeType: "image/jpeg",
+              sha256: assetSlug,
+            }
+          });
+          
+          await prisma.productMockup.upsert({
+            where: { id: `mockup-${catalogVariant.id}` },
+            update: { assetId: asset.id },
+            create: {
+              id: `mockup-${catalogVariant.id}`,
+              catalogVariantId: catalogVariant.id,
+              assetId: asset.id,
+              provider: "PRINTFUL"
+            }
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Imports a specific base product directly from the Printful Catalog,
+   * generates blank mockups using the Mockup Generator API, and maps it.
+   */
+  public async importCatalogProduct(catalogProductId: number, category: string, slug: string, defaultRetailPriceMinor: number) {
+    const providerRecord = await this.getProviderRecord();
+    
+    console.log(`[CatalogSyncService] Fetching catalog details for product ${catalogProductId}`);
+    const detailsData = await this.provider.getCatalogProductDetails(catalogProductId);
+    const productData = detailsData.result.product;
+    const variantsData = detailsData.result.variants;
+    
+    if (!productData || !variantsData || variantsData.length === 0) {
+      throw new Error(`Product ${catalogProductId} not found or has no variants.`);
+    }
+
+    // 1. Create canonical product
+    const catalogProduct = await prisma.catalogProduct.upsert({
+      where: { slug: slug },
+      update: { name: productData.title },
+      create: {
+        slug: slug,
+        name: productData.title,
+        category: category,
+        status: "ACTIVE",
+        defaultMarkupMinor: BigInt(2500),
+      }
+    });
+
+    console.log(`[CatalogSyncService] Upserted product: ${catalogProduct.name}`);
+
+    // Filter to only unisex/common variants to avoid 500 variants per product (simplified for MVP)
+    const validVariants = variantsData; 
+    const variantIdsToMockup: number[] = [];
+
+    // 2. Create Variants
+    for (const v of validVariants) {
+      variantIdsToMockup.push(v.id);
+      
+      const priceMinor = Math.round(parseFloat(v.price) * 100);
+      const pricing = calculatePricing(priceMinor);
+      const retailMinor = priceMinor > 0 ? pricing.galleryPriceMinor : defaultRetailPriceMinor;
+
+      const catalogVariant = await prisma.catalogVariant.upsert({
+        where: { sku: `TB-CAT-${v.id}` },
+        update: {
+          color: v.color || v.name.split(" - ")[1] || "Default",
+          size: v.size || "Standard",
+        },
+        create: {
+          productId: catalogProduct.id,
+          sku: `TB-CAT-${v.id}`,
+          color: v.color || v.name.split(" - ")[1] || "Default",
+          colorHex: v.colorHex || null,
+          size: v.size || "Standard",
+          baseRetailMinor: BigInt(retailMinor),
+          active: true
+        }
+      });
+
       await prisma.providerVariant.upsert({
         where: { 
           providerId_catalogVariantId: {
@@ -84,23 +198,49 @@ export class CatalogSyncService {
           }
         },
         update: {
-          costMinor: v.priceMinor,
+          costMinor: priceMinor,
           lastSyncedAt: new Date(),
-          active: v.inStock
         },
         create: {
           providerId: providerRecord.id,
           catalogVariantId: catalogVariant.id,
-          externalProductId: externalProductId,
-          externalVariantId: v.id,
-          costMinor: v.priceMinor,
-          currency: v.currency,
-          active: v.inStock,
+          externalProductId: catalogProductId.toString(),
+          externalVariantId: v.id.toString(),
+          costMinor: BigInt(priceMinor),
+          currency: "USD",
+          active: true,
           lastSyncedAt: new Date(),
         }
       });
+
+      // 3. Store Mockup Asset directly from Catalog Variant image
+      const mockupUrl = v.image || productData.image;
+      if (mockupUrl) {
+        const assetSlug = `mockup-${catalogProductId}-${v.id}`;
+        const asset = await prisma.asset.upsert({
+          where: { objectKey: mockupUrl },
+          update: {},
+          create: {
+            objectKey: mockupUrl,
+            mimeType: "image/jpeg",
+            sha256: assetSlug,
+          }
+        });
+        
+        await prisma.productMockup.upsert({
+          where: { id: `mockup-${catalogVariant.id}` },
+          update: { assetId: asset.id },
+          create: {
+            id: `mockup-${catalogVariant.id}`,
+            catalogVariantId: catalogVariant.id,
+            assetId: asset.id,
+            provider: "PRINTFUL"
+          }
+        });
+      }
     }
 
+    console.log(`[CatalogSyncService] Successfully imported ${productData.title}!`);
     return catalogProduct;
   }
 }

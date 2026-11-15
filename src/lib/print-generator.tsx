@@ -1,56 +1,89 @@
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import React from 'react';
+import { DesignComposition } from './print/types';
 
 /**
- * Generates a 4500x5400 px @ 300 DPI transparent PNG print master file.
+ * Generates a high-res print master file from a Universal Composition Object.
  * This is meant to be run inside a Server Action or Background Worker.
  */
-export async function generatePrintMaster(text: string, stylePack: string): Promise<Buffer> {
+export async function generatePrintMaster(composition: DesignComposition): Promise<Buffer> {
   let fontData: ArrayBuffer;
   try {
-    // In production, load from a local asset or cache to speed up.
-    // We fetch a standard font here as a fallback for the Canvas drawing.
     const fontResponse = await fetch('https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Bold.ttf');
     fontData = await fontResponse.arrayBuffer();
   } catch (e) {
     throw new Error('Failed to load font data for Satori rendering.');
   }
 
-  // Satori converts React elements to an SVG string.
-  // 4500x5400 is the standard DTG print file size.
+  // Sort layers by zIndex so they render in correct order
+  const sortedLayers = [...composition.layers].sort((a, b) => a.zIndex - b.zIndex);
+
   const svg = await satori(
     <div
       style={{
+        position: 'relative',
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
         width: '100%',
         height: '100%',
-        color: 'black',
-        fontSize: '400px',
-        fontWeight: 'bold',
-        fontFamily: 'Roboto',
+        backgroundColor: composition.canvas.backgroundColor || 'transparent',
       }}
     >
-      <div style={{ textAlign: 'center', maxWidth: '80%', display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
-        {text}
-      </div>
-      <div style={{ 
-        fontSize: '150px', 
-        marginTop: '100px', 
-        color: '#B3261E', // Vermilion Seal Accent
-        border: '10px solid #B3261E',
-        padding: '20px 60px',
-        display: 'flex'
-      }}>
-        {stylePack}
-      </div>
+      {sortedLayers.map((layer) => {
+        if (layer.type === 'media') {
+          return (
+            <img
+              key={layer.id}
+              src={layer.assetUrl}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: layer.fillMode,
+                opacity: layer.opacity,
+              }}
+            />
+          );
+        } else if (layer.type === 'vector') {
+          // Calculate transforms based on the canvas center
+          // Note: Satori handles basic transforms: translate, scale, rotate
+          const transform = `translate(${layer.transform.x}px, ${layer.transform.y}px) scale(${layer.transform.scale}) rotate(${layer.transform.rotation}deg)`;
+          
+          return (
+            <div
+              key={layer.id}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: layer.opacity,
+              }}
+            >
+              <img
+                src={layer.svgBase64}
+                style={{
+                  transform,
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
+                }}
+              />
+            </div>
+          );
+        }
+        return null;
+      })}
     </div>,
     {
-      width: 4500,
-      height: 5400,
+      width: composition.canvas.width,
+      height: composition.canvas.height,
       fonts: [
         {
           name: 'Roboto',
@@ -62,9 +95,8 @@ export async function generatePrintMaster(text: string, stylePack: string): Prom
     }
   );
 
-  // Resvg converts the SVG string to a high-res PNG Buffer
   const resvg = new Resvg(svg, {
-    background: 'rgba(0, 0, 0, 0)', // Transparent background for apparel printing
+    background: composition.canvas.backgroundColor || 'rgba(0, 0, 0, 0)',
     fitTo: {
       mode: 'original',
     },

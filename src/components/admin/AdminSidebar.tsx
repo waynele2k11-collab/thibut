@@ -38,7 +38,9 @@ export function AdminSidebar() {
     { name: "Presets", href: "/admin/background-presets", icon: ImageIcon },
     { name: "Calligraphy", href: "/admin/ai/calligraphy", icon: Palette },
     { name: "Knowledge", href: "/admin/knowledge", icon: BookOpen },
+    { name: "Admin Studio", href: "/admin/studio", icon: Palette },
     { name: "Gallery", href: "/admin/gallery", icon: Store },
+    { name: "Products", href: "/admin/products", icon: Store },
     { name: "Orders", href: "/admin/orders", icon: CreditCard },
     { name: "Finance", href: "/admin/finance", icon: CreditCard },
     // Mock future routes to show layout

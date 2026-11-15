@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import AuthForm from "@/components/auth/AuthForm";
 
 export const metadata: Metadata = {
@@ -13,7 +14,9 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#2a2a2a] via-[#0B0B0B] to-[#0B0B0B] opacity-50 pointer-events-none" />
       
       <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md">
-        <AuthForm />
+        <Suspense fallback={<div className="text-white text-center">Loading...</div>}>
+          <AuthForm />
+        </Suspense>
       </div>
     </div>
   );

@@ -336,6 +336,21 @@ model UserRole {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// FONTS & TYPOGRAPHY
+// ═══════════════════════════════════════════════════════════════
+
+model Font {
+  id          String   @id @default(uuid())
+  name        String
+  fileName    String   @unique
+  format      String
+  tradition   String?  @default("VIETNAMESE_THU_PHAP")
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════
 // CREATOR
 // ═══════════════════════════════════════════════════════════════
 
@@ -414,6 +429,49 @@ model Tag {
   slug    String      @unique
   name    String
   designs DesignTag[]
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GALLERY & MERCHANDISE
+// ═══════════════════════════════════════════════════════════════
+
+model GalleryItem {
+  id                   String   @id @default(uuid())
+  slug                 String   @unique
+  title                String
+  subtitle             String?
+  description          String?
+  
+  sourceText           String
+  sourceLanguage       String?
+  tradition            String?
+  
+  artworkId            String
+  artworkPreviewUrl    String
+  productionArtworkUrl String
+  
+  productType          String
+  productName          String
+  productImageUrl      String
+  
+  listedPriceCents     Int
+  currency             String   @default("USD")
+  
+  requiresSize         Boolean  @default(false)
+  requiresColor        Boolean  @default(false)
+  defaultColor         String?
+  availableSizes       String[]
+  availableColors      String[]
+  mockupTransform      Json?
+  
+  category             String   // "NAME" | "POETRY" | "HERITAGE"
+  productCategory      String   // "TEE" | "WALL_ART" | etc
+  
+  published            Boolean  @default(false)
+  purchasable          Boolean  @default(true)
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -671,6 +729,7 @@ model PersonalizationSession {
   selectedInterpretationId String?
   status                   PersonalizationStatus @default(DRAFT)
   intent                   Json?
+  compositionJson          Json? // Architecture INV-013: DesignComposition API payload saved at checkout
 
   interpretations Interpretation[]
   candidates      PersonalizationCandidate[]
@@ -1038,6 +1097,7 @@ model OrderItem {
   catalogVariantId         String?
   catalogVariant           CatalogVariant?         @relation(fields: [catalogVariantId], references: [id])
   quantity                 Int
+  placement                String                  @default("front")
 
   // Financial snapshot — never recalculate from current prices (INV-008)
   artworkRevenueMinor         BigInt

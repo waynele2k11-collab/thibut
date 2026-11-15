@@ -21,8 +21,9 @@ export interface FontEntry {
   zipInternalPath?: string;
   license: string;
   commercialApproved: boolean;
-  licenseVerifiedAt: string;
   description: string;
+  isWebFont?: boolean;
+  cssFontFamily?: string;
   isDownloaded: boolean;
   isActiveOnFrontend: boolean;
   base64Data?: string;
@@ -125,6 +126,23 @@ const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend
   },
 
   // 🇯🇵 Japanese Shodō
+  {
+    id: "kokuryu",
+    name: "KokuryuSou (黒龍草)",
+    category: "JAPANESE_SHODO",
+    categoryLabel: "Japanese Shodō",
+    fileName: "",
+    previewText: "黒龍",
+    sourceUrl: "https://fonts.adobe.com/fonts/kokuryu",
+    sourceLabel: "Adobe Fonts / Showashotai",
+    downloadUrl: "",
+    license: "Adobe Fonts Commercial Web License",
+    commercialApproved: true,
+    licenseVerifiedAt: "2026-08-18",
+    description: "Premium Japanese calligraphy brush by Showa Shotai. Loaded dynamically via Typekit.",
+    isWebFont: true,
+    cssFontFamily: "kokuryu, sans-serif",
+  },
   {
     id: "yuji-boku",
     name: "Yuji Boku (勇司 朴)",
@@ -313,6 +331,7 @@ export class FontRegistryService {
   }
 
   public static isFontOnDisk(fileName: string): boolean {
+    if (!fileName) return false;
     const fontPath = path.join(process.cwd(), "public", "fonts", fileName);
     return fs.existsSync(fontPath) && fs.statSync(fontPath).size > 1000;
   }
@@ -335,13 +354,13 @@ export class FontRegistryService {
   public static getAllFonts(): FontEntry[] {
     const activeState = this.loadState();
     return INITIAL_FONT_CATALOG.map((font) => {
-      const onDisk = this.isFontOnDisk(font.fileName);
+      const onDisk = font.isWebFont ? true : this.isFontOnDisk(font.fileName);
       const isActive = activeState[font.id] ?? onDisk;
       return {
         ...font,
         isDownloaded: onDisk,
         isActiveOnFrontend: isActive && onDisk,
-        base64Data: onDisk ? this.getBase64(font.fileName) : undefined,
+        base64Data: (onDisk && !font.isWebFont) ? this.getBase64(font.fileName) : undefined,
       };
     });
   }

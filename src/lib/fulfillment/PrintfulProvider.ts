@@ -61,6 +61,41 @@ export class PrintfulProvider implements FulfillmentProvider {
     }));
   }
 
+  async getCatalogProductDetails(productId: string | number): Promise<any> {
+    const data = await this.request(`/products/${productId}`);
+    return data;
+  }
+
+  async generateBlankMockups(productId: string | number, variantIds: number[], placement: string = "default"): Promise<any> {
+    const data = await this.request(`/mockup-generator/create-task/${productId}`, {
+      method: "POST",
+      body: JSON.stringify({
+        variant_ids: variantIds,
+        format: "jpg",
+        files: [
+          {
+            placement: placement,
+            image_url: "https://raw.githubusercontent.com/mathiasbynens/transparent-pixels/master/transparent.png",
+            position: {
+              area_width: 100,
+              area_height: 100,
+              width: 1,
+              height: 1,
+              top: 0,
+              left: 0
+            }
+          }
+        ]
+      })
+    });
+    return data;
+  }
+
+  async getMockupTaskResult(taskKey: string): Promise<any> {
+    const data = await this.request(`/mockup-generator/task?task_key=${taskKey}`);
+    return data;
+  }
+
   async getVariants(productId: string): Promise<ProviderVariant[]> {
     const data = await this.request(`/products/${productId}`);
     
@@ -70,6 +105,7 @@ export class PrintfulProvider implements FulfillmentProvider {
       name: v.name,
       sku: v.sku,
       color: v.color || v.color_code || "",
+      colorHex: v.color_code || undefined,
       size: v.size,
       priceMinor: BigInt(Math.round(parseFloat(v.price) * 100)),
       currency: "USD", // Assuming USD for now

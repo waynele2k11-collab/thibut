@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import prisma from "@/lib/prisma";
 import Stripe from "stripe";
+import { sendDigitalDownloadEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -59,6 +60,7 @@ export async function POST(req: Request) {
       const orderNumber = session.metadata?.orderNumber;
       const personalizationSessionId = session.metadata?.personalizationSessionId;
       const designId = session.metadata?.designId;
+      const placement = session.metadata?.placement || "front";
 
       if (!orderNumber || !personalizationSessionId || !designId) {
         throw new Error("Missing metadata in checkout session");
@@ -113,6 +115,7 @@ export async function POST(req: Request) {
                 designId: design.id,
                 designVersionId: designVersion.id,
                 quantity: 1,
+                placement: placement,
                 // Hardcoding financial snapshot for Phase 3 (INV-008)
                 artworkRevenueMinor: 499,
                 personalizationRevenueMinor: 200,
@@ -150,6 +153,17 @@ export async function POST(req: Request) {
         });
 
         console.log(`[Webhook] Order ${orderNumber} successfully created in database.`);
+
+        // Digital Delivery Trigger
+        if (session.metadata?.isDigital === "true") {
+          console.log(`[Webhook] Triggering digital delivery for order ${orderNumber}`);
+          await sendDigitalDownloadEmail(
+            customerEmail,
+            orderNumber,
+            personalizationSessionId,
+            session.metadata?.productName || "Digital Download"
+          );
+        }
       });
     } else {
       // Just mark event as processed if we don't care about it

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FontRegistryService } from "@/lib/fonts/FontRegistryService";
 import { requireAdmin } from "@/utils/admin/auth";
+import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "fontId and isActive (boolean) required" }, { status: 400 });
     }
 
-    FontRegistryService.toggleActive(fontId, isActive);
+    // Simple check if it's a Prisma UUID (contains hyphens)
+    if (fontId.includes("-") && fontId.length > 20) {
+      await prisma.font.update({
+        where: { id: fontId },
+        data: { enabled: isActive }
+      });
+    } else {
+      FontRegistryService.toggleActive(fontId, isActive);
+    }
 
     return NextResponse.json({
       success: true,

@@ -7,7 +7,7 @@ interface Props {
 export function AdminHeader({ user }: Props) {
   return (
     <header className="h-20 bg-[#FCFAF6] border-b border-[#E5E0D8] flex items-center justify-between px-8 sticky top-0 z-10">
-      <div className="flex items-center gap-4">
+      <div id="admin-header-context" className="flex items-center gap-4">
         {/* Breadcrumb or title context can go here */}
       </div>
 

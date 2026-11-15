@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { stripe, buildPriceBreakdown, STRIPE_CURRENCY } from "@/lib/stripe";
+import { stripe, STRIPE_CURRENCY } from "@/lib/stripe";
 import prisma from "@/lib/prisma";
+import { calculatePricing } from "@/lib/pricing/engine";
 
 const CheckoutRequestSchema = z.object({
   sessionId: z.string().optional(),
   designId: z.string().optional(),
   galleryProductId: z.string().optional(),
   title: z.string().optional(),
-  priceMinor: z.number().optional(),
+  productId: z.string().optional(), // Expected base product name (e.g. "Premium Hoodie")
+  priceMinor: z.number().optional(), // Ignored for security, kept for backward compatibility
   imageUrl: z.string().optional(),
+  placement: z.string().optional(),
   successUrl: z.string().url(),
   cancelUrl: z.string().url(),
 });
@@ -19,11 +22,39 @@ export async function POST(req: Request) {
     const body = await req.json();
     const input = CheckoutRequestSchema.parse(body);
 
-    const totalAmount = input.priceMinor || 3199;
     const productName = input.title || "Thi Bút Personalized Artwork";
     const productDescription = input.galleryProductId
       ? `Curated Gallery Artwork (${input.title})`
       : "Custom Calligraphy Artwork";
+
+    // --- SECURE PRICING ENGINE CALCULATION ---
+    let authoritativePriceMinor = 3199; // Fallback
+
+    if (input.productId === "Digital Download (All 6)") {
+      authoritativePriceMinor = 1499; // Digital Personalized ($14.99)
+    } else if (input.productId) {
+      // Fetch authoritative cost from DB
+      const dbProd = await prisma.catalogProduct.findFirst({
+        where: { name: input.productId },
+        include: { 
+          variants: { 
+            take: 1,
+            include: { providerVariants: true }
+          } 
+        }
+      });
+
+      let baseCostMinor = 0;
+      if (dbProd && dbProd.variants.length > 0 && dbProd.variants[0].providerVariants.length > 0) {
+        baseCostMinor = Number(dbProd.variants[0].providerVariants[0].costMinor);
+      }
+
+      // Dynamic Placement Cost (MVP: flat $5.95 for back prints)
+      const placementCostMinor = input.placement === "back" ? 595 : 0;
+      
+      const pricing = calculatePricing(baseCostMinor, 0, placementCostMinor);
+      authoritativePriceMinor = pricing.personalizedPriceMinor;
+    }
 
     // Generate a unique order number
     const orderNumber = `TB-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -47,7 +78,7 @@ export async function POST(req: Request) {
               description: productDescription,
               images: input.imageUrl && input.imageUrl.startsWith("http") ? [input.imageUrl] : undefined,
             },
-            unit_amount: totalAmount,
+            unit_amount: authoritativePriceMinor,
           },
           quantity: 1,
         },
@@ -63,6 +94,9 @@ export async function POST(req: Request) {
         galleryProductId: input.galleryProductId || "",
         personalizationSessionId: input.sessionId || "",
         designId: input.designId || "",
+        placement: input.placement || "front",
+        isDigital: productName === "Digital Download (All 6)" ? "true" : "false",
+        productName: productName,
       },
     });
 

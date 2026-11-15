@@ -28,7 +28,10 @@ interface SearchParams {
   romanization?: string;
   style?: string;
   image?: string;
+  placement?: string;
 }
+
+import { calculatePricing } from "@/lib/pricing/engine";
 
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
@@ -40,6 +43,21 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const selectedSize = params.size || defaultCfg.size;
   const selectedColor = params.color || defaultCfg.color;
   const selectedMockup = params.mockup || defaultCfg.mockup;
+  const selectedPlacement = params.placement || "front";
+
+  let realProductPrice = defaultCfg.price || 45.00;
+  if (productId !== "Digital Download (All 6)") {
+    const dbProd = await prisma.catalogProduct.findFirst({
+      where: { name: productId },
+      include: { variants: { take: 1, include: { providerVariants: true } } }
+    });
+    if (dbProd && dbProd.variants.length > 0 && dbProd.variants[0].providerVariants.length > 0) {
+      const baseCostMinor = Number(dbProd.variants[0].providerVariants[0].costMinor);
+      const placementCostMinor = selectedPlacement === "back" ? 595 : 0;
+      const pricing = calculatePricing(baseCostMinor, 0, placementCostMinor);
+      realProductPrice = pricing.personalizedPriceMinor / 100;
+    }
+  }
 
   let calligraphyData: {
     sessionId: string;
@@ -124,7 +142,33 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
     }
   }
 
-  // 3. Fallback to passed query params (from creation flow)
+  // 3. Fallback to DB session composition (since URL params can't hold huge base64 SVGs)
+  if (!calligraphyData && sessionId && sessionId !== "00000000-0000-0000-0000-000000000000") {
+    try {
+      const session = await prisma.personalizationSession.findUnique({
+        where: { id: sessionId },
+        select: { compositionJson: true }
+      });
+      if (session && session.compositionJson) {
+        const comp = session.compositionJson as any;
+        calligraphyData = {
+          sessionId,
+          candidateId: candidateId || "custom-candidate",
+          imageUrl: comp.svgBase64 || params.image || "",
+          inputText: params.text || params.interpretedText || "Custom Calligraphy",
+          interpretation: params.interpretation || "Original Phrase",
+          interpretedText: params.interpretedText || params.text || "Custom Calligraphy",
+          romanization: params.romanization || "",
+          meaning: params.meaning || params.text || "Personalized calligraphy art",
+          culturalNote: "Created via Authentic Controlled Calligraphy Engine.",
+        };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 4. Fallback to passed query params (from creation flow)
   if (!calligraphyData && (params.text || params.interpretedText)) {
     calligraphyData = {
       sessionId,
@@ -169,7 +213,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
     ];
     totalPrice = 9.99;
   } else {
-    const targetRetail = defaultCfg.price || 45.00;
+    const targetRetail = realProductPrice;
     const productCharge = targetRetail - 4.99 - 2.00;
     
     items = [
@@ -232,6 +276,11 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                     <span className="px-2.5 py-1 bg-[#F4EFE6] border border-[#E5E0D8] text-[#111111] rounded font-mono font-semibold">
                       Color: {selectedColor}
                     </span>
+                    {selectedPlacement && selectedPlacement !== "front" && (
+                      <span className="px-2.5 py-1 bg-[#F4EFE6] border border-[#E5E0D8] text-[#111111] rounded font-mono font-semibold uppercase">
+                        {selectedPlacement === "both" ? "Front & Back" : selectedPlacement}
+                      </span>
+                    )}
                   </div>
                   <p className="font-label-caps text-xs text-on-surface-variant mt-1 flex items-center gap-1">
                     <span>Qty: 1</span>
@@ -340,6 +389,9 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                 sessionId={calligraphyData.sessionId} 
                 candidateId={calligraphyData.candidateId} 
                 productId={productId} 
+                placement={selectedPlacement}
+                priceMinor={Math.round(totalPrice * 100)}
+                title={productId}
               />
               <button className="w-full border border-outline-variant py-4 font-label-caps text-label-caps uppercase flex items-center justify-center gap-2 text-on-background hover:bg-surface-container-low transition-colors rounded-lg font-semibold">
                 <Package className="w-5 h-5" />

@@ -412,7 +412,7 @@ export default function AdminFontsPage() {
                   <div className="flex flex-col items-end gap-1.5">
                     {font.isDownloaded ? (
                       <span className="px-2.5 py-1 bg-[#E6F4EA] text-[#137333] border border-[#A8DAB5] rounded-full text-xs font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Downloaded
+                        <CheckCircle2 className="w-3.5 h-3.5" /> {font.isWebFont ? "Web Font" : "Downloaded"}
                       </span>
                     ) : (
                       <span className="px-2.5 py-1 bg-[#FEF7E0] text-[#B06000] border border-[#FEEFC3] rounded-full text-xs font-semibold flex items-center gap-1">
@@ -430,7 +430,11 @@ export default function AdminFontsPage() {
 
                 {/* Live Specimen Preview Canvas */}
                 <div className="w-full h-36 bg-[#FBF9F5] border border-[#E5E0D8] rounded-lg overflow-hidden flex items-center justify-center relative group">
-                  {font.isDownloaded && previewSvg ? (
+                  {font.isDownloaded && font.isWebFont ? (
+                    <div className="text-center p-4 w-full h-full flex flex-col items-center justify-center">
+                      <p className="text-[84px] text-[#0B0B0B] leading-none mb-4" style={{ fontFamily: font.cssFontFamily || "inherit" }}>{font.previewText}</p>
+                    </div>
+                  ) : font.isDownloaded && previewSvg ? (
                     <img 
                       src={`data:image/svg+xml;utf8,${encodeURIComponent(previewSvg)}`}
                       alt={font.name}
@@ -488,7 +492,7 @@ export default function AdminFontsPage() {
                     </button>
                   )}
 
-                  {font.isDownloaded && (
+                  {font.isDownloaded && !font.isWebFont && (
                     <button
                       onClick={() => handleDeleteFont(font.id, font.name)}
                       className="text-xs text-[#88857F] hover:text-[#B3261E] p-1.5 hover:bg-[#FCE8E6] rounded transition-colors"

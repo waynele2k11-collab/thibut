@@ -8,7 +8,7 @@
 
 export interface ClientRenderOptions {
   text: string;
-  tradition: "VIETNAMESE_THU_PHAP" | "JAPANESE_SHODO" | "CHINESE_CALLIGRAPHY" | "KOREAN_BRUSH";
+  tradition?: "VIETNAMESE_THU_PHAP";
   strokePreset: "BOLD_BRUSH" | "FLOWING_INK" | "DRY_BRUSH" | "CLASSICAL" | "FREE_SPIRIT";
   variationType: "01_CONTROLLED" | "02_BOLD" | "03_DRY_BRUSH" | "04_EXPRESSIVE" | "05_MINIMAL" | "06_SIGNATURE";
   fontId?: string;
@@ -17,6 +17,11 @@ export interface ClientRenderOptions {
   hasSeal?: boolean;
   scale?: number;
   rotation?: number;
+  fontFamily?: string;
+  customFontFamily?: string;
+  customFontUrl?: string;
+  sealText?: string;
+  sealFontFamily?: string;
 }
 
 export function safeBase64Encode(str: string): string {
@@ -39,16 +44,21 @@ export function safeBase64Decode(b64: string): string {
   return "";
 }
 
-export function generateInstantSvgUri(options: ClientRenderOptions): string {
+export function generateInstantSvgString(options: ClientRenderOptions): string {
   const {
     text = "Thi Bút",
     tradition = "VIETNAMESE_THU_PHAP",
     strokePreset = "BOLD_BRUSH",
     variationType = "01_CONTROLLED",
     fontId,
+    fontFamily: overrideFontFamily,
     layout = "HORIZONTAL",
     inkColor = "#0B0B0B",
     hasSeal = true,
+    customFontFamily,
+    customFontUrl,
+    sealText,
+    sealFontFamily,
   } = options;
 
   const trimmed = text.trim() || "Thi Bút";
@@ -73,29 +83,22 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
     "zhi-mang-xing": "'Zhi Mang Xing', cursive",
     "nanum-brush-script": "'Nanum Brush Script', cursive",
     "east-sea-dokdo": "'East Sea Dokdo', cursive",
+    "kokuryu": "kokuryu, sans-serif",
   };
 
-  let fontFamily = fontId && FONT_MAP[fontId] ? FONT_MAP[fontId] : "";
+  let fontFamily = overrideFontFamily
+    ? `"${overrideFontFamily}", cursive`
+    : (customFontFamily && customFontUrl) 
+    ? customFontFamily 
+    : (fontId && FONT_MAP[fontId] ? FONT_MAP[fontId] : "");
 
   if (!fontFamily) {
-    if (tradition === "JAPANESE_SHODO") {
-      fontFamily = strokePreset === "BOLD_BRUSH" ? "'Yuji Boku', serif" 
-        : strokePreset === "FLOWING_INK" ? "'Yuji Mai', cursive" 
-        : strokePreset === "CLASSICAL" ? "'Yuji Syuku', serif" : "'Yuji Boku', serif";
-    } else if (tradition === "CHINESE_CALLIGRAPHY") {
-      fontFamily = strokePreset === "BOLD_BRUSH" ? "'Ma Shan Zheng', cursive" 
-        : strokePreset === "FREE_SPIRIT" ? "'Long Cang', cursive" 
-        : strokePreset === "DRY_BRUSH" ? "'Liu Jian Mao Cao', cursive" : "'Ma Shan Zheng', cursive";
-    } else if (tradition === "KOREAN_BRUSH") {
-      fontFamily = strokePreset === "DRY_BRUSH" ? "'East Sea Dokdo', cursive" : "'Nanum Brush Script', cursive";
-    } else {
-      // Vietnamese Thư Pháp
-      fontFamily = strokePreset === "BOLD_BRUSH" ? "'UTM ThuPhap Thien An', 'Caveat Brush', cursive"
-        : strokePreset === "FLOWING_INK" ? "'Arizonia', 'Great Vibes', cursive"
-        : strokePreset === "DRY_BRUSH" ? "'Kaushan Script', 'Caveat Brush', cursive"
-        : strokePreset === "FREE_SPIRIT" ? "'Great Vibes', cursive"
-        : "'UTM ThuPhap Thien An', cursive";
-    }
+    // Vietnamese Thư Pháp
+    fontFamily = strokePreset === "BOLD_BRUSH" ? "'UTM ThuPhap Thien An', 'Caveat Brush', cursive"
+      : strokePreset === "FLOWING_INK" ? "'Arizonia', 'Great Vibes', cursive"
+      : strokePreset === "DRY_BRUSH" ? "'Kaushan Script', 'Caveat Brush', cursive"
+      : strokePreset === "FREE_SPIRIT" ? "'Great Vibes', cursive"
+      : "'UTM ThuPhap Thien An', cursive";
   }
 
   // Stroke dynamic weight reflecting strokePreset and variation
@@ -117,32 +120,80 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
     strokeWidth = "6px";
   }
 
-  const words = trimmed.split(/\s+/);
-  const width = isVertical ? 640 : isEmblem ? 800 : Math.max(1000, trimmed.length * 130 + 300);
-  const height = isVertical ? Math.max(900, words.length * 280 + 220) : isEmblem ? 800 : 500;
+  // If the text contains CJK characters, vertical layout splits by character. Otherwise, splits by spaces.
+  const isCJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(trimmed);
+  const words = isCJK ? Array.from(trimmed) : trimmed.split(/\s+/);
+  
+  const width = isVertical ? 1000 : isEmblem ? 1000 : Math.max(1600, trimmed.length * 200 + 600);
   const centerX = width / 2;
-  const centerY = height / 2;
+
+  const wordSpacing = 400;
+  
+  // Pre-calculate horizontal height so centerY is available
+  let height = isEmblem ? 1000 : 800;
+  let centerY = height / 2;
+
+  // First word Y offset to avoid clipping tall ascenders
+  const startY = isVertical ? 400 : centerY;
+  
+  // Calculate dynamic vertical height based on exact word count and seal
+  const lastWordY = isVertical ? startY + (words.length > 0 ? words.length - 1 : 0) * wordSpacing : centerY;
+
+  if (isVertical) {
+    height = Math.max(1200, lastWordY + 500);
+    centerY = height / 2;
+  }
 
   // Swash path calculation
-  const swashStartY = centerY + (isVertical ? 0 : 75);
-  const swashStartX = isVertical ? centerX - 60 : 120;
-  const swashEndX = isVertical ? centerX + 60 : width - 120;
+  const swashStartY = centerY + (isVertical ? 0 : 180);
+  const swashStartX = isVertical ? centerX - 150 : 120;
+  const swashEndX = isVertical ? centerX + 150 : width - 120;
   const swashMidX = (swashStartX + swashEndX) / 2;
-  const swashCurveY = swashStartY + (variationType === "04_EXPRESSIVE" ? 45 : 25);
+  const swashCurveY = swashStartY + (variationType === "04_EXPRESSIVE" ? 60 : 40);
 
-  // Exact Seal Position
+  // Exact Seal Position (placed right after the last word vertically)
   const shouldRenderSeal = Boolean(hasSeal);
-  const sealX = isVertical ? centerX + 80 : isEmblem ? centerX + 110 : width - 90;
-  const sealY = isVertical ? height - 120 : isEmblem ? centerY + 90 : centerY - 30;
+  const sealX = isVertical ? centerX + 180 : isEmblem ? centerX + 220 : width - 90;
+  const sealY = isVertical ? lastWordY + 280 : isEmblem ? centerY + 180 : centerY - 60;
+
+  // Generate a unique ID to scope CSS classes
+  const uid = Math.random().toString(36).substring(2, 9);
+
+  // Resolve Seal Font URL
+  let sealFontUrl = "";
+  if (sealFontFamily === "VNI Ong do") sealFontUrl = "/fonts/VNI-Ong_do.ttf";
+  else if (sealFontFamily === "UTM Thư Pháp Thiên Ân") sealFontUrl = "/fonts/UtmThuphapThienAn.ttf";
+  else if (sealFontFamily === "VNI Netbut") sealFontUrl = "/fonts/VNI-Netbut.ttf";
+
+  // Convert relative to absolute for SVG exports (if running in browser)
+  if (sealFontUrl && typeof window !== "undefined") {
+    sealFontUrl = window.location.origin + sealFontUrl;
+  }
+  let absCustomFontUrl = customFontUrl;
+  if (absCustomFontUrl && absCustomFontUrl.startsWith("/") && typeof window !== "undefined") {
+    absCustomFontUrl = window.location.origin + absCustomFontUrl;
+  }
 
   const svgContent = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
       <defs>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&amp;family=Caveat+Brush&amp;family=Arizonia&amp;family=Alex+Brush&amp;family=Kaushan+Script&amp;family=Yuji+Boku&amp;family=Yuji+Mai&amp;family=Yuji+Syuku&amp;family=Long+Cang&amp;family=Ma+Shan+Zheng&amp;family=Liu+Jian+Mao+Cao&amp;family=Nanum+Brush+Script&amp;family=East+Sea+Dokdo&amp;display=swap');
-          .calligraphy-text {
+          ${absCustomFontUrl ? `
+            @font-face {
+              font-family: ${customFontFamily?.split(',')[0] || "'CustomFont'"};
+              src: url('${absCustomFontUrl}') format('truetype');
+            }
+          ` : ""}
+          ${sealFontUrl ? `
+            @font-face {
+              font-family: '${sealFontFamily}';
+              src: url('${sealFontUrl}') format('truetype');
+            }
+          ` : ""}
+          .calligraphy-text-${uid} {
             font-family: ${fontFamily};
-            font-size: ${isVertical ? "110px" : isEmblem ? "95px" : isFullBack ? "135px" : "125px"};
+            font-size: ${isVertical ? "280px" : isEmblem ? "240px" : isFullBack ? "350px" : "320px"};
             font-style: ${fontStyle};
             letter-spacing: ${letterSpacing};
             fill: ${inkColor};
@@ -154,18 +205,18 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
             text-anchor: middle;
             dominant-baseline: central;
           }
-          .swash-line {
+          .swash-line-${uid} {
             fill: none;
             stroke: ${inkColor};
             stroke-width: ${variationType === "02_BOLD" ? "9px" : "5px"};
             stroke-linecap: round;
             opacity: ${variationType === "05_MINIMAL" ? "0" : "0.95"};
           }
-          .splatter-dot {
+          .splatter-dot-${uid} {
             fill: ${inkColor};
             opacity: 0.85;
           }
-          .emblem-ring {
+          .emblem-ring-${uid} {
             fill: none;
             stroke: ${inkColor};
             stroke-width: 3.5px;
@@ -177,35 +228,109 @@ export function generateInstantSvgUri(options: ClientRenderOptions): string {
 
       <!-- Emblem Circular Frame for EMBLEM Layout -->
       ${isEmblem ? `
-        <circle class="emblem-ring" cx="${centerX}" cy="${centerY}" r="${Math.min(centerX, centerY) - 45}" stroke-dasharray="380, 25" />
-        <circle class="emblem-ring" cx="${centerX}" cy="${centerY}" r="${Math.min(centerX, centerY) - 60}" stroke-dasharray="10, 8" opacity="0.4" />
+        <circle 
+          cx="${centerX}" cy="${centerY}" r="${Math.min(centerX, centerY) - 45}" 
+          stroke-dasharray="380, 25" 
+          fill="none" stroke="${inkColor}" stroke-width="3.5" stroke-linecap="round" opacity="0.75" 
+        />
+        <circle 
+          cx="${centerX}" cy="${centerY}" r="${Math.min(centerX, centerY) - 60}" 
+          stroke-dasharray="10, 8" 
+          fill="none" stroke="${inkColor}" stroke-width="3.5" stroke-linecap="round" opacity="0.4" 
+        />
       ` : ""}
 
       <!-- Sweeping Underline Swash (Nét Liệng Rồng Bay) for Horizontal Layouts -->
       ${!isVertical && !isEmblem && variationType !== "05_MINIMAL" ? `
-        <path class="swash-line" d="M ${swashStartX} ${swashStartY} Q ${swashMidX} ${swashCurveY}, ${swashEndX} ${swashStartY - 10}" />
-        <circle class="splatter-dot" cx="${swashEndX + 15}" cy="${swashStartY - 18}" r="4.5" />
-        <circle class="splatter-dot" cx="${swashEndX + 30}" cy="${swashStartY - 24}" r="2.5" />
+        <path 
+          d="M ${swashStartX} ${swashStartY} Q ${swashMidX} ${swashCurveY}, ${swashEndX} ${swashStartY - 10}" 
+          fill="none" stroke="${inkColor}" stroke-width="${variationType === "02_BOLD" ? "9" : "5"}" stroke-linecap="round" opacity="${variationType === "05_MINIMAL" ? "0" : "0.95"}"
+        />
+        <circle cx="${swashEndX + 15}" cy="${swashStartY - 18}" r="4.5" fill="${inkColor}" opacity="0.85" />
+        <circle cx="${swashEndX + 30}" cy="${swashStartY - 24}" r="2.5" fill="${inkColor}" opacity="0.85" />
       ` : ""}
 
       <!-- Main Calligraphy Glyph Flow -->
       ${isVertical ? words.map((w, idx) => {
-        const wordY = 160 + idx * 220;
-        return `<text class="calligraphy-text" x="${centerX}" y="${wordY}">${w}</text>`;
+        const wordY = startY + idx * wordSpacing;
+        return `
+        <!-- Stroke (Background) -->
+        <text 
+          x="${centerX}" 
+          y="${wordY}"
+          font-family="${fontFamily.replace(/"/g, "'")}"
+          font-size="${isVertical ? 280 : isEmblem ? 240 : isFullBack ? 350 : 320}"
+          font-style="${fontStyle}"
+          letter-spacing="${letterSpacing}"
+          fill="none"
+          stroke="${inkColor}"
+          stroke-width="${strokeWidth}"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          text-anchor="middle"
+          dominant-baseline="central"
+        >${w}</text>
+        <!-- Fill (Foreground) -->
+        <text 
+          x="${centerX}" 
+          y="${wordY}"
+          font-family="${fontFamily.replace(/"/g, "'")}"
+          font-size="${isVertical ? 280 : isEmblem ? 240 : isFullBack ? 350 : 320}"
+          font-style="${fontStyle}"
+          letter-spacing="${letterSpacing}"
+          fill="${inkColor}"
+          stroke="none"
+          text-anchor="middle"
+          dominant-baseline="central"
+        >${w}</text>`;
       }).join("") : `
-        <text class="calligraphy-text" x="${centerX}" y="${centerY - (isEmblem ? 0 : 10)}">${trimmed}</text>
+        <!-- Stroke (Background) -->
+        <text 
+          x="${centerX}" 
+          y="${centerY - (isEmblem ? 0 : 10)}"
+          font-family="${fontFamily.replace(/"/g, "'")}"
+          font-size="${isVertical ? 280 : isEmblem ? 240 : isFullBack ? 350 : 320}"
+          font-style="${fontStyle}"
+          letter-spacing="${letterSpacing}"
+          fill="none"
+          stroke="${inkColor}"
+          stroke-width="${strokeWidth}"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          text-anchor="middle"
+          dominant-baseline="central"
+        >${trimmed}</text>
+        <!-- Fill (Foreground) -->
+        <text 
+          x="${centerX}" 
+          y="${centerY - (isEmblem ? 0 : 10)}"
+          font-family="${fontFamily.replace(/"/g, "'")}"
+          font-size="${isVertical ? 280 : isEmblem ? 240 : isFullBack ? 350 : 320}"
+          font-style="${fontStyle}"
+          letter-spacing="${letterSpacing}"
+          fill="${inkColor}"
+          stroke="none"
+          text-anchor="middle"
+          dominant-baseline="central"
+        >${trimmed}</text>
       `}
 
       <!-- Imperial Cinnabar Red Seal Stamp (Ấn Triện Son) -->
       ${shouldRenderSeal ? `
         <g transform="translate(${sealX}, ${sealY})">
-          <rect x="-24" y="-24" width="48" height="48" rx="6" fill="#B3261E" stroke="#931A12" stroke-width="2" opacity="0.95" />
-          <text x="0" y="3" font-family="'SimSun', 'STSong', serif" font-size="20" font-weight="900" fill="#FFFFFF" text-anchor="middle" dominant-baseline="central" letter-spacing="1">詩筆</text>
+          <rect x="-40" y="-40" width="80" height="80" fill="#B3261E" stroke="none" />
+          <rect x="-36" y="-36" width="72" height="72" fill="none" stroke="#FFFFFF" stroke-width="2" />
+          <text x="0" y="5" font-family="${sealFontFamily ? `'${sealFontFamily}', serif` : 'serif'}" font-size="${(sealText || '印').length > 2 ? 28 : 42}" font-weight="bold" fill="#FFFFFF" text-anchor="middle" dominant-baseline="central">${sealText || '印'}</text>
         </g>
       ` : ""}
     </svg>
   `.trim();
 
+  return svgContent;
+}
+
+export function generateInstantSvgUri(options: ClientRenderOptions): string {
+  const svgContent = generateInstantSvgString(options);
   const encoded = safeBase64Encode(svgContent);
   return `data:image/svg+xml;base64,${encoded}`;
 }

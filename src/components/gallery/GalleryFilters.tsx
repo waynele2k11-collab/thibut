@@ -1,58 +1,44 @@
 "use client";
 
-import type { GalleryCategory, ProductType } from "@/data/gallery";
+import { useRouter, useSearchParams } from "next/navigation";
 
-interface GalleryFiltersProps {
-  currentCategory: GalleryCategory | "ALL";
-  onCategoryChange: (category: GalleryCategory | "ALL") => void;
-  currentProductType: ProductType | "ALL";
-  onProductTypeChange: (productType: ProductType | "ALL") => void;
-}
+const FILTERS = [
+  { id: "all", label: "All Works" },
+  { id: "names", label: "Names & Identity" },
+  { id: "quotes", label: "Poetry & Quotes" },
+  { id: "heritage", label: "Heritage & Values" },
+  { id: "abstract", label: "Abstract" },
+];
 
-export function GalleryFilters({ 
-  currentCategory, 
-  onCategoryChange,
-  currentProductType,
-  onProductTypeChange
-}: GalleryFiltersProps) {
-  const categories: Array<GalleryCategory | "ALL"> = ["ALL", "NAME", "POETRY", "HERITAGE"];
-  const productTypes: Array<ProductType | "ALL"> = ["ALL", "TEE", "HOODIE", "TANK", "WALL_ART"];
+export function GalleryFilters({ activeFilter }: { activeFilter: string }) {
+  const router = useRouter();
+
+  const setFilter = (id: string) => {
+    if (id === "all") {
+      router.push("/gallery");
+    } else {
+      router.push(`/gallery?filter=${id}`);
+    }
+  };
 
   return (
-    <div className="flex flex-col items-center gap-6 mb-12">
-      {/* Category Filter */}
-      <div className="flex flex-wrap justify-center gap-4">
-        {categories.map((category) => (
+    <div className="flex items-center gap-2 flex-wrap mb-2">
+      {FILTERS.map((f) => {
+        const isActive = f.id === activeFilter || (f.id === "all" && activeFilter === "all");
+        return (
           <button
-            key={category}
-            onClick={() => onCategoryChange(category)}
-            className={`px-6 py-2 rounded-full font-label-caps text-label-caps transition-all duration-300 ${
-              currentCategory === category
-                ? "bg-primary text-on-primary shadow-sm"
-                : "bg-surface-variant text-on-surface hover:bg-surface-variant/80"
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all active:scale-[0.97] ${
+              isActive
+                ? "bg-[#111111] text-white shadow-sm"
+                : "bg-white border border-[#E0DBD1] text-[#444] hover:border-black"
             }`}
           >
-            {category}
+            {f.label}
           </button>
-        ))}
-      </div>
-
-      {/* Product Type Filter */}
-      <div className="flex flex-wrap justify-center gap-4">
-        {productTypes.map((type) => (
-          <button
-            key={type}
-            onClick={() => onProductTypeChange(type)}
-            className={`px-4 py-1.5 rounded-full font-label-caps text-label-caps text-xs transition-all duration-300 ${
-              currentProductType === type
-                ? "border-2 border-secondary text-secondary"
-                : "border-2 border-transparent text-on-surface-variant hover:text-on-surface"
-            }`}
-          >
-            {type.replace("_", " ")}
-          </button>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

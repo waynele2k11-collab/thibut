@@ -192,16 +192,24 @@ export const processOrderFulfillment = inngest.createFunction(
           zip: "94105",
           email: order.buyer.email,
         },
-        items: order.items.map((item: any) => ({
-          variantId: item.catalogVariantId || "1", // Fallback variant
-          quantity: item.quantity,
-          files: [
-            {
-              url: item.personalizationVersion?.printAsset?.url || "https://example.com/fallback.png",
-              placement: "front"
-            }
-          ]
-        }))
+        items: order.items.map((item: any) => {
+          const placementOpt = item.placement || "front";
+          const assetUrl = item.personalizationVersion?.printAsset?.url || "https://example.com/fallback.png";
+          
+          const files = [];
+          if (placementOpt === "both") {
+            files.push({ url: assetUrl, placement: "front" });
+            files.push({ url: assetUrl, placement: "back" });
+          } else {
+            files.push({ url: assetUrl, placement: placementOpt });
+          }
+
+          return {
+            variantId: item.catalogVariantId || "1", // Fallback variant
+            quantity: item.quantity,
+            files: files
+          };
+        })
       };
 
       try {

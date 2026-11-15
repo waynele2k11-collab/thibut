@@ -34,16 +34,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const { text, stylePack } = await request.json();
+    const { composition } = await request.json();
     
-    if (!text) {
-      return NextResponse.json({ error: 'Missing text parameter for print generation' }, { status: 400 });
+    if (!composition) {
+      return NextResponse.json({ error: 'Missing composition object for print generation' }, { status: 400 });
     }
 
-    console.log(`[API Secure] Generating Print Master for text: "${text}" with style: "${stylePack}"`);
+    console.log(`[API Secure] Generating Print Master from Composition Object...`);
 
     // Generate high-res 300 DPI print master PNG buffer
-    const pngBuffer = await generatePrintMaster(text, stylePack || 'Thi Bút Classic');
+    const pngBuffer = await generatePrintMaster(composition);
 
     return new NextResponse(pngBuffer as unknown as BodyInit, {
       status: 200,

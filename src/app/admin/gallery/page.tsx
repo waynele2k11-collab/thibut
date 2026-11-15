@@ -2,15 +2,12 @@ import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
+import { DeleteGalleryItemButton } from "@/components/admin/DeleteGalleryItemButton";
 
 export default async function AdminGalleryPage() {
-  const galleryProducts = await prisma.designProduct.findMany({
+  const galleryProducts = await prisma.galleryItem.findMany({
     take: 50,
-    orderBy: { createdAt: "desc" },
-    include: {
-      design: { select: { title: true } },
-      catalogProduct: { select: { name: true, category: true } }
-    }
+    orderBy: { createdAt: "desc" }
   });
 
   return (
@@ -32,42 +29,56 @@ export default async function AdminGalleryPage() {
         <table className="w-full text-left">
           <thead className="bg-[#F4EFE6] border-b border-[#E5E0D8]">
             <tr>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Design</th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Product</th>
+              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Image</th>
+              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Title</th>
+              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Product Name</th>
               <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Placement</th>
+              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Price</th>
               <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Created</th>
+              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E5E0D8]">
             {galleryProducts.map((gp) => (
-              <tr key={gp.id} className="hover:bg-[#F4EFE6]/50 transition-colors">
+              <tr key={gp.id} className="hover:bg-[#F4EFE6]/50 transition-colors group">
+                <td className="px-6 py-4">
+                  <div className="w-12 h-12 rounded-md overflow-hidden bg-[#EAE4DA]">
+                    {gp.productImageUrl && (
+                      <img src={gp.productImageUrl} alt={gp.title} className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                </td>
                 <td className="px-6 py-4">
                   <Link href={`/admin/gallery/${gp.id}`} className="font-medium text-[#B3261E] hover:underline">
-                    {gp.design.title}
+                    {gp.title}
                   </Link>
                 </td>
                 <td className="px-6 py-4 text-sm text-[#4A4844]">
-                  {gp.catalogProduct.name}
+                  {gp.productName}
                 </td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex px-2 py-1 text-[10px] rounded-full font-medium ${
-                    gp.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    gp.published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {gp.active ? 'ACTIVE' : 'INACTIVE'}
+                    {gp.published ? 'ACTIVE' : 'DRAFT'}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm text-[#4A4844]">
-                  {gp.defaultPlacement || "Default"}
+                  ${(gp.listedPriceCents / 100).toFixed(2)}
                 </td>
                 <td className="px-6 py-4 text-sm text-[#A09D96]">
                   {format(new Date(gp.createdAt), "MMM d, yyyy")}
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <div className="flex justify-end text-gray-400 hover:text-red-600 transition-colors">
+                    <DeleteGalleryItemButton id={gp.id} title={gp.title} />
+                  </div>
                 </td>
               </tr>
             ))}
             {galleryProducts.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-[#A09D96]">No gallery products found.</td>
+                <td colSpan={7} className="px-6 py-8 text-center text-[#A09D96]">No gallery products found.</td>
               </tr>
             )}
           </tbody>

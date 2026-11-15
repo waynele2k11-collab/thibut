@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CreditCard, Loader2 } from "lucide-react";
 
-export function CheckoutButton({ sessionId, candidateId, productId }: { sessionId: string; candidateId: string; productId: string }) {
+export function CheckoutButton({ sessionId, candidateId, productId, placement, priceMinor, title }: { sessionId: string; candidateId: string; productId: string; placement?: string; priceMinor: number; title: string }) {
   const [loading, setLoading] = useState(false);
 
   const handleCheckout = async () => {
@@ -16,6 +16,9 @@ export function CheckoutButton({ sessionId, candidateId, productId }: { sessionI
           sessionId,
           candidateId,
           productId,
+          placement,
+          priceMinor,
+          title,
           designId: "mock-design-123", // TODO: real design ID
           successUrl: `${window.location.origin}/checkout/success`,
           cancelUrl: window.location.href,

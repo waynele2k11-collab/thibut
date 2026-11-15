@@ -1,6 +1,54 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@400;700&family=Dancing+Script:wght@400;700&display=swap');
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'UTM ThuPhap Thien An';
+  src: url('/fonts/UtmThuphapThienAn.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fz_ThuPhapButBi_Full';
+  src: url('/fonts/Fz_ThuPhapButBi_Full.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fz_DucThuyThuPhap';
+  src: url('/fonts/Fz_DucThuyThuPhap.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'HY-Thu_phap_7';
+  src: url('/fonts/HY-Thu_phap_7.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'VNI Ong do';
+  src: url('/fonts/VNI-Ong_do.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'VNI Netbut';
+  src: url('/fonts/VNI-Netbut.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    STITCH DESIGN TOKENS — Source of truth from /stitch_thi_b_t_system_architecture
    All hex values are extracted directly from tailwind.config inside Stitch HTML exports.
@@ -168,3 +216,63 @@ img, picture, canvas, svg {
   -webkit-user-select: none;
 }
 
+/* ── Mobile Global: Safe Area, Touch Targets, Overflow ── */
+:root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+}
+
+/* Prevent tap flash on iOS */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* No horizontal scroll anywhere */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Bottom sheet drag handle pill */
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: #C7C6CA;
+  margin: 0 auto;
+}
+
+/* Smooth sheet transitions */
+.sheet-panel {
+  transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+
+/* ── Skeleton shimmer ─────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0ede8 25%, #e8e4dd 50%, #f0ede8 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ── Slide-up for modals ──────────────────────────────── */
+@keyframes slideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Hide scrollbar (keep scroll) ────────────────────── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

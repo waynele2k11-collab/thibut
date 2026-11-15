@@ -48,14 +48,72 @@ export class PrintfulProvider implements FulfillmentProvider {
     return response.json();
   }
 
-  async syncProducts(): Promise<any> {
-    const url = "https://api.printful.com/sync/products";
-    console.log("[PrintfulProvider] Syncing products from Printful Catalog");
+  async getStoreProducts(): Promise<any> {
+    const url = "https://api.printful.com/store/products";
+    console.log("[PrintfulProvider] Fetching products from Printful Store");
     const response = await fetch(url, {
       headers: { "Authorization": `Bearer ${this.apiKey}` },
     });
     if (!response.ok) {
-      throw new Error(`Printful syncProducts failed: ${response.status}`);
+      throw new Error(`Printful getStoreProducts failed: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async getProductDetails(externalProductId: string): Promise<any> {
+    const url = `https://api.printful.com/store/products/${externalProductId}`;
+    console.log(`[PrintfulProvider] Fetching details for product ${externalProductId}`);
+    const response = await fetch(url, {
+      headers: { "Authorization": `Bearer ${this.apiKey}` },
+    });
+    if (!response.ok) {
+      throw new Error(`Printful getProductDetails failed: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async getCatalogProductDetails(productId: string | number): Promise<any> {
+    const url = `https://api.printful.com/products/${productId}`;
+    console.log(`[PrintfulProvider] Fetching catalog details for product ${productId}`);
+    const response = await fetch(url, {
+      headers: { "Authorization": `Bearer ${this.apiKey}` },
+    });
+    if (!response.ok) {
+      throw new Error(`Printful getCatalogProductDetails failed: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async generateBlankMockups(productId: string | number, variantIds: number[]): Promise<any> {
+    const url = `https://api.printful.com/mockup-generator/create-task/${productId}`;
+    console.log(`[PrintfulProvider] Generating blank mockups for product ${productId}`);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { 
+        "Authorization": `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        variant_ids: variantIds,
+        format: "jpg",
+        files: [] // Empty files array natively requests blank mockups
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Printful generateBlankMockups failed: ${response.status} - ${errorText}`);
+    }
+    return response.json();
+  }
+
+  async getMockupTaskResult(taskKey: string): Promise<any> {
+    const url = `https://api.printful.com/mockup-generator/task?task_key=${taskKey}`;
+    const response = await fetch(url, {
+      headers: { "Authorization": `Bearer ${this.apiKey}` },
+    });
+    if (!response.ok) {
+      throw new Error(`Printful getMockupTaskResult failed: ${response.status}`);
     }
     return response.json();
   }

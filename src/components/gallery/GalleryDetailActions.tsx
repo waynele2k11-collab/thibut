@@ -3,32 +3,28 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
-import type { GalleryProductFixture } from "@/data/gallery";
+import type { GalleryItem } from "@prisma/client";
 
 interface Props {
-  product: GalleryProductFixture;
+  product: GalleryItem;
 }
 
 export function GalleryDetailActions({ product }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const makeItYoursLink = `/create?product=${product.productId}&color=${encodeURIComponent(product.color)}&placement=${product.placement}&source=gallery&template=${product.id}`;
+  const makeItYoursLink = `/create?galleryId=${product.id}`;
 
   const handleBuyNow = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/checkout", {
+      const res = await fetch("/api/checkout/gallery", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          galleryProductId: product.id,
-          title: `${product.title} (${product.productName})`,
-          priceMinor: product.retailPriceMinor,
-          imageUrl: `${window.location.origin}${product.mockups[0]?.asset}`,
-          successUrl: `${window.location.origin}/checkout/success`,
-          cancelUrl: window.location.href,
+          galleryItemId: product.id,
+          variantId: "default", // size selection happens downstream if required
         }),
       });
 

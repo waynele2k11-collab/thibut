@@ -28,9 +28,11 @@ export default function Home() {
             </a>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Mobile: horizontal scroll; Desktop: 3-col grid */}
+          <div className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-4 md:pb-0
+                          md:grid md:grid-cols-3 md:overflow-visible scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
             {/* Category 1 */}
-            <a className="group block" href="#">
+            <a className="group block min-w-[72vw] sm:min-w-[60vw] md:min-w-0 snap-start flex-shrink-0" href="#">
               <div className="relative overflow-hidden aspect-[4/5] bg-surface-container-highest mb-6">
                 <img alt="Personalized Name Hoodie" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/mockups/hoodie.jpg" />
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
@@ -40,7 +42,7 @@ export default function Home() {
             </a>
 
             {/* Category 2 */}
-            <a className="group block" href="#">
+            <a className="group block min-w-[72vw] sm:min-w-[60vw] md:min-w-0 snap-start flex-shrink-0" href="#">
               <div className="relative overflow-hidden aspect-[4/5] bg-surface-container-highest mb-6">
                 <img alt="Framed Poetry Print" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/mockups/framed_print.jpg" />
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
@@ -50,7 +52,7 @@ export default function Home() {
             </a>
 
             {/* Category 3 */}
-            <a className="group block" href="#">
+            <a className="group block min-w-[72vw] sm:min-w-[60vw] md:min-w-0 snap-start flex-shrink-0" href="#">
               <div className="relative overflow-hidden aspect-[4/5] bg-surface-container-highest mb-6">
                 <img alt="Heritage Seal Stamp" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/mockups/seal.jpg" />
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
