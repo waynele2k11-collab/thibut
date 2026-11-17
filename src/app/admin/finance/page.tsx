@@ -1,14 +1,39 @@
-import prisma from "@/lib/prisma";
+import type { LedgerAccountType } from "@prisma/client";
 import { format } from "date-fns";
+import prisma from "@/lib/prisma";
 import { MetricCard } from "@/components/admin/MetricCard";
+import { formatUsdMinor } from "@/lib/pricing/quote";
+import { requireAdmin } from "@/utils/admin/auth";
+
+const REVENUE_ACCOUNT_TYPES = new Set<LedgerAccountType>([
+  "PLATFORM_REVENUE",
+  "PLATFORM_AI_REVENUE",
+  "PLATFORM_PRODUCT_REVENUE",
+  "PLATFORM_MARKETPLACE_REVENUE",
+  "AI_REVENUE",
+]);
+
+function formatSignedLedgerBalance(balanceMinor: bigint): string {
+  if (balanceMinor === 0n) {
+    return "$0.00";
+  }
+  const absFormatted = formatUsdMinor(balanceMinor < 0n ? -balanceMinor : balanceMinor);
+  const side = balanceMinor > 0n ? "DR" : "CR";
+  return `${absFormatted} ${side}`;
+}
 
 export default async function AdminFinancePage() {
-  const [
-    accounts,
-    recentEarnings
-  ] = await Promise.all([
+  await requireAdmin();
+
+  const [accounts, postingGroups, recentEarnings] = await Promise.all([
     prisma.ledgerAccount.findMany({
-      orderBy: { type: "asc" }
+      orderBy: { code: "asc" },
+    }),
+    prisma.ledgerPosting.groupBy({
+      by: ["accountId"],
+      _sum: {
+        amountMinor: true,
+      },
     }),
     prisma.creatorEarning.findMany({
       take: 20,
@@ -17,113 +42,170 @@ export default async function AdminFinancePage() {
         creator: true,
         orderItem: {
           include: {
-            order: true
-          }
-        }
-      }
-    })
+            order: true,
+          },
+        },
+      },
+    }),
   ]);
 
-  // Sum up platform revenue
-  const platformAccounts = accounts.filter(a => a.ownerType === "PLATFORM");
-  const totalPlatformRevenueMinor = platformAccounts.reduce((sum, acc) => sum + Number(acc.balanceMinor), 0);
-  
-  // Sum up creator pending payouts
-  const creatorAccounts = accounts.filter(a => a.ownerType === "CREATOR");
-  const totalCreatorPendingMinor = creatorAccounts.reduce((sum, acc) => sum + Number(acc.balanceMinor), 0);
+  // Derive exact BigInt balances from LedgerPosting sums (INV-009, zero float drift)
+  const postingSumByAccountId = new Map<string, bigint>();
+  for (const group of postingGroups) {
+    postingSumByAccountId.set(group.accountId, group._sum.amountMinor ?? 0n);
+  }
+
+  const accountsWithDerivedBalance = accounts.map((acc) => ({
+    ...acc,
+    derivedBalanceMinor: postingSumByAccountId.get(acc.id) ?? 0n,
+  }));
+
+  // Revenue accounts carry credit (negative) postings; negate to obtain positive net revenue
+  const totalPlatformRevenueMinor = accountsWithDerivedBalance
+    .filter((acc) => REVENUE_ACCOUNT_TYPES.has(acc.type))
+    .reduce((sum, acc) => sum + -acc.derivedBalanceMinor, 0n);
+
+  // Creator payable liability accounts carry credit (negative) postings when owed to creators
+  const totalCreatorPendingMinor = accountsWithDerivedBalance
+    .filter((acc) => acc.type === "CREATOR_PAYABLE" || acc.ownerType === "CREATOR")
+    .reduce((sum, acc) => sum + -acc.derivedBalanceMinor, 0n);
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display-md text-display-sm text-[#111111] mb-2">Finance Ledger</h1>
-          <p className="font-body text-[#A09D96]">Platform revenue, creator payouts, and ledger accounts.</p>
+          <h1 className="font-headline-md text-headline-md text-on-background mb-2">
+            Finance Ledger
+          </h1>
+          <p className="font-body-md text-body-md text-on-surface-variant">
+            Platform revenue, creator payouts, and double-entry ledger accounts.
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <MetricCard 
-          title="Platform Revenue (Gross)" 
-          value={`$${(totalPlatformRevenueMinor / 100).toFixed(2)}`} 
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-gutter">
+        <MetricCard
+          title="Platform Revenue (Net)"
+          value={formatUsdMinor(totalPlatformRevenueMinor)}
         />
-        <MetricCard 
-          title="Pending Creator Payouts" 
-          value={`$${(totalCreatorPendingMinor / 100).toFixed(2)}`} 
+        <MetricCard
+          title="Pending Creator Payouts"
+          value={formatUsdMinor(totalCreatorPendingMinor)}
         />
-        <MetricCard 
-          title="Active Ledger Accounts" 
-          value={accounts.length} 
+        <MetricCard
+          title="Active Ledger Accounts"
+          value={accountsWithDerivedBalance.length}
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-[#E5E0D8]">
-             <h2 className="font-label-caps text-sm uppercase tracking-wider text-[#A09D96]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+        <div className="bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden">
+          <div className="p-6 border-b border-surface-variant">
+            <h2 className="font-label-caps text-label-caps uppercase text-on-surface-variant">
               Ledger Accounts
             </h2>
           </div>
-          <table className="w-full text-left">
-            <thead className="bg-[#F4EFE6] border-b border-[#E5E0D8]">
-              <tr>
-                <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Account</th>
-                <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Type</th>
-                <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider text-right">Balance</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E5E0D8]">
-              {accounts.map(acc => (
-                <tr key={acc.id} className="hover:bg-[#F4EFE6]/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-[#111111]">{acc.name}</span>
-                      <span className="text-[10px] text-[#A09D96] font-mono">{acc.code}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-[10px] uppercase font-bold text-[#4A4844]">{acc.type}</span>
-                  </td>
-                  <td className="px-6 py-4 text-right font-medium">
-                    ${(Number(acc.balanceMinor) / 100).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-              {accounts.length === 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-surface-container-low border-b border-surface-variant">
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-[#A09D96]">No ledger accounts found.</td>
+                  <th className="px-6 py-4 font-label-caps text-label-caps uppercase text-on-surface-variant">
+                    Account
+                  </th>
+                  <th className="px-6 py-4 font-label-caps text-label-caps uppercase text-on-surface-variant">
+                    Type
+                  </th>
+                  <th className="px-6 py-4 font-label-caps text-label-caps uppercase text-on-surface-variant text-right">
+                    Posted Balance
+                  </th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-surface-variant">
+                {accountsWithDerivedBalance.map((acc) => (
+                  <tr
+                    key={acc.id}
+                    className="hover:bg-surface-container-low transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-body-md text-body-md text-on-background">
+                          {acc.name}
+                        </span>
+                        <span className="font-label-caps text-label-caps text-on-surface-variant">
+                          {acc.code}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+                        {acc.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right font-body-md text-body-md text-on-background">
+                      {formatSignedLedgerBalance(acc.derivedBalanceMinor)}
+                    </td>
+                  </tr>
+                ))}
+                {accountsWithDerivedBalance.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-6 py-8 text-center font-body-md text-body-md text-on-surface-variant"
+                    >
+                      No ledger accounts found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div className="bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-[#E5E0D8]">
-             <h2 className="font-label-caps text-sm uppercase tracking-wider text-[#A09D96]">
+        <div className="bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden">
+          <div className="p-6 border-b border-surface-variant">
+            <h2 className="font-label-caps text-label-caps uppercase text-on-surface-variant">
               Recent Creator Earnings
             </h2>
           </div>
           <div className="p-6 space-y-4">
-            {recentEarnings.map(earning => (
-              <div key={earning.id} className="flex items-center justify-between p-4 bg-white border border-[#E5E0D8] rounded-lg">
+            {recentEarnings.map((earning) => (
+              <div
+                key={earning.id}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-4 bg-background border border-surface-variant rounded-lg"
+              >
                 <div>
-                  <p className="text-sm font-medium text-[#111111]">{earning.creator.displayName}</p>
-                  <p className="text-xs text-[#A09D96]">Order {earning.orderItem.order.orderNumber} • {format(new Date(earning.createdAt), "MMM d")}</p>
+                  <p className="font-body-md text-body-md text-on-background">
+                    {earning.creator.displayName}
+                  </p>
+                  <p className="font-label-caps text-label-caps text-on-surface-variant mt-1">
+                    Order {earning.orderItem.order.orderNumber} ·{" "}
+                    {format(new Date(earning.createdAt), "MMM d")}
+                  </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-green-700">+${(Number(earning.netCreatorMinor) / 100).toFixed(2)}</p>
-                  <span className={`inline-flex px-2 py-0.5 mt-1 text-[10px] rounded-full font-medium ${
-                    earning.status === 'TRANSFERRED' ? 'bg-green-100 text-green-800' : 
-                    earning.status === 'HELD' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
+                <div className="sm:text-right">
+                  <p className="font-body-md text-body-md text-on-background">
+                    {earning.status === "REVERSED"
+                      ? `-${formatUsdMinor(earning.netCreatorMinor)}`
+                      : `+${formatUsdMinor(earning.netCreatorMinor)}`}
+                  </p>
+                  <span
+                    className={`inline-flex px-2 py-1 mt-1 font-label-caps text-label-caps uppercase rounded ${
+                      earning.status === "TRANSFERRED"
+                        ? "bg-primary text-on-primary"
+                        : earning.status === "HELD" || earning.status === "REVERSED"
+                          ? "bg-error-container text-on-error-container"
+                          : "bg-surface-container-high text-on-surface"
+                    }`}
+                  >
                     {earning.status}
                   </span>
                 </div>
               </div>
             ))}
             {recentEarnings.length === 0 && (
-              <p className="text-sm text-center text-[#A09D96] py-4">No recent earnings found.</p>
+              <p className="font-body-md text-body-md text-center text-on-surface-variant py-4">
+                No recent earnings found.
+              </p>
             )}
           </div>
         </div>

@@ -3,29 +3,61 @@
 import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { getCartCount } from "@/lib/cart/cartStore";
+import { usePathname } from "next/navigation";
+import { getCartCountAction } from "@/app/actions/cart";
+
+interface CartRefreshDetail {
+  count?: number;
+}
 
 export function CartBadge({ className }: { className?: string }) {
   const [count, setCount] = useState(0);
+  const pathname = usePathname();
 
   useEffect(() => {
-    // Initial count
-    setCount(getCartCount());
+    let active = true;
+    getCartCountAction()
+      .then((serverCount) => {
+        if (active) {
+          setCount(serverCount);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setCount(0);
+        }
+      });
 
-    // Listen for cart updates
-    const handler = (e: Event) => {
-      const items = (e as CustomEvent).detail as any[];
-      setCount(items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0));
+    return () => {
+      active = false;
     };
-    window.addEventListener("thibut-cart-update", handler);
-    return () => window.removeEventListener("thibut-cart-update", handler);
+  }, [pathname]);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const custom = event as CustomEvent<CartRefreshDetail | undefined>;
+      if (typeof custom.detail?.count === "number") {
+        setCount(custom.detail.count);
+        return;
+      }
+      getCartCountAction()
+        .then((serverCount) => setCount(serverCount))
+        .catch(() => {});
+    };
+
+    window.addEventListener("thibut-cart-refresh", handler);
+    return () => window.removeEventListener("thibut-cart-refresh", handler);
   }, []);
 
   return (
-    <Link href="/cart" aria-label={`Cart (${count} items)`} className={`relative ${className ?? ""}`}>
+    <Link
+      href="/cart"
+      aria-label={`Cart (${count} items)`}
+      className={`relative ${className ?? ""}`}
+    >
       <ShoppingCart className="w-5 h-5 text-primary hover:text-secondary transition-colors" />
       {count > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[#B3261E] text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-secondary text-on-secondary font-label-caps text-[10px] rounded-full flex items-center justify-center leading-none">
           {count > 9 ? "9+" : count}
         </span>
       )}

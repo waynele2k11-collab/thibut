@@ -1,3 +1,12 @@
+import {
+  DEFAULT_LICENSE_ROYALTY_MINOR,
+  DEFAULT_PERSONALIZATION_FEE_MINOR,
+  DIGITAL_TOTAL_MINOR,
+  roundUpTo99Minor,
+} from "./quote";
+
+export * from "./quote";
+
 export interface PricingBreakdown {
   fulfillmentCostMinor: number;
   baseVariantCostMinor: number;
@@ -10,37 +19,57 @@ export interface PricingBreakdown {
   digitalPersonalizedPriceMinor: number;
 }
 
-/**
- * Rounds a cents value up to the nearest .99
- * @param cents The cost in cents
- */
-export function roundUpTo99(cents: number): number {
-  const dollars = Math.floor(cents / 100);
-  return (dollars * 100) + 99;
+function toMinorBigInt(value: number | bigint): bigint {
+  if (typeof value === "bigint") {
+    return value;
+  }
+  if (!Number.isFinite(value)) {
+    return 0n;
+  }
+  return BigInt(Math.trunc(value));
 }
 
 /**
- * Authoritative pricing engine for Thi Bút.
- * The server must ALWAYS use this engine to calculate retail prices.
+ * Facade helper over authoritative BigInt roundUpTo99Minor.
+ */
+export function roundUpTo99(cents: number | bigint): number {
+  const minor = toMinorBigInt(cents);
+  if (minor <= 0n) {
+    return 99;
+  }
+  return Number(roundUpTo99Minor(minor));
+}
+
+/**
+ * Clean compatibility facade over src/lib/pricing/quote.ts (BigInt math only).
  */
 export function calculatePricing(
-  baseVariantCostMinor: number,
-  printCostMinor: number = 0,
-  additionalPlacementCostMinor: number = 0
+  baseVariantCostMinor: number | bigint,
+  printCostMinor: number | bigint = 0,
+  additionalPlacementCostMinor: number | bigint = 0
 ): PricingBreakdown {
-  const PERSONALIZATION_FEE = 700; // $7.00
-  
-  const fulfillmentCostMinor = baseVariantCostMinor + printCostMinor + additionalPlacementCostMinor;
+  const baseMinor = toMinorBigInt(baseVariantCostMinor);
+  const printMinor = toMinorBigInt(printCostMinor);
+  const placementMinor = toMinorBigInt(additionalPlacementCostMinor);
+
+  const fulfillmentMinor = baseMinor + printMinor + placementMinor;
+  const personalizationAdderMinor =
+    DEFAULT_LICENSE_ROYALTY_MINOR + DEFAULT_PERSONALIZATION_FEE_MINOR; // 499n + 300n = 799n
+
+  const galleryMinor =
+    fulfillmentMinor > 0n ? roundUpTo99Minor(fulfillmentMinor * 2n) : 0n;
+  const personalizedMinor =
+    galleryMinor > 0n ? galleryMinor + personalizationAdderMinor : personalizationAdderMinor;
 
   return {
-    fulfillmentCostMinor,
-    baseVariantCostMinor,
-    printCostMinor,
-    additionalPlacementCostMinor,
-    galleryPriceMinor: roundUpTo99(fulfillmentCostMinor * 2),
-    personalizationFeeMinor: PERSONALIZATION_FEE,
-    personalizedPriceMinor: roundUpTo99((fulfillmentCostMinor * 2) + PERSONALIZATION_FEE),
-    digitalGalleryPriceMinor: 999, // $9.99
-    digitalPersonalizedPriceMinor: 1499, // $14.99
+    fulfillmentCostMinor: Number(fulfillmentMinor),
+    baseVariantCostMinor: Number(baseMinor),
+    printCostMinor: Number(printMinor),
+    additionalPlacementCostMinor: Number(placementMinor),
+    galleryPriceMinor: Number(galleryMinor),
+    personalizationFeeMinor: Number(DEFAULT_PERSONALIZATION_FEE_MINOR),
+    personalizedPriceMinor: Number(personalizedMinor),
+    digitalGalleryPriceMinor: Number(DIGITAL_TOTAL_MINOR),
+    digitalPersonalizedPriceMinor: Number(DIGITAL_TOTAL_MINOR),
   };
 }

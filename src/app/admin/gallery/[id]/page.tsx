@@ -13,6 +13,14 @@ export default async function EditGalleryItemPage({ params }: { params: Promise<
     notFound();
   }
 
+  const customImageUrl =
+    item.mockupTransform &&
+    typeof item.mockupTransform === "object" &&
+    !Array.isArray(item.mockupTransform) &&
+    typeof item.mockupTransform.customImageUrl === "string"
+      ? item.mockupTransform.customImageUrl
+      : undefined;
+
   return (
     <div className="max-w-2xl mx-auto py-8">
       <h1 className="font-display-md text-3xl text-[#111111] mb-6">Edit Gallery Item</h1>
@@ -23,7 +31,7 @@ export default async function EditGalleryItemPage({ params }: { params: Promise<
         
         <EditGalleryItemForm 
           id={item.id} 
-          currentCustomImage={(item.mockupTransform as any)?.customImageUrl}
+          currentCustomImage={customImageUrl}
           productImageUrl={item.productImageUrl}
         />
       </div>

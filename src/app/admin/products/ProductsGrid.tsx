@@ -99,7 +99,14 @@ export function ProductsGrid({ products, statusMap }: ProductsGridProps) {
             <div key={product.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="aspect-square relative bg-gray-50 p-4 flex items-center justify-center">
                 {product.imageUrls[0] ? (
-                  <img src={product.imageUrls[0]} alt={product.name} className="max-w-full max-h-full object-contain mix-blend-multiply" />
+                  <Image
+                    src={product.imageUrls[0]}
+                    alt={product.name}
+                    width={400}
+                    height={400}
+                    unoptimized
+                    className="max-w-full max-h-full w-auto h-auto object-contain mix-blend-multiply"
+                  />
                 ) : (
                   <div className="text-gray-300">No Image</div>
                 )}
@@ -160,7 +167,7 @@ export function ProductsGrid({ products, statusMap }: ProductsGridProps) {
       
       {filteredProducts.length === 0 && (
         <div className="text-center py-12 text-gray-500">
-          No products found matching "{searchQuery}"
+          No products found matching &ldquo;{searchQuery}&rdquo;
         </div>
       )}
     </div>

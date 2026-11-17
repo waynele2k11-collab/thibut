@@ -34,9 +34,9 @@ export function GalleryDetailActions({ product }: Props) {
       } else {
         throw new Error(data.error || "Failed to start checkout");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Checkout error:", err);
-      setError(err.message || "Failed to start checkout. Please try again.");
+      setError(err instanceof Error ? err.message : "Failed to start checkout. Please try again.");
       setLoading(false);
     }
   };

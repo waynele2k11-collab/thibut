@@ -27,13 +27,18 @@ export interface ProviderPrice {
 }
 
 export interface PrintAreaMetadata {
-  placement: "FRONT_CENTER" | "BACK_CENTER" | "LEFT_CHEST" | "SLEEVE_LEFT" | "SLEEVE_RIGHT";
+  placement:
+    | "FRONT_CENTER"
+    | "BACK_CENTER"
+    | "LEFT_CHEST"
+    | "SLEEVE_LEFT"
+    | "SLEEVE_RIGHT";
   widthPx: number;
   heightPx: number;
   safeWidthPx: number;
   safeHeightPx: number;
   dpi: number;
-  schemaJson: any;
+  schemaJson: Record<string, unknown>;
 }
 
 export interface MockupRequest {
@@ -63,7 +68,7 @@ export interface ShippingQuoteRequest {
 
 export interface ShippingRate {
   id: string;
-  name: string; // e.g., "Standard", "Express"
+  name: string;
   rateMinor: bigint;
   currency: string;
   minDeliveryDays?: number;
@@ -71,7 +76,7 @@ export interface ShippingRate {
 }
 
 export interface FulfillmentOrderRequest {
-  externalId: string; // e.g. TB-10482
+  externalId: string;
   recipient: {
     name: string;
     company?: string;
@@ -96,25 +101,119 @@ export interface FulfillmentOrderRequest {
 }
 
 export interface ProviderOrder {
-  id: string; // The provider's internal order ID
-  externalId: string; // Thi Bút Order ID
-  status: "DRAFT" | "PENDING" | "PROCESSING" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "FAILED" | "CANCELLED";
+  id: string;
+  externalId: string;
+  status:
+    | "DRAFT"
+    | "PENDING"
+    | "PROCESSING"
+    | "IN_PRODUCTION"
+    | "SHIPPED"
+    | "DELIVERED"
+    | "FAILED"
+    | "CANCELLED";
   totalCostMinor: bigint;
   currency: string;
 }
 
+export interface PrintfulStoreProductSummary {
+  id: number | string;
+  name: string;
+  thumbnail_url?: string | null;
+}
+
+export interface PrintfulSyncVariantFile {
+  type?: string;
+  preview_url?: string | null;
+}
+
+export interface PrintfulSyncVariant {
+  id: number | string;
+  name: string;
+  sku?: string | null;
+  color?: string | null;
+  size?: string | null;
+  price?: string | number | null;
+  retail_price?: string | number | null;
+  currency?: string | null;
+  files?: PrintfulSyncVariantFile[];
+}
+
+export interface PrintfulStoreProductDetailsResult {
+  sync_product?: PrintfulStoreProductSummary;
+  sync_variants?: PrintfulSyncVariant[];
+}
+
+export interface PrintfulCatalogProductVariantRaw {
+  id: number;
+  product_id?: number;
+  name: string;
+  sku?: string | null;
+  color?: string | null;
+  color_code?: string | null;
+  colorHex?: string | null;
+  size?: string | null;
+  price: string | number;
+  in_stock?: boolean;
+  image?: string | null;
+}
+
+export interface PrintfulCatalogProductDetailsResponse {
+  result: {
+    product: {
+      id: number;
+      title: string;
+      type?: string;
+      description?: string | null;
+      image?: string | null;
+    };
+    variants: PrintfulCatalogProductVariantRaw[];
+  };
+}
+
+export interface FulfillmentEventPayload {
+  order?: {
+    id?: string | number;
+    external_id?: string;
+  };
+  shipment?: Record<string, unknown>;
+  task_key?: string;
+  mockups?: Array<Record<string, unknown>>;
+  reason?: string;
+}
+
+export type FulfillmentEventType =
+  | "MOCKUP_COMPLETED"
+  | "MOCKUP_FAILED"
+  | "ORDER_SHIPPED"
+  | "ORDER_FAILED"
+  | "ORDER_CANCELED"
+  | "IGNORED";
+
 export interface FulfillmentEvent {
-  type: "MOCKUP_COMPLETED" | "MOCKUP_FAILED" | "ORDER_SHIPPED" | "ORDER_FAILED" | "ORDER_CANCELED";
+  type: FulfillmentEventType;
+  rawType: string;
   externalEventId: string;
-  payload: any;
+  orderExternalId?: string;
+  payload: FulfillmentEventPayload;
 }
 
 export interface FulfillmentProvider {
   getProducts(): Promise<ProviderProduct[]>;
   getVariants(productId: string): Promise<ProviderVariant[]>;
-  getCatalogProductDetails(productId: string | number): Promise<any>;
-  generateBlankMockups(productId: string | number, variantIds: number[], placement?: string): Promise<any>;
-  getMockupTaskResult(taskKey: string): Promise<any>;
+  getStoreProducts(): Promise<{ result: PrintfulStoreProductSummary[] }>;
+  getProductDetails(
+    productId: string | number
+  ): Promise<{ result: PrintfulStoreProductDetailsResult }>;
+  getCatalogProductDetails(
+    productId: string | number
+  ): Promise<PrintfulCatalogProductDetailsResponse>;
+  generateBlankMockups(
+    productId: string | number,
+    variantIds: number[],
+    placement?: string
+  ): Promise<Record<string, unknown>>;
+  getMockupTaskResult(taskKey: string): Promise<Record<string, unknown>>;
   getPricing(variantId: string): Promise<ProviderPrice>;
   getPrintAreas(productId: string): Promise<PrintAreaMetadata[]>;
   generateMockups(input: MockupRequest): Promise<MockupJob>;
@@ -123,5 +222,5 @@ export interface FulfillmentProvider {
   confirmOrder(providerOrderId: string): Promise<void>;
   cancelOrder(providerOrderId: string): Promise<void>;
   getOrder(providerOrderId: string): Promise<ProviderOrder>;
-  parseWebhook(payload: unknown): Promise<FulfillmentEvent>;
+  parseWebhook(payload: unknown, rawBodyText?: string): Promise<FulfillmentEvent>;
 }

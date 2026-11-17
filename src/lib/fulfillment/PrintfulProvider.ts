@@ -1,132 +1,237 @@
-import {
+import "server-only";
+import crypto from "node:crypto";
+import { z } from "zod";
+import { parseUsdDecimalToMinor } from "@/lib/pricing/quote";
+import type {
+  FulfillmentEvent,
+  FulfillmentEventType,
+  FulfillmentOrderRequest,
   FulfillmentProvider,
+  MockupJob,
+  MockupRequest,
+  PrintAreaMetadata,
+  PrintfulCatalogProductDetailsResponse,
+  PrintfulStoreProductDetailsResult,
+  PrintfulStoreProductSummary,
+  ProviderOrder,
+  ProviderPrice,
   ProviderProduct,
   ProviderVariant,
-  ProviderPrice,
-  PrintAreaMetadata,
-  MockupRequest,
-  MockupJob,
   ShippingQuoteRequest,
   ShippingRate,
-  FulfillmentOrderRequest,
-  ProviderOrder,
-  FulfillmentEvent
 } from "./types";
+
+export const PrintfulWebhookOrderSchema = z
+  .object({
+    id: z.union([z.string(), z.number()]).optional(),
+    external_id: z.string().optional(),
+  })
+  .passthrough();
+
+export const PrintfulWebhookPayloadSchema = z
+  .object({
+    id: z.union([z.string(), z.number()]).optional(),
+    type: z.string().min(1).max(120),
+    created: z.number().int().nonnegative().optional(),
+    retries: z.number().int().nonnegative().optional(),
+    store: z.number().int().optional(),
+    data: z
+      .object({
+        order: PrintfulWebhookOrderSchema.optional(),
+        shipment: z.record(z.string(), z.unknown()).optional(),
+        task_key: z.string().optional(),
+        mockups: z.array(z.record(z.string(), z.unknown())).optional(),
+        reason: z.string().optional(),
+      })
+      .passthrough()
+      .optional(),
+    order: PrintfulWebhookOrderSchema.optional(),
+  })
+  .passthrough();
+
+export type PrintfulWebhookPayload = z.infer<typeof PrintfulWebhookPayloadSchema>;
+
+function formatMinorForPrintfulDecimal(minor: bigint): string {
+  const abs = minor < 0n ? -minor : minor;
+  const dollars = abs / 100n;
+  const cents = (abs % 100n).toString().padStart(2, "0");
+  return `${minor < 0n ? "-" : ""}${dollars.toString()}.${cents}`;
+}
+
+interface RawPrintfulProductItem {
+  id: string | number;
+  title?: string;
+  name?: string;
+  type?: string;
+  description?: string;
+  image?: string;
+}
+
+interface RawPrintfulShippingRate {
+  id: string;
+  name: string;
+  rate: string | number;
+  currency: string;
+  minDeliveryDays?: number;
+  maxDeliveryDays?: number;
+}
+
+interface RawPrintfulOrderResponse {
+  result: {
+    id: string | number;
+    external_id: string;
+    status: string;
+    costs: {
+      total: string | number;
+      currency: string;
+    };
+  };
+}
 
 export class PrintfulProvider implements FulfillmentProvider {
   private readonly baseUrl = "https://api.printful.com";
 
-  private get headers() {
+  private get headers(): Record<string, string> {
     const token = process.env.PRINTFUL_ACCESS_TOKEN || process.env.PRINTFUL_API_KEY;
     if (!token) {
-      throw new Error("PRINTFUL_ACCESS_TOKEN or PRINTFUL_API_KEY environment variable is missing.");
+      throw new Error(
+        "PRINTFUL_ACCESS_TOKEN or PRINTFUL_API_KEY environment variable is missing."
+      );
     }
-    return {
-      "Authorization": `Bearer ${token}`,
+
+    const hdrs: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
-      "X-PF-Store-Id": process.env.PRINTFUL_STORE_ID || "",
     };
+
+    const storeId = process.env.PRINTFUL_STORE_ID?.trim();
+    if (storeId) {
+      hdrs["X-PF-Store-Id"] = storeId;
+    }
+
+    return hdrs;
   }
 
-  private async request(endpoint: string, options: RequestInit = {}) {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
-    // In local MVP testing, we might want to stub if token isn't fully active
-    // But since the token was provided, we'll try to use it for real.
     const res = await fetch(url, {
       ...options,
-      headers: { ...this.headers, ...options.headers }
+      headers: {
+        ...this.headers,
+        ...(options.headers as Record<string, string> | undefined),
+      },
     });
 
     if (!res.ok) {
       const text = await res.text();
       console.error(`Printful API Error: ${res.status} ${res.statusText}`, text);
-      throw new Error(`Printful API Error ${res.status}: ${text}`);
+      throw new Error(`Printful API Error ${res.status}`);
     }
 
-    return await res.json();
+    return (await res.json()) as T;
   }
 
   async getProducts(): Promise<ProviderProduct[]> {
-    // Printful Catalog API v2 (or v1 depending on exact endpoint availability)
-    const data = await this.request("/products");
-    
-    // Map Printful response to our ProviderProduct format
-    return data.result.map((p: any) => ({
+    const data = await this.request<{ result: RawPrintfulProductItem[] }>("/products");
+
+    return (data.result ?? []).map((p) => ({
       id: String(p.id),
-      name: p.title || p.name,
+      name: p.title || p.name || `Product ${String(p.id)}`,
       category: p.type || "apparel",
       description: p.description || "",
-      imageUrls: [p.image || ""]
+      imageUrls: p.image ? [p.image] : [],
     }));
   }
 
-  async getCatalogProductDetails(productId: string | number): Promise<any> {
-    const data = await this.request(`/products/${productId}`);
-    return data;
+  async getStoreProducts(): Promise<{ result: PrintfulStoreProductSummary[] }> {
+    return this.request<{ result: PrintfulStoreProductSummary[] }>("/store/products");
   }
 
-  async generateBlankMockups(productId: string | number, variantIds: number[], placement: string = "default"): Promise<any> {
-    const data = await this.request(`/mockup-generator/create-task/${productId}`, {
-      method: "POST",
-      body: JSON.stringify({
-        variant_ids: variantIds,
-        format: "jpg",
-        files: [
-          {
-            placement: placement,
-            image_url: "https://raw.githubusercontent.com/mathiasbynens/transparent-pixels/master/transparent.png",
-            position: {
-              area_width: 100,
-              area_height: 100,
-              width: 1,
-              height: 1,
-              top: 0,
-              left: 0
-            }
-          }
-        ]
-      })
-    });
-    return data;
+  async getProductDetails(
+    productId: string | number
+  ): Promise<{ result: PrintfulStoreProductDetailsResult }> {
+    return this.request<{ result: PrintfulStoreProductDetailsResult }>(
+      `/store/products/${productId}`
+    );
   }
 
-  async getMockupTaskResult(taskKey: string): Promise<any> {
-    const data = await this.request(`/mockup-generator/task?task_key=${taskKey}`);
-    return data;
+  async getCatalogProductDetails(
+    productId: string | number
+  ): Promise<PrintfulCatalogProductDetailsResponse> {
+    return this.request<PrintfulCatalogProductDetailsResponse>(
+      `/products/${productId}`
+    );
+  }
+
+  async generateBlankMockups(
+    productId: string | number,
+    variantIds: number[],
+    placement: string = "default"
+  ): Promise<Record<string, unknown>> {
+    return this.request<Record<string, unknown>>(
+      `/mockup-generator/create-task/${productId}`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          variant_ids: variantIds,
+          format: "jpg",
+          files: [
+            {
+              placement,
+              image_url:
+                "https://raw.githubusercontent.com/mathiasbynens/transparent-pixels/master/transparent.png",
+              position: {
+                area_width: 100,
+                area_height: 100,
+                width: 1,
+                height: 1,
+                top: 0,
+                left: 0,
+              },
+            },
+          ],
+        }),
+      }
+    );
+  }
+
+  async getMockupTaskResult(taskKey: string): Promise<Record<string, unknown>> {
+    return this.request<Record<string, unknown>>(
+      `/mockup-generator/task?task_key=${encodeURIComponent(taskKey)}`
+    );
   }
 
   async getVariants(productId: string): Promise<ProviderVariant[]> {
-    const data = await this.request(`/products/${productId}`);
-    
-    return data.result.variants.map((v: any) => ({
+    const data = await this.getCatalogProductDetails(productId);
+
+    return (data.result?.variants ?? []).map((v) => ({
       id: String(v.id),
-      productId: String(v.product_id),
+      productId: String(v.product_id ?? productId),
       name: v.name,
-      sku: v.sku,
+      sku: v.sku || `PF-${v.id}`,
       color: v.color || v.color_code || "",
-      colorHex: v.color_code || undefined,
-      size: v.size,
-      priceMinor: BigInt(Math.round(parseFloat(v.price) * 100)),
-      currency: "USD", // Assuming USD for now
-      inStock: v.in_stock,
-      imageUrls: [v.image]
+      colorHex: v.color_code || v.colorHex || undefined,
+      size: v.size || "Standard",
+      priceMinor: parseUsdDecimalToMinor(v.price),
+      currency: "USD",
+      inStock: Boolean(v.in_stock),
+      imageUrls: v.image ? [v.image] : [],
     }));
   }
 
   async getPricing(variantId: string): Promise<ProviderPrice> {
-    // Usually bundled in variants, but if we need live quotes:
-    // (This is a simplified stub, Printful exposes price in variant details)
-    const data = await this.request(`/products/variant/${variantId}`);
+    const data = await this.request<{
+      result: { variant: { price: string | number; currency?: string } };
+    }>(`/products/variant/${variantId}`);
+
     return {
       variantId,
-      priceMinor: BigInt(Math.round(parseFloat(data.result.variant.price) * 100)),
-      currency: data.result.variant.currency || "USD"
+      priceMinor: parseUsdDecimalToMinor(data.result.variant.price),
+      currency: (data.result.variant.currency || "USD").toUpperCase(),
     };
   }
 
-  async getPrintAreas(productId: string): Promise<PrintAreaMetadata[]> {
-    // Mock mapping - Printful doesn't expose clean "safe width" via one simple endpoint often
+  async getPrintAreas(): Promise<PrintAreaMetadata[]> {
     return [
       {
         placement: "FRONT_CENTER",
@@ -135,31 +240,34 @@ export class PrintfulProvider implements FulfillmentProvider {
         safeWidthPx: 3000,
         safeHeightPx: 4000,
         dpi: 300,
-        schemaJson: {}
-      }
+        schemaJson: {},
+      },
     ];
   }
 
   async generateMockups(input: MockupRequest): Promise<MockupJob> {
     const payload = {
-      variant_ids: [parseInt(input.variantId, 10)],
+      variant_ids: [Number.parseInt(input.variantId, 10)],
       format: "png",
       files: [
         {
           placement: input.placement.toLowerCase(),
           image_url: input.assetUrl,
-        }
-      ]
+        },
+      ],
     };
 
-    const data = await this.request("/mockup-generator/create-task/1", { // Assuming product ID 1 for URL struct
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+    const data = await this.request<{ result: { task_key: string } }>(
+      "/mockup-generator/create-task/1",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
 
     return {
       taskId: data.result.task_key,
-      status: "PENDING"
+      status: "PENDING",
     };
   }
 
@@ -170,26 +278,29 @@ export class PrintfulProvider implements FulfillmentProvider {
         city: input.recipient.city,
         country_code: input.recipient.countryCode,
         state_code: input.recipient.stateCode,
-        zip: input.recipient.zip
+        zip: input.recipient.zip,
       },
       items: input.variantIds.map((vid, idx) => ({
-        variant_id: parseInt(vid, 10),
-        quantity: input.quantities[idx]
-      }))
+        variant_id: Number.parseInt(vid, 10),
+        quantity: input.quantities[idx],
+      })),
     };
 
-    const data = await this.request("/shipping/rates", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+    const data = await this.request<{ result: RawPrintfulShippingRate[] }>(
+      "/shipping/rates",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
 
-    return data.result.map((r: any) => ({
+    return (data.result ?? []).map((r) => ({
       id: r.id,
       name: r.name,
-      rateMinor: BigInt(Math.round(parseFloat(r.rate) * 100)),
-      currency: r.currency,
+      rateMinor: parseUsdDecimalToMinor(r.rate),
+      currency: (r.currency || "USD").toUpperCase(),
       minDeliveryDays: r.minDeliveryDays,
-      maxDeliveryDays: r.maxDeliveryDays
+      maxDeliveryDays: r.maxDeliveryDays,
     }));
   }
 
@@ -208,82 +319,138 @@ export class PrintfulProvider implements FulfillmentProvider {
         phone: input.recipient.phone,
         email: input.recipient.email,
       },
-      items: input.items.map(item => ({
-        variant_id: parseInt(item.variantId, 10),
+      items: input.items.map((item) => ({
+        variant_id: Number.parseInt(item.variantId, 10),
         quantity: item.quantity,
-        retail_price: item.retailPriceMinor ? (Number(item.retailPriceMinor) / 100).toFixed(2) : undefined,
-        files: item.files.map(f => ({
+        retail_price:
+          item.retailPriceMinor !== undefined
+            ? formatMinorForPrintfulDecimal(item.retailPriceMinor)
+            : undefined,
+        files: item.files.map((f) => ({
           url: f.url,
-          placement: f.placement.toLowerCase() // "front", "back"
-        }))
-      }))
+          placement: f.placement.toLowerCase(),
+        })),
+      })),
     };
 
-    const data = await this.request("/orders", {
+    const data = await this.request<RawPrintfulOrderResponse>("/orders", {
       method: "POST",
-      // confirm: false creates a draft
-      body: JSON.stringify({ ...payload, confirm: false }) 
+      body: JSON.stringify({ ...payload, confirm: false }),
     });
 
     return {
       id: String(data.result.id),
       externalId: data.result.external_id,
       status: "DRAFT",
-      totalCostMinor: BigInt(Math.round(parseFloat(data.result.costs.total) * 100)),
-      currency: data.result.costs.currency
+      totalCostMinor: parseUsdDecimalToMinor(data.result.costs.total),
+      currency: (data.result.costs.currency || "USD").toUpperCase(),
     };
   }
 
   async confirmOrder(providerOrderId: string): Promise<void> {
-    await this.request(`/orders/${providerOrderId}/confirm`, {
-      method: "POST"
+    await this.request<unknown>(`/orders/${providerOrderId}/confirm`, {
+      method: "POST",
     });
   }
 
   async cancelOrder(providerOrderId: string): Promise<void> {
-    await this.request(`/orders/${providerOrderId}`, {
-      method: "DELETE"
+    await this.request<unknown>(`/orders/${providerOrderId}`, {
+      method: "DELETE",
     });
   }
 
   async getOrder(providerOrderId: string): Promise<ProviderOrder> {
-    const data = await this.request(`/orders/${providerOrderId}`);
-    
-    // Map Printful statuses to ours
+    const data = await this.request<RawPrintfulOrderResponse>(
+      `/orders/${providerOrderId}`
+    );
+
     let mappedStatus: ProviderOrder["status"] = "PENDING";
     switch (data.result.status) {
-      case "draft": mappedStatus = "DRAFT"; break;
-      case "pending": mappedStatus = "PENDING"; break;
-      case "inprocess": mappedStatus = "IN_PRODUCTION"; break;
-      case "fulfilled": mappedStatus = "SHIPPED"; break;
-      case "canceled": mappedStatus = "CANCELLED"; break;
-      case "failed": mappedStatus = "FAILED"; break;
-      default: mappedStatus = "PENDING";
+      case "draft":
+        mappedStatus = "DRAFT";
+        break;
+      case "pending":
+        mappedStatus = "PENDING";
+        break;
+      case "inprocess":
+        mappedStatus = "IN_PRODUCTION";
+        break;
+      case "fulfilled":
+        mappedStatus = "SHIPPED";
+        break;
+      case "canceled":
+        mappedStatus = "CANCELLED";
+        break;
+      case "failed":
+        mappedStatus = "FAILED";
+        break;
+      default:
+        mappedStatus = "PENDING";
     }
 
     return {
       id: String(data.result.id),
       externalId: data.result.external_id,
       status: mappedStatus,
-      totalCostMinor: BigInt(Math.round(parseFloat(data.result.costs.total) * 100)),
-      currency: data.result.costs.currency
+      totalCostMinor: parseUsdDecimalToMinor(data.result.costs.total),
+      currency: (data.result.costs.currency || "USD").toUpperCase(),
     };
   }
 
-  async parseWebhook(payload: any): Promise<FulfillmentEvent> {
-    // Printful wraps events in type
-    const type = payload.type;
+  async parseWebhook(
+    rawInput: unknown,
+    rawBodyText?: string
+  ): Promise<FulfillmentEvent> {
+    const parsed = PrintfulWebhookPayloadSchema.parse(rawInput);
 
-    let mappedType: FulfillmentEvent["type"] = "ORDER_FAILED";
-    if (type === "mockup_task_finished") mappedType = "MOCKUP_COMPLETED";
-    if (type === "package_shipped") mappedType = "ORDER_SHIPPED";
-    if (type === "order_canceled") mappedType = "ORDER_CANCELED";
-    if (type === "order_failed") mappedType = "ORDER_FAILED";
+    const resolvedOrder = parsed.data?.order ?? parsed.order;
+    const orderExternalId =
+      resolvedOrder?.external_id?.trim() ||
+      (resolvedOrder?.id !== undefined ? String(resolvedOrder.id) : undefined) ||
+      parsed.data?.task_key?.trim() ||
+      undefined;
+
+    let externalEventId: string;
+    if (parsed.created !== undefined && orderExternalId) {
+      externalEventId = `${parsed.type}:${parsed.created}:${orderExternalId}`;
+    } else {
+      const canonical = rawBodyText ?? JSON.stringify(parsed);
+      const digest = crypto.createHash("sha256").update(canonical, "utf8").digest("hex");
+      externalEventId = `${parsed.type}:sha256:${digest}`;
+    }
+
+    let mappedType: FulfillmentEventType;
+    switch (parsed.type) {
+      case "package_shipped":
+        mappedType = "ORDER_SHIPPED";
+        break;
+      case "order_failed":
+        mappedType = "ORDER_FAILED";
+        break;
+      case "order_canceled":
+      case "order_cancelled":
+        mappedType = "ORDER_CANCELED";
+        break;
+      case "mockup_task_finished":
+        mappedType = "MOCKUP_COMPLETED";
+        break;
+      default:
+        // Unknown events MUST be ignored, NEVER mapped to ORDER_FAILED (T-107)
+        mappedType = "IGNORED";
+    }
 
     return {
       type: mappedType,
-      externalEventId: payload.id || payload.type,
-      payload: payload.data
+      rawType: parsed.type,
+      externalEventId,
+      orderExternalId: resolvedOrder?.external_id?.trim() || undefined,
+      payload: {
+        order: resolvedOrder,
+        shipment: parsed.data?.shipment,
+        task_key: parsed.data?.task_key,
+        mockups: parsed.data?.mockups,
+        reason: parsed.data?.reason,
+      },
     };
   }
 }

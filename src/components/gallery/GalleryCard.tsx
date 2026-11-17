@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState } from "react";
@@ -6,32 +7,106 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2 } from "lucide-react";
 import type { GalleryItem } from "@prisma/client";
 
-interface GalleryCardProps {
+interface PrintAreaPct {
+  topPct?: number;
+  leftPct?: number;
+  widthPct?: number;
+  heightPct?: number;
+}
+
+interface LayerTransform {
+  translateX?: number;
+  translateY?: number;
+  scale?: number;
+  rotation?: number;
+}
+
+interface ParsedMockupTransform {
+  customImageUrl?: string;
+  translateX?: number;
+  translateY?: number;
+  scale?: number;
+  background?: LayerTransform;
+  artwork?: LayerTransform;
+  printArea?: PrintAreaPct;
+}
+
+function asRecord(val: unknown): Record<string, unknown> | null {
+  if (val && typeof val === "object" && !Array.isArray(val)) {
+    return val as Record<string, unknown>;
+  }
+  return null;
+}
+
+function asNumber(val: unknown): number | undefined {
+  return typeof val === "number" && Number.isFinite(val) ? val : undefined;
+}
+
+function parseLayerTransform(val: unknown): LayerTransform | undefined {
+  const rec = asRecord(val);
+  if (!rec) return undefined;
+  return {
+    translateX: asNumber(rec.translateX),
+    translateY: asNumber(rec.translateY),
+    scale: asNumber(rec.scale),
+    rotation: asNumber(rec.rotation),
+  };
+}
+
+function parseMockupTransform(raw: unknown): ParsedMockupTransform | null {
+  const rec = asRecord(raw);
+  if (!rec) return null;
+
+  const printAreaRec = asRecord(rec.printArea);
+
+  return {
+    customImageUrl:
+      typeof rec.customImageUrl === "string" && rec.customImageUrl.length > 0
+        ? rec.customImageUrl
+        : undefined,
+    translateX: asNumber(rec.translateX),
+    translateY: asNumber(rec.translateY),
+    scale: asNumber(rec.scale),
+    background: parseLayerTransform(rec.background),
+    artwork: parseLayerTransform(rec.artwork),
+    printArea: printAreaRec
+      ? {
+          topPct: asNumber(printAreaRec.topPct),
+          leftPct: asNumber(printAreaRec.leftPct),
+          widthPct: asNumber(printAreaRec.widthPct),
+          heightPct: asNumber(printAreaRec.heightPct),
+        }
+      : undefined,
+  };
+}
+
+export interface GalleryCardProps {
   item: GalleryItem;
 }
 
 export function GalleryCard({ item }: GalleryCardProps) {
   const router = useRouter();
   const [isBuying, setIsBuying] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState(item.availableSizes[0] || "");
+  const [selectedVariant, setSelectedVariant] = useState(
+    item.availableSizes[0] || ""
+  );
   const [showVariantSelector, setShowVariantSelector] = useState(false);
 
-  // 1. MAKE IT YOURS
+  const formattedPrice = (Number(item.listedPriceMinor) / 100).toFixed(2);
+  const mt = parseMockupTransform(item.mockupTransform);
+
   const handleMakeItYours = () => {
-    // Analytics: gallery_make_it_yours_click
     const params = new URLSearchParams();
     params.set("galleryId", item.id);
     router.push(`/create?${params.toString()}`);
   };
 
-  // 2. BUY AS SHOWN
   const handleBuyAsShown = async () => {
     if (item.requiresSize && !showVariantSelector) {
       setShowVariantSelector(true);
       return;
     }
 
-    // Analytics: gallery_buy_as_shown_click
     setIsBuying(true);
     try {
       const res = await fetch("/api/checkout/gallery", {
@@ -42,112 +117,139 @@ export function GalleryCard({ item }: GalleryCardProps) {
           variantId: showVariantSelector ? selectedVariant : "default",
         }),
       });
-      
-      const data = await res.json();
+
+      const data: { url?: string; error?: string } = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
         alert(data.error || "Failed to initiate checkout");
         setIsBuying(false);
       }
-    } catch (error) {
-      console.error(error);
+    } catch (error: unknown) {
+      console.error("[GalleryCard] Checkout error:", error);
       setIsBuying(false);
     }
   };
 
+  const isApparel = Boolean(
+    item.productName
+      .toLowerCase()
+      .match(/shirt|tee|hoodie|tank|shorts|leggings|jersey/)
+  );
+
+  const fallbackPrintArea = {
+    top: isApparel ? "22%" : "15%",
+    left: isApparel ? "30%" : "15%",
+    width: isApparel ? "40%" : "70%",
+    height: isApparel ? "55%" : "70%",
+  };
+
+  const bgTransformStyle = mt
+    ? {
+        transform: `translate(${mt.background?.translateX ?? mt.translateX ?? 0}px, ${
+          mt.background?.translateY ?? mt.translateY ?? 0
+        }px) scale(${mt.background?.scale ?? mt.scale ?? 1})`,
+      }
+    : undefined;
+
+  const printAreaStyle = mt?.printArea
+    ? {
+        top: `${mt.printArea.topPct ?? 20}%`,
+        left: `${mt.printArea.leftPct ?? 25}%`,
+        width: `${mt.printArea.widthPct ?? 50}%`,
+        height: `${mt.printArea.heightPct ?? 55}%`,
+      }
+    : fallbackPrintArea;
+
+  const artTransformStyle = mt?.artwork
+    ? {
+        transform: `translate(${mt.artwork.translateX ?? 0}px, ${
+          mt.artwork.translateY ?? 0
+        }px) scale(${mt.artwork.scale ?? 1}) rotate(${mt.artwork.rotation ?? 0}deg)`,
+      }
+    : undefined;
+
   return (
-    <div className="flex flex-col bg-white border border-surface-variant rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+    <div className="flex flex-col bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden transition-colors hover:border-outline">
       {/* Product Image */}
-      <Link href={`/gallery/${item.slug}`} className="aspect-[4/5] bg-[#FBF9F5] relative overflow-hidden flex items-center justify-center group">
+      <Link
+        href={`/gallery/${item.slug}`}
+        className="aspect-[4/5] bg-background relative overflow-hidden flex items-center justify-center group"
+      >
         {item.productImageUrl ? (
-          (() => {
-            const isApparel = item.productName.toLowerCase().match(/shirt|tee|hoodie|tank|shorts|leggings|jersey/);
-            const fallbackPrintArea = {
-              top: isApparel ? "22%" : "15%",
-              left: isApparel ? "30%" : "15%",
-              width: isApparel ? "40%" : "70%",
-              height: isApparel ? "55%" : "70%"
-            };
-            return (
-          <>
-            {(item.mockupTransform as any)?.customImageUrl ? (
-              <img 
-                src={(item.mockupTransform as any).customImageUrl} 
-                alt={item.title} 
-                className="absolute inset-0 w-full h-full object-cover"
+          mt?.customImageUrl ? (
+            <img
+              src={mt.customImageUrl}
+              alt={item.title}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <>
+              <img
+                src={item.productImageUrl}
+                alt={item.title}
+                className="absolute inset-0 w-full h-full object-cover mix-blend-multiply"
+                style={bgTransformStyle}
               />
-            ) : (
-              <>
-                <img 
-                  src={item.productImageUrl} 
-                  alt={item.title} 
-                  className="absolute inset-0 w-full h-full object-cover mix-blend-multiply"
-                  style={item.mockupTransform ? {
-                    transform: `translate(${((item.mockupTransform as any).background?.translateX) || (item.mockupTransform as any).translateX || 0}px, ${((item.mockupTransform as any).background?.translateY) || (item.mockupTransform as any).translateY || 0}px) scale(${((item.mockupTransform as any).background?.scale) || (item.mockupTransform as any).scale || 1})`,
-                  } : undefined}
-                />
-                {item.artworkPreviewUrl && item.artworkPreviewUrl.startsWith("data:image/svg+xml;base64,") ? (
-                  <div 
-                    className="absolute z-10 flex items-center justify-center"
-                    style={(item.mockupTransform as any)?.printArea ? {
-                      top: `${(item.mockupTransform as any).printArea.topPct}%`,
-                      left: `${(item.mockupTransform as any).printArea.leftPct}%`,
-                      width: `${(item.mockupTransform as any).printArea.widthPct}%`,
-                      height: `${(item.mockupTransform as any).printArea.heightPct}%`,
-                    } : fallbackPrintArea}
-                  >
-                    <div 
-                      className={`w-full h-full flex items-center justify-center pointer-events-none select-none [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto drop-shadow-sm`}
-                      style={(item.mockupTransform as any)?.artwork ? {
-                        transform: `translate(${(item.mockupTransform as any).artwork.translateX || 0}px, ${(item.mockupTransform as any).artwork.translateY || 0}px) scale(${(item.mockupTransform as any).artwork.scale || 1}) rotate(${(item.mockupTransform as any).artwork.rotation || 0}deg)`,
-                      } : undefined}
-                      dangerouslySetInnerHTML={{
-                        __html: typeof atob !== "undefined" 
-                          ? decodeURIComponent(escape(atob(item.artworkPreviewUrl.split(",")[1]))) 
-                          : ""
-                      }}
-                    />
-                  </div>
-                ) : item.artworkPreviewUrl && (
-                  <img 
+              {item.artworkPreviewUrl &&
+              item.artworkPreviewUrl.startsWith("data:image/svg+xml;base64,") ? (
+                <div
+                  className="absolute z-10 flex items-center justify-center"
+                  style={printAreaStyle}
+                >
+                  <img
                     src={item.artworkPreviewUrl}
                     alt=""
-                    className="absolute inset-0 w-full h-full object-contain drop-shadow-sm scale-75"
+                    className="max-w-full max-h-full w-auto h-auto object-contain pointer-events-none select-none"
+                    style={artTransformStyle}
                   />
-                )}
-              </>
-            )}
-          </>
-          );
-          })()
+                </div>
+              ) : item.artworkPreviewUrl ? (
+                <img
+                  src={item.artworkPreviewUrl}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-contain scale-75 pointer-events-none select-none"
+                />
+              ) : null}
+            </>
+          )
         ) : (
-          <div className="text-surface-variant font-medium">No Image</div>
+          <div className="text-on-surface-variant font-body-md text-body-md">
+            No Image
+          </div>
         )}
       </Link>
 
       {/* Metadata & Actions */}
       <div className="p-5 flex flex-col gap-4 flex-1">
-        <Link href={`/gallery/${item.slug}`} className="hover:opacity-80 transition-opacity block">
-          <h3 className="font-display-md text-lg font-bold text-on-background line-clamp-1 group-hover:text-primary transition-colors">{item.title}</h3>
-          <p className="text-sm text-on-surface-variant mt-1">
-            {item.productType} &middot; ${(item.listedPriceCents / 100).toFixed(2)}
+        <Link
+          href={`/gallery/${item.slug}`}
+          className="hover:opacity-80 transition-opacity block"
+        >
+          <h3 className="font-headline-sm text-headline-sm text-on-background line-clamp-1">
+            {item.title}
+          </h3>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-1">
+            {item.productType} &middot; ${formattedPrice}
           </p>
         </Link>
 
         <div className="mt-auto flex flex-col gap-3">
           {showVariantSelector && item.requiresSize && (
-            <div className="flex flex-col gap-2 p-3 bg-[#FBF9F5] border border-surface-variant rounded-xl mb-2">
-              <label className="text-xs font-bold text-on-background uppercase tracking-widest">Select Size</label>
+            <div className="flex flex-col gap-2 p-3 bg-surface-container-low border border-surface-variant rounded-lg mb-2">
+              <label className="font-label-caps text-label-caps text-on-background uppercase">
+                Select Size
+              </label>
               <div className="flex gap-2 flex-wrap">
-                {item.availableSizes.map(size => (
+                {item.availableSizes.map((size) => (
                   <button
                     key={size}
+                    type="button"
                     onClick={() => setSelectedVariant(size)}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-md border transition-all ${
-                      selectedVariant === size 
-                        ? "bg-[#111111] text-white border-black" 
-                        : "bg-white text-on-background border-surface-variant hover:border-black"
+                    className={`px-3 py-1.5 font-label-caps text-label-caps rounded border transition-colors ${
+                      selectedVariant === size
+                        ? "bg-primary text-on-primary border-primary"
+                        : "bg-surface-container-lowest text-on-background border-surface-variant hover:border-primary"
                     }`}
                   >
                     {size}
@@ -158,19 +260,25 @@ export function GalleryCard({ item }: GalleryCardProps) {
           )}
 
           <button
+            type="button"
             onClick={handleBuyAsShown}
             disabled={isBuying || !item.purchasable}
-            className="w-full bg-[#111111] text-white py-3.5 rounded-xl font-label-caps uppercase text-sm font-bold tracking-wider hover:bg-black/90 active:scale-[0.98] transition-all flex items-center justify-center shadow-md disabled:opacity-50"
+            className="w-full bg-primary text-on-primary py-3.5 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors flex items-center justify-center disabled:opacity-50"
             title="Get this exact design."
           >
-            {isBuying ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-               showVariantSelector ? `Buy Now — $${(item.listedPriceCents / 100).toFixed(2)}` : "Buy As Shown"
+            {isBuying ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : showVariantSelector ? (
+              `Buy Now — $${formattedPrice}`
+            ) : (
+              "Buy As Shown"
             )}
           </button>
 
           <button
+            type="button"
             onClick={handleMakeItYours}
-            className="w-full bg-white text-[#111111] py-3.5 rounded-xl font-label-caps uppercase text-sm font-bold tracking-wider border-2 border-[#E0DBD1] hover:border-black/60 hover:bg-[#FAF8F5] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            className="w-full bg-surface-container-lowest text-primary py-3.5 rounded font-label-caps text-label-caps uppercase border border-outline-variant hover:border-primary hover:bg-surface-container-high transition-colors flex items-center justify-center gap-2"
             title="Start with these words and create your own Thi Bút."
           >
             Make It Yours <ArrowRight className="w-4 h-4" />

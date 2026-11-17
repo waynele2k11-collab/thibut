@@ -1,57 +1,200 @@
-import { NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
-import prisma from '@/lib/prisma';
-import { generatePrintMaster } from '@/lib/print-generator';
+import "server-only";
+import fs from "node:fs";
+import path from "node:path";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import prisma from "@/lib/prisma";
+import {
+  adaptLegacyComposition,
+  generatePrintMasterPng,
+} from "@/lib/print-generator";
+import {
+  SecurityConfigError,
+  TokenVerificationError,
+  verifyDownloadToken,
+} from "@/lib/security/tokens";
 
-const JWT_SECRET = new TextEncoder().encode(process.env.STRIPE_WEBHOOK_SECRET || process.env.JWT_SECRET || 'fallback_secret_for_dev');
+const DownloadQuerySchema = z.object({
+  token: z.string().trim().min(1).max(4096),
+});
+
+const ALLOWED_BLOB_HOST_SUFFIXES = [
+  ".public.blob.vercel-storage.com",
+  ".blob.vercel-storage.com",
+  ".supabase.co",
+];
+
+const ALLOWED_BLOB_HOSTS = new Set<string>(["storage.thibut.com"]);
+
+function isAllowedStoredAssetHost(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+  if (ALLOWED_BLOB_HOSTS.has(lower)) return true;
+  return ALLOWED_BLOB_HOST_SUFFIXES.some((suffix) => lower.endsWith(suffix));
+}
+
+async function tryLoadStoredPrintAsset(
+  objectKey: string,
+  storageProvider: string
+): Promise<Buffer | null> {
+  if (!objectKey || storageProvider === "memory") {
+    return null;
+  }
+
+  const trimmed = objectKey.trim();
+  if (trimmed.startsWith("/")) {
+    const publicRoot = path.resolve(process.cwd(), "public");
+    const candidatePath = path.resolve(publicRoot, trimmed.slice(1));
+    if (!candidatePath.startsWith(publicRoot + path.sep)) {
+      return null;
+    }
+    if (fs.existsSync(candidatePath) && fs.statSync(candidatePath).isFile()) {
+      return fs.readFileSync(candidatePath);
+    }
+    return null;
+  }
+
+  if (trimmed.startsWith("https://")) {
+    try {
+      const parsed = new URL(trimmed);
+      if (
+        parsed.protocol === "https:" &&
+        isAllowedStoredAssetHost(parsed.hostname)
+      ) {
+        const res = await fetch(parsed.toString(), {
+          redirect: "error",
+          signal: AbortSignal.timeout(8_000),
+        });
+        if (res.ok) {
+          return Buffer.from(await res.arrayBuffer());
+        }
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const token = searchParams.get('token');
+  const rawToken = searchParams.get("token");
 
-  if (!token) {
-    return new NextResponse('Missing download token', { status: 400 });
+  const parsedQuery = DownloadQuerySchema.safeParse({ token: rawToken ?? "" });
+  if (!parsedQuery.success) {
+    return NextResponse.json(
+      { error: "Missing download token" },
+      { status: 400 }
+    );
+  }
+
+  let claims: { orderItemId: string; orderId: string };
+  try {
+    claims = await verifyDownloadToken(parsedQuery.data.token);
+  } catch (err: unknown) {
+    if (err instanceof SecurityConfigError) {
+      return NextResponse.json(
+        { error: "Download verification is not configured" },
+        { status: 503 }
+      );
+    }
+    if (err instanceof TokenVerificationError) {
+      return NextResponse.json(
+        { error: "Invalid or expired download token" },
+        { status: 401 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Invalid download token" },
+      { status: 401 }
+    );
   }
 
   try {
-    // 1. Verify the 20-day JWT token
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    
-    if (!payload.sessionId || !payload.orderNumber) {
-      return new NextResponse('Invalid token payload', { status: 400 });
-    }
-
-    // 2. Fetch the composition from the PersonalizationSession
-    const session = await prisma.personalizationSession.findUnique({
-      where: { id: payload.sessionId as string },
-      select: { compositionJson: true }
-    });
-
-    if (!session || !session.compositionJson) {
-      return new NextResponse('Composition not found or expired', { status: 404 });
-    }
-
-    // 3. Generate the 300 DPI High-Res Print Master
-    // (This uses the exact same pipeline we built, ensuring 100% fidelity)
-    const pngBuffer = await generatePrintMaster(session.compositionJson as any);
-
-    // 4. Send as downloadable attachment
-    return new NextResponse(pngBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'image/png',
-        'Content-Disposition': `attachment; filename="ThiBut_Master_${payload.orderNumber}.png"`,
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    // Load strictly from OrderItem -> Order + frozen PersonalizationVersion (INV-003).
+    // NEVER read mutable PersonalizationSession.compositionJson!
+    const orderItem = await prisma.orderItem.findUnique({
+      where: { id: claims.orderItemId },
+      include: {
+        order: true,
+        personalizationVersion: {
+          include: {
+            printAsset: true,
+          },
+        },
       },
     });
 
-  } catch (error: any) {
-    console.error('[Download API] Error:', error.message);
-    
-    if (error.code === 'ERR_JWT_EXPIRED') {
-      return new NextResponse('This download link has expired.', { status: 410 });
+    if (
+      !orderItem ||
+      !orderItem.order ||
+      orderItem.order.id !== claims.orderId
+    ) {
+      return NextResponse.json(
+        { error: "Order item not found" },
+        { status: 404 }
+      );
     }
-    
-    return new NextResponse('Invalid or expired download token', { status: 401 });
+
+    const { order, personalizationVersion } = orderItem;
+
+    if (
+      order.paymentStatus !== "SUCCEEDED" ||
+      order.status === "REFUNDED" ||
+      order.status === "PARTIALLY_REFUNDED" ||
+      order.status === "CANCELLED"
+    ) {
+      return NextResponse.json(
+        { error: "Order is not eligible for digital download" },
+        { status: 403 }
+      );
+    }
+
+    if (!personalizationVersion) {
+      return NextResponse.json(
+        { error: "Frozen personalization snapshot not found" },
+        { status: 404 }
+      );
+    }
+
+    let pngBuffer: Buffer | null = null;
+
+    if (personalizationVersion.printAsset?.objectKey) {
+      pngBuffer = await tryLoadStoredPrintAsset(
+        personalizationVersion.printAsset.objectKey,
+        personalizationVersion.printAsset.storageProvider
+      );
+    }
+
+    if (!pngBuffer) {
+      const frozenComposition = adaptLegacyComposition(
+        personalizationVersion.styleSnapshot
+      );
+      pngBuffer = await generatePrintMasterPng(frozenComposition);
+    }
+
+    const safeOrderNumber = order.orderNumber.replace(/[^A-Za-z0-9_-]/g, "_");
+
+    return new NextResponse(new Uint8Array(pngBuffer), {
+      status: 200,
+      headers: {
+        "Content-Type": "image/png",
+        "Content-Disposition": `attachment; filename="ThiBut_Master_${safeOrderNumber}.png"`,
+        "Cache-Control":
+          "no-store, no-cache, must-revalidate, proxy-revalidate",
+      },
+    });
+  } catch (err: unknown) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Stored personalization snapshot is invalid" },
+        { status: 422 }
+      );
+    }
+    console.error("[Download API] Failed to serve print master:", err);
+    return NextResponse.json(
+      { error: "Unable to generate download artifact" },
+      { status: 500 }
+    );
   }
 }
