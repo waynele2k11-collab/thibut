@@ -353,6 +353,7 @@ model Font {
   licenseUrl         String?
   commercialApproved Boolean   @default(false)
   printExportAllowed Boolean   @default(false)
+  webEmbedAllowed    Boolean   @default(false)
   licenseVerifiedAt  DateTime?
   licenseVerifiedBy  String?
   storageKey         String?
@@ -1328,11 +1329,14 @@ model WebhookEvent {
   eventType       String
   payloadJson     Json
   status          String    @default("PENDING")
+  attempts        Int       @default(0)
   receivedAt      DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
   processedAt     DateTime?
 
   @@unique([provider, externalEventId])
   @@index([provider, status])
+  @@index([provider, status, updatedAt])
 }
 
 model ModerationCase {

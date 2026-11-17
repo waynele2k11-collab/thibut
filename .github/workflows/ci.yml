@@ -1,0 +1,145 @@
+name: Thi Bút CI
+
+on:
+  push:
+    branches: ["main", "fix/**"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck, Lint, Unit Tests & Next Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+      - name: ESLint check (zero warnings)
+        run: npx eslint --max-warnings=0 src tests e2e
+
+      - name: Run automated unit & contract tests
+        run: npm test
+
+      - name: Production Next.js build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_APP_URL: https://thibut.com
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-public-anon-key
+        run: npm run build
+
+  postgres-integration:
+    name: PostgreSQL 16 Migrations & Ledger Trigger Integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_ci_password
+          POSTGRES_DB: thibut_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d thibut_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres_ci_password@localhost:5432/thibut_ci?schema=public
+      TEST_POSTGRES_URL: postgresql://postgres:postgres_ci_password@localhost:5432/thibut_ci?schema=public
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply Prisma migrations (baseline + triggers)
+        run: npx prisma migrate deploy
+
+      - name: Run PostgreSQL integration suite
+        run: npm run test:db
+
+  playwright-e2e:
+    name: Playwright E2E Hydration, CSP & Drawer Smoke
+    runs-on: ubuntu-latest
+    needs: [verify]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_ci_password
+          POSTGRES_DB: thibut_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d thibut_e2e"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres_ci_password@localhost:5432/thibut_e2e?schema=public
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-public-anon-key
+      ADMIN_SESSION_SECRET: ci-admin-session-secret-minimum-32-chars!!
+      DEVICE_TRUST_SECRET: ci-device-trust-secret-minimum-32-chars!!
+      DOWNLOAD_TOKEN_SECRET: ci-download-token-secret-minimum-32-chars!!
+      ANON_SESSION_SECRET: ci-anon-session-secret-minimum-32-chars!!
+      FULFILLMENT_SECRET_KEY: ci-fulfillment-secret-minimum-32-chars!!
+      STRIPE_SECRET_KEY: sk_test_ci_e2e_key_non_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_e2e_webhook_secret_key
+      PRINTFUL_API_KEY: pf_ci_test_token
+      PRINTFUL_WEBHOOK_SECRET: pf_whsec_ci_test_secret
+      INNGEST_SIGNING_KEY: signkey-prod-ci-e2e-minimum-32-chars!!
+      BLOB_READ_WRITE_TOKEN: vercel_blob_rw_ci_test_token
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies & Playwright runner
+        run: |
+          npm ci
+          npm install --no-save @playwright/test
+          npx playwright install --with-deps chromium
+
+      - name: Apply Prisma migrations & build production app
+        run: |
+          npx prisma migrate deploy
+          npm run build
+
+      - name: Run Playwright E2E smoke tests
+        run: npm run test:e2e

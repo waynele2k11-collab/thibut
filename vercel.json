@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "src/app/api/print-master/route.ts": {
+      "memory": 3009,
+      "maxDuration": 60
+    },
+    "src/app/api/download/route.ts": {
+      "memory": 3009,
+      "maxDuration": 60
+    },
+    "src/app/api/inngest/route.ts": {
+      "memory": 3009,
+      "maxDuration": 60
+    },
+    "src/app/api/backgrounds/generate/route.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    },
+    "src/app/api/personalization/**/route.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
+}

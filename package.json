@@ -2,13 +2,19 @@
   "name": "thibut",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.15"
+  },
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "node --import ./scripts/test-loader.mjs --test 'tests/**/*.test.ts'",
+    "test:db": "node --import ./scripts/test-loader.mjs --test 'tests/postgres-integration.integration.ts'",
+    "test:e2e": "playwright test",
     "db:migrate": "prisma migrate deploy"
   },
   "dependencies": {
