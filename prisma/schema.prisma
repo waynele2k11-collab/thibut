@@ -316,6 +316,7 @@ model User {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   userCompositions UserComposition[]
+  assets           Asset[]           @relation("UserAssets")
 }
 
 model Role {
@@ -340,14 +341,24 @@ model UserRole {
 // ═══════════════════════════════════════════════════════════════
 
 model Font {
-  id          String   @id @default(uuid())
-  name        String
-  fileName    String   @unique
-  format      String
-  tradition   String?  @default("VIETNAMESE_THU_PHAP")
-  enabled     Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String    @id @default(uuid())
+  slug               String?   @unique
+  name               String
+  familyName         String?
+  fileName           String    @unique
+  format             String
+  tradition          String?   @default("VIETNAMESE_THU_PHAP")
+  supportedScripts   String[]  @default([])
+  licenseType        String?
+  licenseUrl         String?
+  commercialApproved Boolean   @default(false)
+  printExportAllowed Boolean   @default(false)
+  licenseVerifiedAt  DateTime?
+  licenseVerifiedBy  String?
+  storageKey         String?
+  enabled            Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -454,7 +465,7 @@ model GalleryItem {
   productName          String
   productImageUrl      String
   
-  listedPriceCents     Int
+  listedPriceMinor     BigInt
   currency             String   @default("USD")
   
   requiresSize         Boolean  @default(false)
@@ -497,6 +508,7 @@ model Design {
   metrics        DesignMetricDaily[]
   sessions       PersonalizationSession[]
   policyVersions DesignPolicyVersion[]
+  cartItems      CartItem[]
 
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
@@ -525,6 +537,7 @@ model DesignVersion {
   assets        DesignVersionAsset[]
 
   personalizationVersions PersonalizationVersion[]
+  cartItems               CartItem[]
 
   createdAt DateTime @default(now())
 
@@ -532,14 +545,18 @@ model DesignVersion {
 }
 
 model Asset {
-  id              String @id @default(uuid())
-  objectKey       String @unique
-  mimeType        String
-  sha256          String
-  width           Int?
-  height          Int?
-  sizeBytes       Int?
-  storageProvider String @default("vercel-blob") // vercel-blob | r2 | s3
+  id                 String     @id @default(uuid())
+  objectKey          String     @unique
+  mimeType           String
+  sha256             String
+  width              Int?
+  height             Int?
+  sizeBytes          Int?
+  storageProvider    String     @default("vercel-blob") // vercel-blob | r2 | s3
+  ownerId            String?
+  owner              User?      @relation("UserAssets", fields: [ownerId], references: [id])
+  anonymousSessionId String?
+  visibility         Visibility @default(PRIVATE) // INV-014: user uploads strictly PRIVATE by default
 
   designAssets           DesignVersionAsset[]
   stylePackPreview       StylePack?                 @relation("StylePackPreview")
@@ -636,7 +653,8 @@ model LicenseOffer {
   allowCommercialUse   Boolean     @default(false)
   termsVersion         Int         @default(1)
 
-  grants LicenseGrant[]
+  grants    LicenseGrant[]
+  cartItems CartItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -649,7 +667,7 @@ model LicenseGrant {
   orderItem       OrderItem    @relation(fields: [orderItemId], references: [id])
   licenseOfferId  String
   licenseOffer    LicenseOffer @relation(fields: [licenseOfferId], references: [id])
-  buyerId         String
+  buyerId         String?
   creatorId       String
   designId        String
   designVersionId String
@@ -717,6 +735,7 @@ model PersonalizationSession {
   id                       String                @id @default(uuid())
   userId                   String?
   user                     User?                 @relation(fields: [userId], references: [id])
+  anonymousSessionId       String?
   designId                 String?
   design                   Design?               @relation(fields: [designId], references: [id])
   designVersionId          String?
@@ -742,6 +761,7 @@ model PersonalizationSession {
   userCompositions UserComposition[]
 
   @@index([userId, status])
+  @@index([anonymousSessionId])
 }
 
 // Cultural interpretation result (§22)
@@ -808,6 +828,7 @@ model PersonalizationVersion {
   printAsset             Asset?                    @relation("PrintAsset", fields: [printAssetId], references: [id])
 
   orderItems OrderItem[]
+  cartItems  CartItem[]
 
   createdAt DateTime @default(now())
 
@@ -993,11 +1014,12 @@ model ProductMockup {
 // ═══════════════════════════════════════════════════════════════
 
 model Cart {
-  id       String     @id @default(uuid())
-  userId   String
-  user     User       @relation(fields: [userId], references: [id])
-  currency String     @default("USD")
-  status   CartStatus @default(ACTIVE)
+  id                 String     @id @default(uuid())
+  userId             String?
+  user               User?      @relation(fields: [userId], references: [id])
+  anonymousSessionId String?
+  currency           String     @default("USD")
+  status             CartStatus @default(ACTIVE)
 
   items  CartItem[]
   quotes PriceQuote[]
@@ -1007,20 +1029,26 @@ model Cart {
   expiresAt DateTime?
 
   @@index([userId, status])
+  @@index([anonymousSessionId, status])
 }
 
 model CartItem {
-  id                       String         @id @default(uuid())
+  id                       String                  @id @default(uuid())
   cartId                   String
-  cart                     Cart           @relation(fields: [cartId], references: [id])
+  cart                     Cart                    @relation(fields: [cartId], references: [id])
   creatorId                String
   designId                 String
+  design                   Design                  @relation(fields: [designId], references: [id])
   designVersionId          String
+  designVersion            DesignVersion           @relation(fields: [designVersionId], references: [id])
   personalizationVersionId String?
+  personalizationVersion   PersonalizationVersion? @relation(fields: [personalizationVersionId], references: [id])
   catalogVariantId         String
-  catalogVariant           CatalogVariant @relation(fields: [catalogVariantId], references: [id])
+  catalogVariant           CatalogVariant          @relation(fields: [catalogVariantId], references: [id])
   licenseOfferId           String?
-  quantity                 Int            @default(1)
+  licenseOffer             LicenseOffer?           @relation(fields: [licenseOfferId], references: [id])
+  placement                String                  @default("front")
+  quantity                 Int                     @default(1)
 
   // Informational only — checkout recalculates authoritative price
   unitArtworkMinor         BigInt
@@ -1033,24 +1061,29 @@ model CartItem {
 
 // Short-lived immutable price quote before payment (§39)
 model PriceQuote {
-  id                   String @id @default(uuid())
-  cartId               String
-  cart                 Cart   @relation(fields: [cartId], references: [id])
+  id                   String  @id @default(uuid())
+  cartId               String?
+  cart                 Cart?   @relation(fields: [cartId], references: [id])
+  orderId              String?
   currency             String
   subtotalMinor        BigInt
   artworkMinor         BigInt
   personalizationMinor BigInt
   productMinor         BigInt
-  shippingMinor        BigInt @default(0)
-  taxMinor             BigInt @default(0)
-  discountMinor        BigInt @default(0)
+  fulfillmentCostMinor BigInt  @default(0)
+  creatorRoyaltyMinor  BigInt  @default(0)
+  platformMinor        BigInt  @default(0)
+  shippingMinor        BigInt  @default(0)
+  taxMinor             BigInt  @default(0)
+  discountMinor        BigInt  @default(0)
   totalMinor           BigInt
-  pricingVersion       Int    @default(1)
+  pricingVersion       Int     @default(1)
 
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   @@index([cartId])
+  @@index([orderId])
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1058,19 +1091,24 @@ model PriceQuote {
 // ═══════════════════════════════════════════════════════════════
 
 model Order {
-  id                String            @id @default(uuid())
-  orderNumber       String            @unique
-  buyerId           String
-  buyer             User              @relation(fields: [buyerId], references: [id])
-  currency          String
-  status            OrderStatus       @default(PENDING_PAYMENT)
-  paymentStatus     PaymentStatus     @default(PENDING)
-  fulfillmentStatus FulfillmentStatus @default(PENDING)
-  subtotalMinor     BigInt
-  discountMinor     BigInt            @default(0)
-  shippingMinor     BigInt
-  taxMinor          BigInt
-  totalMinor        BigInt
+  id                      String            @id @default(uuid())
+  orderNumber             String            @unique
+  buyerId                 String?
+  buyer                   User?             @relation(fields: [buyerId], references: [id])
+  buyerEmail              String?
+  anonymousSessionId      String?
+  shippingAddressJson     Json?
+  stripeCheckoutSessionId String?           @unique
+  externalFulfillmentId   String?           @unique
+  currency                String
+  status                  OrderStatus       @default(PENDING_PAYMENT)
+  paymentStatus           PaymentStatus     @default(PENDING)
+  fulfillmentStatus       FulfillmentStatus @default(PENDING)
+  subtotalMinor           BigInt
+  discountMinor           BigInt            @default(0)
+  shippingMinor           BigInt
+  taxMinor                BigInt
+  totalMinor              BigInt
 
   items    OrderItem[]
   payments Payment[]
@@ -1082,6 +1120,7 @@ model Order {
   updatedAt   DateTime  @updatedAt
 
   @@index([buyerId, status])
+  @@index([anonymousSessionId])
 }
 
 model OrderItem {
@@ -1091,6 +1130,8 @@ model OrderItem {
   creatorId                String
   designId                 String
   designVersionId          String
+  licenseOfferId           String?
+  galleryItemId            String?
   personalizationVersionId String?
   personalizationVersion   PersonalizationVersion? @relation(fields: [personalizationVersionId], references: [id])
   catalogProductId         String?
@@ -1099,7 +1140,7 @@ model OrderItem {
   quantity                 Int
   placement                String                  @default("front")
 
-  // Financial snapshot — never recalculate from current prices (INV-008)
+  // Financial snapshot — never recalculate from current prices (INV-005)
   artworkRevenueMinor         BigInt
   personalizationRevenueMinor BigInt
   productRevenueMinor         BigInt
@@ -1348,6 +1389,7 @@ model GeneratedDesign {
   phraseKnowledge   PhraseKnowledge @relation(fields: [phraseKnowledgeId], references: [id])
   stylePackId       String
   rendererVersion   String
+  script            String          @default("LATIN")
 
   variations GeneratedDesignVariation[]
 
@@ -1356,7 +1398,7 @@ model GeneratedDesign {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  @@index([phraseKnowledgeId, stylePackId, rendererVersion])
+  @@unique([phraseKnowledgeId, stylePackId, rendererVersion, script])
 }
 
 model GeneratedDesignVariation {
@@ -1487,6 +1529,8 @@ model DeviceVerification {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   code      String
+  deviceId  String?
+  attempts  Int      @default(0)
   expiresAt DateTime
   verified  Boolean  @default(false)
   createdAt DateTime @default(now())

@@ -1,13 +1,32 @@
 import { PrismaClient } from "@prisma/client";
-import { generateInstantSvgString, safeBase64Encode } from "../lib/calligraphy/ClientCalligraphyRenderer";
+import {
+  generateInstantSvgString,
+  safeBase64Encode,
+} from "../src/lib/calligraphy/ClientCalligraphyRenderer";
 
 const prisma = new PrismaClient();
 
 const POPULAR_NAMES = [
-  "Sarah", "Michael", "David", "Emily", "Jessica", 
-  "Daniel", "Matthew", "Amanda", "Joshua", "Nicole",
-  "James", "Jennifer", "Robert", "Elizabeth", "John",
-  "William", "Mary", "Christopher", "Ashley", "Joseph"
+  "Sarah",
+  "Michael",
+  "David",
+  "Emily",
+  "Jessica",
+  "Daniel",
+  "Matthew",
+  "Amanda",
+  "Joshua",
+  "Nicole",
+  "James",
+  "Jennifer",
+  "Robert",
+  "Elizabeth",
+  "John",
+  "William",
+  "Mary",
+  "Christopher",
+  "Ashley",
+  "Joseph",
 ];
 
 const COLORS = [
@@ -24,16 +43,16 @@ async function seedGalleryNames() {
   console.log("Fetching active products...");
   const products = await prisma.catalogProduct.findMany({
     where: { status: "ACTIVE" },
-    include: { 
-      variants: { 
+    include: {
+      variants: {
         take: 1,
         include: {
           mockups: {
-            include: { asset: true }
-          }
-        }
-      } 
-    }
+            include: { asset: true },
+          },
+        },
+      },
+    },
   });
 
   if (products.length === 0) {
@@ -41,21 +60,24 @@ async function seedGalleryNames() {
     return;
   }
 
-  console.log(`Found ${products.length} active products. Generating 20 gallery items...`);
+  console.log(
+    `Found ${products.length} active products. Generating 20 gallery items...`
+  );
 
-  // Delete existing generated names if re-running
   await prisma.galleryItem.deleteMany({
     where: {
-      slug: { startsWith: "name-vertical-" }
-    }
+      slug: { startsWith: "name-vertical-" },
+    },
   });
 
   let productIndex = 0;
 
   for (const name of POPULAR_NAMES) {
-    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)] ?? "#0B0B0B";
     const product = products[productIndex % products.length];
     productIndex++;
+
+    if (!product) continue;
 
     const svgString = generateInstantSvgString({
       text: name,
@@ -65,18 +87,23 @@ async function seedGalleryNames() {
       fontId: "utm-thuphap-thien-an",
       layout: "VERTICAL",
       inkColor: color,
-      hasSeal: true
+      hasSeal: true,
     });
 
     const base64Uri = `data:image/svg+xml;base64,${safeBase64Encode(svgString)}`;
 
-    // Calculate 10% discount
-    const baseRetailMinor = product.variants.length > 0 ? Number(product.variants[0].baseRetailMinor) : 3669;
-    const discountedPriceCents = Math.round(baseRetailMinor * 0.9);
+    // Compute 10% discount strictly in BigInt minor units
+    const baseRetailMinor =
+      product.variants.length > 0 && product.variants[0]
+        ? product.variants[0].baseRetailMinor
+        : 3669n;
+    const discountedPriceMinor = (baseRetailMinor * 90n + 50n) / 100n;
 
     const slug = `name-vertical-${name.toLowerCase()}`;
 
-    const imageUrl = product.variants[0]?.mockups[0]?.asset?.objectKey || "/mockups/model-male.jpg";
+    const imageUrl =
+      product.variants[0]?.mockups[0]?.asset?.objectKey ||
+      "/mockups/model-male.jpg";
 
     await prisma.galleryItem.create({
       data: {
@@ -89,23 +116,31 @@ async function seedGalleryNames() {
         tradition: "VIETNAMESE_THU_PHAP",
         artworkId: "generated-vector",
         artworkPreviewUrl: base64Uri,
-        productionArtworkUrl: base64Uri, // in reality, printful webhook will generate higher res if needed
+        productionArtworkUrl: base64Uri,
         productType: product.category,
         productCategory: product.category,
         productName: product.name,
         productImageUrl: imageUrl,
-        listedPriceCents: discountedPriceCents,
+        listedPriceMinor: discountedPriceMinor,
         currency: "USD",
         requiresSize: product.category === "apparel",
+        availableSizes: [],
+        availableColors: [],
         category: "NAME",
-        published: true
-      }
+        published: true,
+      },
     });
 
-    console.log(`Created Gallery Item: ${name} mapped to ${product.name} ($${(discountedPriceCents/100).toFixed(2)})`);
+    console.log(
+      `Created Gallery Item: ${name} mapped to ${product.name} ($${(
+        Number(discountedPriceMinor) / 100
+      ).toFixed(2)})`
+    );
   }
 
   console.log("Seeding complete!");
 }
 
-seedGalleryNames().catch(console.error).finally(() => prisma.$disconnect());
+seedGalleryNames()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());

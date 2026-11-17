@@ -1,12 +1,15 @@
 {
-  "name": "next-app-temp",
+  "name": "thibut",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import ./scripts/test-loader.mjs --test 'tests/**/*.test.ts'",
+    "db:migrate": "prisma migrate deploy"
   },
   "dependencies": {
     "@fal-ai/client": "^1.10.1",
@@ -17,12 +20,10 @@
     "@supabase/supabase-js": "^2.112.3",
     "@types/fabric": "^5.3.11",
     "@vercel/blob": "^2.8.0",
-    "canvas": "^3.2.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "fabric": "^7.4.0",
     "framer-motion": "^13.1.0",
-    "html-to-image": "^1.11.13",
     "inngest": "^4.18.1",
     "jose": "^6.2.9",
     "lucide-react": "^1.31.0",
@@ -34,6 +35,7 @@
     "react-dom": "19.2.8",
     "resend": "^6.20.0",
     "satori": "^0.29.0",
+    "sharp": "^0.34.3",
     "stripe": "^22.5.0",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"
