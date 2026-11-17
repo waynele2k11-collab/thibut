@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createGalleryItem } from "@/app/actions/gallery";
+import { minorToDecimalInput, parseDecimalDollarsToMinor } from "@/lib/money";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface GalleryItemFormProps {
   designs: { id: string; title: string }[];
@@ -12,6 +15,12 @@ interface GalleryItemFormProps {
 
 export function GalleryItemForm({ designs, products }: GalleryItemFormProps) {
   const router = useRouter();
+  const designSelectId = useId();
+  const productSelectId = useId();
+  const priceInputId = useId();
+  const mockupFileId = useId();
+
+  const [priceText, setPriceText] = useState(() => minorToDecimalInput(3500n));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +30,10 @@ export function GalleryItemForm({ designs, products }: GalleryItemFormProps) {
     setError(null);
 
     try {
+      const parsedMinor = parseDecimalDollarsToMinor(priceText);
       const formData = new FormData(e.currentTarget);
+      formData.set("price", minorToDecimalInput(parsedMinor));
+
       const res = await createGalleryItem(formData);
 
       if (res.success) {
@@ -40,19 +52,26 @@ export function GalleryItemForm({ designs, products }: GalleryItemFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md text-sm">
+        <div
+          role="alert"
+          className="bg-error-container text-on-error-container border border-error/30 p-4 rounded text-sm"
+        >
           {error}
         </div>
       )}
 
       <div className="space-y-2">
-        <label className="font-label-caps text-xs text-[#111111] uppercase tracking-wider block">
+        <label
+          htmlFor={designSelectId}
+          className="font-label-caps text-label-caps text-on-surface uppercase block"
+        >
           Design
         </label>
         <select
+          id={designSelectId}
           name="designId"
           required
-          className="w-full bg-[#EAE4DA] border border-[#D5D0C8] rounded-md px-4 py-2.5 text-sm text-[#111111] outline-none focus:border-[#B3261E]"
+          className="w-full bg-surface-container-lowest border border-outline-variant rounded px-4 py-2.5 font-body-md text-body-md text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
         >
           <option value="">Select a published design...</option>
           {designs.map((d) => (
@@ -64,13 +83,17 @@ export function GalleryItemForm({ designs, products }: GalleryItemFormProps) {
       </div>
 
       <div className="space-y-2">
-        <label className="font-label-caps text-xs text-[#111111] uppercase tracking-wider block">
+        <label
+          htmlFor={productSelectId}
+          className="font-label-caps text-label-caps text-on-surface uppercase block"
+        >
           Catalog Product
         </label>
         <select
+          id={productSelectId}
           name="catalogProductId"
           required
-          className="w-full bg-[#EAE4DA] border border-[#D5D0C8] rounded-md px-4 py-2.5 text-sm text-[#111111] outline-none focus:border-[#B3261E]"
+          className="w-full bg-surface-container-lowest border border-outline-variant rounded px-4 py-2.5 font-body-md text-body-md text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
         >
           <option value="">Select a base product...</option>
           {products.map((p) => (
@@ -82,77 +105,80 @@ export function GalleryItemForm({ designs, products }: GalleryItemFormProps) {
       </div>
 
       <div className="space-y-2">
-        <label className="font-label-caps text-xs text-[#111111] uppercase tracking-wider block">
+        <label
+          htmlFor={priceInputId}
+          className="font-label-caps text-label-caps text-on-surface uppercase block"
+        >
           Listed Price (USD)
         </label>
-        <input
-          type="number"
+        <Input
+          id={priceInputId}
+          type="text"
+          inputMode="decimal"
           name="price"
-          step="0.01"
-          min="0"
+          value={priceText}
+          onChange={(e) => setPriceText(e.target.value)}
           placeholder="35.00"
           required
-          className="w-full bg-[#EAE4DA] border border-[#D5D0C8] rounded-md px-4 py-2.5 text-sm text-[#111111] outline-none focus:border-[#B3261E]"
         />
       </div>
 
       <div className="space-y-2">
-        <label className="font-label-caps text-xs text-[#111111] uppercase tracking-wider block">
+        <label
+          htmlFor={mockupFileId}
+          className="font-label-caps text-label-caps text-on-surface uppercase block"
+        >
           Product Mockup Image (Required)
         </label>
-        <input
+        <Input
+          id={mockupFileId}
           type="file"
           name="productImage"
           accept="image/png,image/jpeg,image/webp"
           required
-          className="w-full bg-[#EAE4DA] border border-[#D5D0C8] rounded-md px-4 py-2 text-sm text-[#111111] outline-none focus:border-[#B3261E]"
         />
-        <p className="text-xs text-[#A09D96]">
+        <p className="font-body-md text-xs text-on-surface-variant">
           Upload a PNG, JPEG, or WEBP product mockup image (max 10MB).
         </p>
       </div>
 
-      <div className="space-y-2">
-        <label className="font-label-caps text-xs text-[#111111] uppercase tracking-wider block">
+      <fieldset className="space-y-2">
+        <legend className="font-label-caps text-label-caps text-on-surface uppercase block">
           Status
-        </label>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-[#111111]">
+        </legend>
+        <div className="flex items-center gap-6">
+          <label className="flex items-center gap-2 font-body-md text-sm text-on-surface">
             <input
               type="radio"
               name="status"
               value="active"
               defaultChecked
-              className="accent-[#B3261E]"
-            />{" "}
+              className="accent-secondary"
+            />
             Active
           </label>
-          <label className="flex items-center gap-2 text-sm text-[#111111]">
+          <label className="flex items-center gap-2 font-body-md text-sm text-on-surface">
             <input
               type="radio"
               name="status"
               value="draft"
-              className="accent-[#B3261E]"
-            />{" "}
+              className="accent-secondary"
+            />
             Draft
           </label>
         </div>
-      </div>
+      </fieldset>
 
-      <div className="pt-6 border-t border-[#E5E0D8] flex justify-end gap-4">
+      <div className="pt-6 border-t border-surface-variant flex justify-end gap-4">
         <Link
           href="/admin/gallery"
-          className="px-6 py-2.5 rounded-full font-label-caps text-xs text-[#4A4844] hover:bg-[#EAE4DA] transition-colors uppercase"
+          className="px-6 py-2.5 rounded border border-outline font-label-caps text-label-caps text-primary hover:bg-surface-container-high transition-colors motion-reduce:transition-none uppercase inline-flex items-center"
         >
           Cancel
         </Link>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-6 py-2.5 rounded-full bg-[#B3261E] text-white font-label-caps text-xs tracking-wider uppercase hover:bg-[#9A2119] transition-colors disabled:opacity-50"
-        >
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : "Create Product"}
-        </button>
+        </Button>
       </div>
     </form>
   );

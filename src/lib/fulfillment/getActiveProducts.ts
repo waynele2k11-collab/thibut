@@ -1,6 +1,7 @@
 import "server-only";
 import prisma from "@/lib/prisma";
 import type { ProductMock } from "@/components/studio/ProductSelectionModal";
+import { formatMinor } from "@/lib/money";
 import { roundUpTo99Minor } from "@/lib/pricing/quote";
 
 export async function getActiveProductsForStudio(): Promise<ProductMock[]> {
@@ -58,20 +59,19 @@ export async function getActiveProductsForStudio(): Promise<ProductMock[]> {
     if (!imageUrl) {
       const lowerCat = p.category.toLowerCase();
       imageUrl =
-        lowerCat === "tote"
-          ? "https://images.unsplash.com/photo-1544816155-12df9643f363?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-          : lowerCat === "canvas"
-            ? "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-            : lowerCat.includes("hoodie")
-              ? "https://images.unsplash.com/photo-1556821840-3a63f95609a7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-              : "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
+        lowerCat.includes("canvas") || lowerCat.includes("poster") || lowerCat.includes("wall")
+          ? "/mockups/framed_print.jpg"
+          : lowerCat.includes("hoodie")
+            ? "/mockups/hoodie.jpg"
+            : "/mockups/blank_hoodie.jpg";
     }
 
     return [
       {
         id: p.id,
         name: p.name,
-        price: Number(minRetailMinor) / 100,
+        priceMinor: minRetailMinor.toString(),
+        formattedPrice: formatMinor(minRetailMinor, "USD"),
         imageUrl,
         description: p.description || "A high-quality blank garment.",
         variants: activeVariants.map((v) => ({

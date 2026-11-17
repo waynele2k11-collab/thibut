@@ -3,13 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
-import type { GalleryItem } from "@prisma/client";
+import { Button } from "@/components/ui/button";
 
-interface Props {
-  product: GalleryItem;
+interface GalleryDetailActionsProps {
+  product: { id: string };
 }
 
-export function GalleryDetailActions({ product }: Props) {
+export function GalleryDetailActions({ product }: GalleryDetailActionsProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,19 +24,23 @@ export function GalleryDetailActions({ product }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           galleryItemId: product.id,
-          variantId: "default", // size selection happens downstream if required
+          variantId: "default",
         }),
       });
 
-      const data = await res.json();
+      const data: { url?: string; error?: string } = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
         throw new Error(data.error || "Failed to start checkout");
       }
     } catch (err: unknown) {
-      console.error("Checkout error:", err);
-      setError(err instanceof Error ? err.message : "Failed to start checkout. Please try again.");
+      console.error("[GalleryDetailActions] Checkout error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to start checkout. Please try again."
+      );
       setLoading(false);
     }
   };
@@ -44,35 +48,43 @@ export function GalleryDetailActions({ product }: Props) {
   return (
     <div className="flex flex-col space-y-4">
       {error && (
-        <div className="p-3 border border-[#B3261E]/50 bg-[#B3261E]/10 text-[#B3261E] text-xs font-mono uppercase tracking-wide text-center">
+        <div
+          role="alert"
+          className="p-3 rounded border border-error/30 bg-error-container text-on-error-container font-label-caps text-label-caps uppercase text-center"
+        >
           {error}
         </div>
       )}
 
-      <button 
+      <Button
         onClick={handleBuyNow}
         disabled={loading}
-        className="w-full sm:w-auto inline-flex items-center justify-center bg-on-background text-background px-8 py-4 font-label-caps text-label-caps uppercase hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed gap-2"
+        size="lg"
+        className="w-full sm:w-auto"
       >
         {loading ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2
+              className="w-4 h-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
             Preparing Secure Checkout...
           </>
         ) : (
           "Buy As Shown"
         )}
-      </button>
-      
-      <Link 
+      </Button>
+
+      <Link
         href={makeItYoursLink}
-        className="w-full sm:w-auto inline-flex items-center justify-center text-on-surface-variant hover:text-on-surface py-4 font-label-caps text-label-caps uppercase transition-colors"
+        className="w-full sm:w-auto inline-flex items-center justify-center text-on-surface-variant hover:text-primary py-3 font-label-caps text-label-caps uppercase transition-colors motion-reduce:transition-none"
       >
-        Personalize this product <ArrowRight className="w-4 h-4 ml-2" />
+        Personalize this product{" "}
+        <ArrowRight className="w-4 h-4 ml-2" aria-hidden="true" />
       </Link>
 
-      <div className="flex items-center justify-center sm:justify-start gap-2 pt-2 text-on-surface-variant/80 text-[11px] font-mono uppercase tracking-wider">
-        <ShieldCheck className="w-4 h-4 text-primary" />
+      <div className="flex items-center justify-center sm:justify-start gap-2 pt-2 text-on-surface-variant font-label-caps text-label-caps uppercase">
+        <ShieldCheck className="w-4 h-4 text-primary" aria-hidden="true" />
         <span>Encrypted Stripe Checkout · 300 DPI Museum Fulfillment</span>
       </div>
     </div>

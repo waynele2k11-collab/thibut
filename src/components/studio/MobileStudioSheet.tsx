@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useReducedMotion } from "framer-motion";
 
 interface MobileStudioSheetProps {
   children: ReactNode;
@@ -20,6 +21,7 @@ export function MobileStudioSheet({ children }: MobileStudioSheetProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [liveOffset, setLiveOffset] = useState(0);
   const dragStartY = useRef(0);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     const update = () => setWinHeight(window.innerHeight);
@@ -35,12 +37,13 @@ export function MobileStudioSheet({ children }: MobileStudioSheetProps) {
 
   const onTouchStart = (e: React.TouchEvent) => {
     setIsDragging(true);
-    dragStartY.current = e.touches[0].clientY;
+    dragStartY.current = e.touches[0]?.clientY ?? 0;
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    const delta = e.touches[0].clientY - dragStartY.current;
+    const clientY = e.touches[0]?.clientY ?? dragStartY.current;
+    const delta = clientY - dragStartY.current;
     setLiveOffset(
       Math.max(-winHeight * 0.12, Math.min(winHeight * 0.45, delta))
     );
@@ -58,16 +61,17 @@ export function MobileStudioSheet({ children }: MobileStudioSheetProps) {
 
   return (
     <div
-      className="fixed left-0 right-0 bottom-0 z-30 lg:hidden bg-surface-container-low rounded-t-2xl border-t border-surface-variant"
+      className="fixed left-0 right-0 bottom-0 z-30 lg:hidden bg-surface-container-low rounded-t-xl border-t border-surface-variant"
+      // R-509 justified runtime style: touch-dragged viewport height & vertical sheet snap offset
       style={{
         height: `${winHeight}px`,
         transform: `translateY(${translateY}px)`,
-        transition: isDragging
-          ? "none"
-          : "transform 300ms cubic-bezier(0.32,0.72,0,1)",
+        transition:
+          isDragging || prefersReducedMotion
+            ? "none"
+            : "transform 300ms cubic-bezier(0.32,0.72,0,1)",
       }}
     >
-      {/* Drag handle */}
       <div
         className="pt-3 pb-2 px-4 cursor-grab active:cursor-grabbing select-none touch-none"
         onTouchStart={onTouchStart}
@@ -77,7 +81,6 @@ export function MobileStudioSheet({ children }: MobileStudioSheetProps) {
         <div className="sheet-handle" />
       </div>
 
-      {/* Scrollable inspector content */}
       <div className="overflow-y-auto overscroll-contain h-full pb-[calc(env(safe-area-inset-bottom,0px)+84px)]">
         {children}
       </div>

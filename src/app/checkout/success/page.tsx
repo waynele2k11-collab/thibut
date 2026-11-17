@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -9,6 +10,12 @@ import {
 import prisma from "@/lib/prisma";
 import { formatUsdMinor } from "@/lib/pricing/quote";
 import { stripe } from "@/lib/stripe";
+
+export const metadata: Metadata = {
+  title: "Order Confirmation",
+  description: "Verify your Thi Bút payment confirmation and fulfillment status.",
+  robots: { index: false, follow: false },
+};
 
 interface SuccessSearchParams {
   session_id?: string;
@@ -101,18 +108,24 @@ export default async function CheckoutSuccessPage({
     );
   }
 
-  const isConfirmedPaid =
-    dbOrder.paymentStatus === "SUCCEEDED" ||
-    dbOrder.status === "PROCESSING" ||
-    dbOrder.status === "PARTIALLY_FULFILLED" ||
-    dbOrder.status === "FULFILLED" ||
-    dbOrder.status === "COMPLETED";
-
   const isCancelledOrRefunded =
     dbOrder.status === "CANCELLED" ||
     dbOrder.status === "REFUNDED" ||
-    dbOrder.status === "PARTIALLY_REFUNDED" ||
-    dbOrder.paymentStatus === "FAILED";
+    dbOrder.paymentStatus === "FAILED" ||
+    dbOrder.paymentStatus === "CANCELLED" ||
+    dbOrder.paymentStatus === "REFUNDED";
+
+  const isConfirmedPaid =
+    !isCancelledOrRefunded &&
+    (dbOrder.paymentStatus === "SUCCEEDED" ||
+      dbOrder.paymentStatus === "PARTIALLY_REFUNDED" ||
+      dbOrder.paymentStatus === "DISPUTED" ||
+      dbOrder.status === "PAID" ||
+      dbOrder.status === "PARTIALLY_REFUNDED" ||
+      dbOrder.status === "PROCESSING" ||
+      dbOrder.status === "PARTIALLY_FULFILLED" ||
+      dbOrder.status === "FULFILLED" ||
+      dbOrder.status === "COMPLETED");
 
   // Case 2: Cancelled / Failed / Refunded
   if (isCancelledOrRefunded) {

@@ -13,8 +13,9 @@ import { createClient } from "@/utils/supabase/server";
 import { removeFromCartFormAction } from "@/app/actions/cart";
 
 export const metadata: Metadata = {
-  title: "Your Cart | Thi Bút",
+  title: "Your Cart",
   description: "Review your personalized calligraphy art before checkout.",
+  robots: { index: false, follow: false },
 };
 
 const CART_ID_COOKIE = "tb_cart_id";

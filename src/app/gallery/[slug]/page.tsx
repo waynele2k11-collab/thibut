@@ -1,10 +1,10 @@
-/* eslint-disable @next/next/no-img-element */
-import prisma from "@/lib/prisma";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Metadata } from "next";
+import prisma from "@/lib/prisma";
+import { formatMinor } from "@/lib/money";
 import { GalleryDetailActions } from "@/components/gallery/GalleryDetailActions";
 import { assertAdminApi } from "@/utils/admin/auth";
 
@@ -128,7 +128,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const item = await prisma.galleryItem.findUnique({ where: { slug } });
   if (!item || (!item.published && !(await isCallerAdmin()))) {
-    return { title: "Not Found" };
+    return { title: "Not Found", robots: { index: false } };
   }
 
   return {
@@ -152,12 +152,11 @@ export default async function GalleryDetailPage({ params }: Props) {
   const primaryImage = item.productImageUrl;
   const artworkImage = item.artworkPreviewUrl;
   const mt = parseMockupTransform(item.mockupTransform);
-
-  const formattedPrice = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: item.currency,
-    minimumFractionDigits: 2,
-  }).format(Number(item.listedPriceMinor) / 100);
+  const formattedPrice = formatMinor(item.listedPriceMinor, item.currency);
+  const isVietnamese = Boolean(
+    item.sourceLanguage?.toLowerCase().includes("vi") ||
+      item.tradition?.includes("VIETNAMESE")
+  );
 
   const isApparel = Boolean(
     item.productName
@@ -202,21 +201,22 @@ export default async function GalleryDetailPage({ params }: Props) {
       <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-12 md:py-24">
         <Link
           href="/gallery"
-          className="inline-flex items-center text-on-surface-variant hover:text-on-surface transition-colors mb-12 font-label-caps text-label-caps uppercase"
+          className="inline-flex items-center text-on-surface-variant hover:text-on-surface transition-colors motion-reduce:transition-none mb-12 font-label-caps text-label-caps uppercase"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Gallery
+          <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" /> Back to Gallery
         </Link>
 
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-24">
-          {/* LEFT: Product Mockup */}
           <div className="flex-1">
             <div className="relative w-full aspect-[4/5] bg-surface border border-surface-variant rounded-lg overflow-hidden sticky top-24">
               {primaryImage &&
                 (mt?.customImageUrl ? (
-                  <img
+                  <Image
                     src={mt.customImageUrl}
                     alt={item.title}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    fill
+                    unoptimized
+                    className="object-cover"
                   />
                 ) : (
                   <>
@@ -224,10 +224,7 @@ export default async function GalleryDetailPage({ params }: Props) {
                       src={primaryImage}
                       alt={item.title}
                       fill
-                      unoptimized={
-                        primaryImage.startsWith("/api/") ||
-                        primaryImage.startsWith("data:")
-                      }
+                      unoptimized
                       className="object-cover mix-blend-multiply absolute inset-0"
                       style={bgTransformStyle}
                       priority
@@ -238,18 +235,23 @@ export default async function GalleryDetailPage({ params }: Props) {
                         className="absolute z-10 flex items-center justify-center"
                         style={printAreaStyle}
                       >
-                        <img
+                        <Image
                           src={artworkImage}
                           alt=""
+                          width={400}
+                          height={400}
+                          unoptimized
                           className="max-w-full max-h-full w-auto h-auto object-contain pointer-events-none select-none"
                           style={artTransformStyle}
                         />
                       </div>
                     ) : artworkImage ? (
-                      <img
+                      <Image
                         src={artworkImage}
                         alt=""
-                        className="absolute inset-0 w-full h-full object-contain scale-75 pointer-events-none select-none"
+                        fill
+                        unoptimized
+                        className="object-contain scale-75 pointer-events-none select-none"
                       />
                     ) : null}
                   </>
@@ -257,12 +259,13 @@ export default async function GalleryDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* RIGHT: Ecommerce Data + Design Meaning */}
           <div className="flex-1 flex flex-col">
             <div className="max-w-md">
-              {/* TOP: ECOMMERCE DATA */}
               <div className="mb-16">
-                <h1 className="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-background mb-2">
+                <h1
+                  lang={isVietnamese ? "vi" : undefined}
+                  className="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-background mb-2"
+                >
                   {item.title}
                 </h1>
 
@@ -278,26 +281,26 @@ export default async function GalleryDetailPage({ params }: Props) {
 
                 <div className="space-y-6 mb-10">
                   <div>
-                    <h3 className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">
+                    <h2 className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">
                       Product
-                    </h3>
+                    </h2>
                     <p className="font-body-lg text-body-lg text-on-background">
                       {item.productName}
                     </p>
                   </div>
                   <div>
-                    <h3 className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">
+                    <h2 className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">
                       Color
-                    </h3>
+                    </h2>
                     <p className="font-body-lg text-body-lg text-on-background">
                       Available at checkout
                     </p>
                   </div>
                   {item.requiresSize && (
                     <div>
-                      <h3 className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">
+                      <h2 className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">
                         Size
-                      </h3>
+                      </h2>
                       <p className="font-body-md text-body-md text-on-surface-variant">
                         Available at checkout
                       </p>
@@ -305,11 +308,9 @@ export default async function GalleryDetailPage({ params }: Props) {
                   )}
                 </div>
 
-                {/* Client component for Actions */}
-                <GalleryDetailActions product={item} />
+                <GalleryDetailActions product={{ id: item.id }} />
               </div>
 
-              {/* BOTTOM: THE WORDS */}
               <div className="pt-12 border-t border-surface-variant">
                 <h2 className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.2em] mb-10">
                   The Words
@@ -317,7 +318,10 @@ export default async function GalleryDetailPage({ params }: Props) {
 
                 <div className="space-y-8">
                   <div>
-                    <p className="font-headline-md text-headline-md text-on-background mb-2">
+                    <p
+                      lang={isVietnamese ? "vi" : undefined}
+                      className="font-headline-md text-headline-md text-on-background mb-2"
+                    >
                       {item.title}
                     </p>
                   </div>
@@ -351,7 +355,6 @@ export default async function GalleryDetailPage({ params }: Props) {
                 </div>
               </div>
 
-              {/* BOTTOM: DESIGN SPECIFICATIONS */}
               {(() => {
                 const design = mt?.designParams;
                 if (!design) return null;
@@ -359,6 +362,7 @@ export default async function GalleryDetailPage({ params }: Props) {
                 const artTx = mt?.artwork?.translateX ?? 0;
                 const artTy = mt?.artwork?.translateY ?? 0;
 
+                // Allowlisted ink color data mapping for saved gallery artwork specs
                 const inkMap: Record<string, string> = {
                   "#111111": "Charcoal Black",
                   "#F6F1E7": "Ivory White",

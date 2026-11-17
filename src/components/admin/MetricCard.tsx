@@ -1,3 +1,5 @@
+import { Card } from "@/components/ui/card";
+
 interface MetricCardProps {
   title: string;
   value: string | number;
@@ -6,23 +8,37 @@ interface MetricCardProps {
   trendUp?: boolean;
 }
 
-export function MetricCard({ title, value, subtitle, trend, trendUp }: MetricCardProps) {
+export function MetricCard({
+  title,
+  value,
+  subtitle,
+  trend,
+  trendUp,
+}: MetricCardProps) {
   return (
-    <div className="bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl p-6 shadow-sm">
-      <h3 className="font-label-caps text-xs text-[#A09D96] uppercase tracking-wider mb-2">
+    <Card className="p-6">
+      <h3 className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">
         {title}
       </h3>
       <div className="flex items-end gap-3">
-        <span className="font-display-md text-3xl text-[#111111]">{value}</span>
+        <span className="font-headline-md text-headline-md text-primary">
+          {value}
+        </span>
         {trend && (
-          <span className={`text-sm mb-1 ${trendUp ? "text-green-700" : "text-[#B3261E]"}`}>
+          <span
+            className={`font-label-caps text-label-caps mb-1 ${
+              trendUp ? "text-primary" : "text-secondary"
+            }`}
+          >
             {trend}
           </span>
         )}
       </div>
       {subtitle && (
-        <p className="text-sm text-[#A09D96] mt-2">{subtitle}</p>
+        <p className="font-body-md text-sm text-on-surface-variant mt-2">
+          {subtitle}
+        </p>
       )}
-    </div>
+    </Card>
   );
 }

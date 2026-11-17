@@ -1,6 +1,8 @@
-import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { format } from "date-fns";
+import prisma from "@/lib/prisma";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 export default async function AdminUsersPage() {
   const users = await prisma.user.findMany({
@@ -13,56 +15,83 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display-md text-display-sm text-[#111111] mb-2">Users</h1>
-          <p className="font-body text-[#A09D96]">Manage platform accounts.</p>
-        </div>
+      <div>
+        <h1 className="font-headline-md text-headline-md text-primary mb-2">
+          Users
+        </h1>
+        <p className="font-body-md text-body-md text-on-surface-variant">
+          Manage platform accounts.
+        </p>
       </div>
 
-      <div className="bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#F4EFE6] border-b border-[#E5E0D8]">
-            <tr>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">User</th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Email</th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Roles</th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Created</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#E5E0D8]">
-            {users.map((user) => (
-              <tr key={user.id} className="hover:bg-[#F4EFE6]/50 transition-colors">
-                <td className="px-6 py-4">
-                  <Link href={`/admin/users/${user.id}`} className="font-medium text-[#B3261E] hover:underline">
-                    {user.name || "Unknown"}
-                  </Link>
-                </td>
-                <td className="px-6 py-4 text-sm text-[#4A4844]">{user.email}</td>
-                <td className="px-6 py-4">
-                  <span className={`inline-flex px-2 py-1 text-xs rounded-full font-medium ${
-                    user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {user.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-[#4A4844]">
-                  {user.roles.map(r => r.role.code).join(", ") || "USER"}
-                </td>
-                <td className="px-6 py-4 text-sm text-[#A09D96]">
-                  {format(new Date(user.createdAt), "MMM d, yyyy")}
-                </td>
-              </tr>
-            ))}
-            {users.length === 0 && (
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-surface-container-low border-b border-surface-variant">
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-[#A09D96]">No users found.</td>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  User
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Email
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Status
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Roles
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Created
+                </th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-surface-variant">
+              {users.map((user) => (
+                <tr
+                  key={user.id}
+                  className="hover:bg-surface-container-low transition-colors motion-reduce:transition-none"
+                >
+                  <td className="px-6 py-4">
+                    <Link
+                      href={`/admin/users/${user.id}`}
+                      className="font-medium text-secondary hover:underline"
+                    >
+                      {user.name || "Unknown"}
+                    </Link>
+                  </td>
+                  <td className="px-6 py-4 font-body-md text-sm text-on-surface-variant">
+                    {user.email}
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge
+                      variant={user.status === "ACTIVE" ? "default" : "outline"}
+                    >
+                      {user.status}
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-4 font-body-md text-sm text-on-surface">
+                    {user.roles.map((r) => r.role.code).join(", ") || "USER"}
+                  </td>
+                  <td className="px-6 py-4 font-body-md text-sm text-on-surface-variant">
+                    {format(new Date(user.createdAt), "MMM d, yyyy")}
+                  </td>
+                </tr>
+              ))}
+              {users.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-8 text-center font-body-md text-body-md text-on-surface-variant"
+                  >
+                    No users found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 }

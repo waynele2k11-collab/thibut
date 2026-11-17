@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Image from "next/image";
 import {
   Type,
   Download,
@@ -590,11 +591,12 @@ export default function AdminFontsPage() {
                 {/* Live Specimen Preview Canvas */}
                 <div className="w-full h-36 bg-background border border-surface-variant rounded-lg overflow-hidden flex items-center justify-center relative">
                   {font.isDownloaded && previewSvg ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={`data:image/svg+xml;utf8,${encodeURIComponent(previewSvg)}`}
                       alt={font.name}
-                      className="w-full h-full object-contain p-2"
+                      fill
+                      unoptimized
+                      className="object-contain p-2"
                     />
                   ) : (
                     <div className="text-center p-4">

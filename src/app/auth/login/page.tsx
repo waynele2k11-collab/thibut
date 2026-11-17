@@ -1,23 +1,25 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import AuthForm from "@/components/auth/AuthForm";
 
 export const metadata: Metadata = {
-  title: "Login | Creator Studio | Thi Bút",
-  description: "Login to your Creator Studio dashboard.",
+  title: "Sign In — Creator Studio",
+  description: "Sign in to your Thi Bút Creator Studio dashboard.",
+  robots: { index: false, follow: false },
 };
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-[#0B0B0B] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative">
-      {/* Background Texture/Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#2a2a2a] via-[#0B0B0B] to-[#0B0B0B] opacity-50 pointer-events-none" />
-      
-      <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md">
-        <Suspense fallback={<div className="text-white text-center">Loading...</div>}>
+    <main className="flex-1 bg-background flex flex-col justify-center py-16 px-margin-mobile md:px-margin-desktop">
+      <div className="w-full max-w-md mx-auto">
+        <Suspense
+          fallback={
+            <div className="h-96 rounded-lg bg-surface-container border border-surface-variant animate-pulse motion-reduce:animate-none" />
+          }
+        >
           <AuthForm />
         </Suspense>
       </div>
-    </div>
+    </main>
   );
 }

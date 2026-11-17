@@ -1,6 +1,6 @@
 export type HeroSlideId = "name" | "poetry" | "heritage";
 
-export type HeroSlide = {
+export interface HeroSlide {
   id: HeroSlideId;
   index: string;
   label: string;
@@ -8,12 +8,13 @@ export type HeroSlide = {
   image: string;
   alt: string;
   primaryScript: string;
+  scriptLang: "ja" | "zh" | "vi";
   semanticTranslation: string;
   scriptStyle: string;
   textColor: string;
   containerStyle: string;
   hasSeal: boolean;
-};
+}
 
 export const heroSlides: HeroSlide[] = [
   {
@@ -24,11 +25,12 @@ export const heroSlides: HeroSlide[] = [
     image: "/mockups/blank_hoodie.jpg",
     alt: "Personalized Thi Bút name calligraphy on apparel",
     primaryScript: "デイビッド",
+    scriptLang: "ja",
     semanticTranslation: "DAVID",
-    scriptStyle: "font-jp-yuji-syuku font-bold tracking-widest leading-none [writing-mode:vertical-rl]",
-    textColor: "text-[#F6F1E7]",
+    scriptStyle: "font-serif font-bold tracking-widest leading-none [writing-mode:vertical-rl]",
+    textColor: "text-on-primary",
     containerStyle: "top-[58%] w-[35%] @container",
-    hasSeal: true
+    hasSeal: true,
   },
   {
     id: "poetry",
@@ -38,11 +40,12 @@ export const heroSlides: HeroSlide[] = [
     image: "/mockups/fine-art-poster.jpg",
     alt: "Poetic Thi Bút calligraphy artwork",
     primaryScript: "心不變",
+    scriptLang: "zh",
     semanticTranslation: "POETIC INTERPRETATION: A STILL MIND",
-    scriptStyle: "font-cn-mashan font-medium tracking-normal leading-tight [writing-mode:vertical-rl]",
-    textColor: "text-[#0B0B0B]",
+    scriptStyle: "font-serif font-medium tracking-normal leading-tight [writing-mode:vertical-rl]",
+    textColor: "text-primary",
     containerStyle: "top-[48%] w-[40%] @container",
-    hasSeal: true
+    hasSeal: true,
   },
   {
     id: "heritage",
@@ -52,10 +55,11 @@ export const heroSlides: HeroSlide[] = [
     image: "/mockups/fine-art-poster.jpg",
     alt: "Thi Bút heritage-inspired family name artwork",
     primaryScript: "阮",
+    scriptLang: "vi",
     semanticTranslation: "FAMILY NAME STUDY: NGUYỄN",
-    scriptStyle: "font-cn-mashan font-bold tracking-normal leading-tight",
-    textColor: "text-[#0B0B0B]",
+    scriptStyle: "font-serif font-bold tracking-normal leading-tight",
+    textColor: "text-primary",
     containerStyle: "top-[48%] w-[40%] @container",
-    hasSeal: false
-  }
+    hasSeal: false,
+  },
 ];

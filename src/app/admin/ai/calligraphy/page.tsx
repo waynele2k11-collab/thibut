@@ -1,34 +1,53 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { 
-  Palette, 
-  ShieldCheck, 
-  Play, 
-  Loader2, 
-  Cpu, 
-  Eye, 
-  ThumbsUp, 
+import {
+  Cpu,
+  Eye,
+  Loader2,
+  Palette,
+  Play,
+  ShieldCheck,
   ThumbsDown,
+  ThumbsUp,
 } from "lucide-react";
-import { BenchmarkMetrics, CalligraphyCandidate } from "@/lib/calligraphy/types";
+import type {
+  BenchmarkMetrics,
+  CalligraphyCandidate,
+} from "@/lib/calligraphy/types";
+import { Badge, type BadgeVariant } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export default function AdminCalligraphyDiagnosticsPage() {
   const [runningBenchmark, setRunningBenchmark] = useState(true);
   const [benchmarkMetrics, setBenchmarkMetrics] = useState<BenchmarkMetrics[]>([]);
-  const [selectedCandidate, setSelectedCandidate] = useState<CalligraphyCandidate | null>(null);
-  const [humanReviewStatus, setHumanReviewStatus] = useState<Record<string, "APPROVED" | "REJECTED">>({});
+  const [selectedCandidate, setSelectedCandidate] =
+    useState<CalligraphyCandidate | null>(null);
+  const [humanReviewStatus, setHumanReviewStatus] = useState<
+    Record<string, "APPROVED" | "REJECTED">
+  >({});
 
-  const providers = [
+  const providers: ReadonlyArray<{
+    id: string;
+    name: string;
+    version: string;
+    status: string;
+    badgeVariant: BadgeVariant;
+    licensing: string;
+    supports: string;
+    tech: string;
+  }> = [
     {
       id: "deterministic-brush-v1",
       name: "Thi Bút Deterministic Brush Engine",
       version: "1.0.0-poc",
       status: "APPROVED",
-      statusColor: "text-emerald-600 bg-emerald-50 border-emerald-200",
+      badgeVariant: "default",
       licensing: "Proprietary / Public Fonts Verified",
-      supports: "Han, Japanese Kana/Kanji, Hangul, Vietnamese Latin, English Latin",
+      supports:
+        "Han, Japanese Kana/Kanji, Hangul, Vietnamese Latin, English Latin",
       tech: "SVG Stroke Dynamics, Bristle Filter Synthesis, Organic Noise Map",
     },
     {
@@ -36,7 +55,7 @@ export default function AdminCalligraphyDiagnosticsPage() {
       name: "Structure-Conditioned AI Brush Engine",
       version: "0.1.0-poc",
       status: "POC / EVALUATION",
-      statusColor: "text-amber-600 bg-amber-50 border-amber-200",
+      badgeVariant: "secondary",
       licensing: "Proprietary Vision API",
       supports: "Multi-script skeleton conditioning",
       tech: "Glyph Mask Projection & Stroke Inpainting",
@@ -46,7 +65,7 @@ export default function AdminCalligraphyDiagnosticsPage() {
       name: "CalliffusionV2 Research Adapter",
       version: "0.2.0-research",
       status: "RESEARCH ONLY (GATED)",
-      statusColor: "text-rose-600 bg-rose-50 border-rose-200",
+      badgeVariant: "error",
       licensing: "Research Candidate (Commercial Rights Unverified)",
       supports: "Han, Japanese (Evaluation Track)",
       tech: "Latent Diffusion Model with Glyph Guidance",
@@ -74,7 +93,7 @@ export default function AdminCalligraphyDiagnosticsPage() {
         }
       }
     } catch (err) {
-      console.error("Benchmark error:", err);
+      console.error("[AdminCalligraphy] Benchmark error:", err);
     } finally {
       setRunningBenchmark(false);
     }
@@ -92,7 +111,7 @@ export default function AdminCalligraphyDiagnosticsPage() {
         }
       })
       .catch((err) => {
-        console.error("Benchmark error:", err);
+        console.error("[AdminCalligraphy] Benchmark error:", err);
       })
       .finally(() => {
         if (!cancelled) {
@@ -106,159 +125,198 @@ export default function AdminCalligraphyDiagnosticsPage() {
 
   return (
     <div className="space-y-8 pb-16">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#111111] text-[#F6F1E7] text-xs font-mono uppercase tracking-widest rounded-full mb-3">
-            <Palette className="w-3.5 h-3.5 text-[#B3261E]" />
+          <Badge variant="seal" className="mb-3 gap-1.5">
+            <Palette className="w-3.5 h-3.5" aria-hidden="true" />
             Controlled Brush Rendering Track (v0.1)
-          </div>
-          <h1 className="font-display-md text-3xl font-bold text-[#111111]">
-            Calligraphy Renderer Diagnostics & Review
+          </Badge>
+          <h1 className="font-headline-md text-headline-md text-primary">
+            Calligraphy Renderer Diagnostics &amp; Review
           </h1>
-          <p className="text-sm text-[#77756F]">
+          <p className="font-body-md text-sm text-on-surface-variant mt-1">
             Evaluate deterministic stroke synthesizers, validate character fidelity, and review candidate outputs.
           </p>
         </div>
 
-        <button
-          onClick={handleRunBenchmark}
-          disabled={runningBenchmark}
-          className="inline-flex items-center gap-2 bg-[#B3261E] text-white px-6 py-3 rounded-lg text-xs font-mono uppercase tracking-widest hover:bg-[#8e1f18] transition-colors disabled:opacity-50 shadow-sm"
-        >
+        <Button onClick={handleRunBenchmark} disabled={runningBenchmark}>
           {runningBenchmark ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2
+                className="w-4 h-4 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
               Running Benchmark Suite...
             </>
           ) : (
             <>
-              <Play className="w-4 h-4" />
+              <Play className="w-4 h-4" aria-hidden="true" />
               Run 4-Language Benchmark
             </>
           )}
-        </button>
+        </Button>
       </div>
 
-      {/* 1. Provider Registry & Licensing Gate */}
-      <div className="bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl p-6 shadow-sm">
-        <h2 className="font-serif text-lg font-bold text-[#111111] mb-4 flex items-center gap-2">
-          <Cpu className="w-5 h-5 text-[#B3261E]" />
+      <Card className="p-6">
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-4 flex items-center gap-2">
+          <Cpu className="w-5 h-5 text-secondary" aria-hidden="true" />
           Calligraphy Renderer Provider Matrix (TB-CALLI-007 / TB-CALLI-008)
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {providers.map((p) => (
-            <div key={p.id} className="p-5 bg-white border border-[#E5E0D8] rounded-xl flex flex-col justify-between">
+            <div
+              key={p.id}
+              className="p-5 bg-surface-container-low border border-surface-variant rounded-lg flex flex-col justify-between"
+            >
               <div>
                 <div className="flex justify-between items-start gap-2 mb-2">
-                  <span className="font-mono text-xs font-bold text-[#111111]">{p.name}</span>
-                  <span className={`px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded border ${p.statusColor}`}>
-                    {p.status}
+                  <span className="font-label-caps text-label-caps text-primary">
+                    {p.name}
                   </span>
+                  <Badge variant={p.badgeVariant}>{p.status}</Badge>
                 </div>
-                <p className="text-xs text-[#77756F] mb-3">Version: {p.version}</p>
-                <div className="space-y-1.5 text-xs">
-                  <div className="text-[#111111]"><strong>Licensing:</strong> {p.licensing}</div>
-                  <div className="text-[#77756F]"><strong>Scripts:</strong> {p.supports}</div>
-                  <div className="text-[#77756F]"><strong>Architecture:</strong> {p.tech}</div>
+                <p className="font-body-md text-xs text-on-surface-variant mb-3">
+                  Version: {p.version}
+                </p>
+                <div className="space-y-1.5 font-body-md text-xs">
+                  <div className="text-on-surface">
+                    <strong>Licensing:</strong> {p.licensing}
+                  </div>
+                  <div className="text-on-surface-variant">
+                    <strong>Scripts:</strong> {p.supports}
+                  </div>
+                  <div className="text-on-surface-variant">
+                    <strong>Architecture:</strong> {p.tech}
+                  </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
-      {/* 2. Live Benchmark Suite Metrics */}
       <div className="space-y-4">
-        <h2 className="font-serif text-lg font-bold text-[#111111] flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-[#0A9E48]" />
+        <h2 className="font-headline-sm text-headline-sm text-primary flex items-center gap-2">
+          <ShieldCheck className="w-5 h-5 text-primary" aria-hidden="true" />
           Automated Test Matrix Benchmark Results
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {benchmarkMetrics.map((m) => (
-            <div key={m.id} className="p-5 bg-white border border-[#E5E0D8] rounded-xl shadow-sm space-y-3">
+            <Card key={m.id} className="p-5 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="font-mono text-xs text-[#B3261E] font-bold">{m.script}</span>
-                <span className="font-mono text-[11px] px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">
-                  {m.passRate}% Pass
+                <span className="font-label-caps text-label-caps text-secondary">
+                  {m.script}
                 </span>
+                <Badge variant="secondary">{m.passRate}% Pass</Badge>
               </div>
               <div>
-                <div className="text-2xl font-serif font-bold text-[#111111]">{m.authoritativeText}</div>
-                <div className="text-xs text-[#77756F]">{m.testCaseName}</div>
-              </div>
-              <div className="pt-3 border-t border-[#E5E0D8] grid grid-cols-2 gap-2 text-xs font-mono">
-                <div>
-                  <span className="text-[#77756F] block">Diacritics:</span>
-                  <span className="font-bold text-emerald-600">{m.diacriticFidelityScore}%</span>
+                <div className="font-headline-sm text-headline-sm text-primary">
+                  {m.authoritativeText}
                 </div>
-                <div>
-                  <span className="text-[#77756F] block">Avg Latency:</span>
-                  <span className="font-bold text-[#111111]">{m.avgLatencyMs}ms</span>
+                <div className="font-body-md text-xs text-on-surface-variant">
+                  {m.testCaseName}
                 </div>
               </div>
-            </div>
+              <div className="pt-3 border-t border-surface-variant grid grid-cols-2 gap-2 text-xs font-mono">
+                <div>
+                  <span className="text-on-surface-variant block">
+                    Diacritics:
+                  </span>
+                  <span className="font-bold text-primary">
+                    {m.diacriticFidelityScore}%
+                  </span>
+                </div>
+                <div>
+                  <span className="text-on-surface-variant block">
+                    Avg Latency:
+                  </span>
+                  <span className="font-bold text-on-surface">
+                    {m.avgLatencyMs}ms
+                  </span>
+                </div>
+              </div>
+            </Card>
           ))}
         </div>
       </div>
 
-      {/* 3. Side-by-Side Candidate Review Inspector */}
-      <div className="bg-white border border-[#E5E0D8] rounded-xl p-6 shadow-sm space-y-6">
+      <Card className="p-6 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-          <h2 className="font-serif text-lg font-bold text-[#111111] flex items-center gap-2">
-            <Eye className="w-5 h-5 text-[#B3261E]" />
-            Side-by-Side Candidate Review & Human Gate
+          <h2 className="font-headline-sm text-headline-sm text-primary flex items-center gap-2">
+            <Eye className="w-5 h-5 text-secondary" aria-hidden="true" />
+            Side-by-Side Candidate Review &amp; Human Gate
           </h2>
-          <span className="text-xs font-mono text-[#77756F]">Select a sample to inspect character structure</span>
+          <span className="font-label-caps text-label-caps text-on-surface-variant uppercase">
+            Select a sample to inspect character structure
+          </span>
         </div>
 
-        {/* Thumbnail Selector */}
         <div className="flex gap-3 overflow-x-auto pb-2">
-          {benchmarkMetrics.flatMap((m) => m.candidates).map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setSelectedCandidate(c)}
-              className={`p-3 rounded-lg border text-left flex-shrink-0 w-36 transition-all ${
-                selectedCandidate?.id === c.id
-                  ? "border-[#B3261E] bg-[#B3261E]/5 ring-1 ring-[#B3261E]"
-                  : "border-[#E5E0D8] bg-[#FCFAF6] hover:border-[#77756F]"
-              }`}
-            >
-              <div className="text-sm font-serif font-bold text-[#111111] truncate">{c.authoritativeText}</div>
-              <div className="text-[10px] font-mono text-[#B3261E] uppercase mt-1">{c.variationName}</div>
-              <div className="text-[9px] text-[#77756F]">{c.validationStatus}</div>
-            </button>
-          ))}
+          {benchmarkMetrics
+            .flatMap((m) => m.candidates)
+            .map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelectedCandidate(c)}
+                className={`p-3 rounded-lg border text-left shrink-0 w-36 transition-colors motion-reduce:transition-none ${
+                  selectedCandidate?.id === c.id
+                    ? "border-secondary bg-secondary/5 ring-1 ring-secondary"
+                    : "border-surface-variant bg-surface-container-low hover:border-outline"
+                }`}
+              >
+                <div className="font-headline-sm text-sm text-primary truncate">
+                  {c.authoritativeText}
+                </div>
+                <div className="font-label-caps text-[10px] text-secondary uppercase mt-1">
+                  {c.variationName}
+                </div>
+                <div className="font-body-md text-[10px] text-on-surface-variant">
+                  {c.validationStatus}
+                </div>
+              </button>
+            ))}
         </div>
 
         {selectedCandidate && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t border-[#E5E0D8]">
-            {/* Panel 1: Authoritative Text & Metadata */}
-            <div className="p-5 bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl space-y-4">
-              <span className="font-mono text-xs text-[#77756F] uppercase tracking-wider block">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t border-surface-variant">
+            <div className="p-5 bg-surface-container-low border border-surface-variant rounded-lg space-y-4">
+              <span className="font-label-caps text-label-caps text-on-surface-variant uppercase block">
                 1. Authoritative Linguistic Text
               </span>
-              <div className="text-4xl font-serif font-bold text-[#111111] py-4 text-center border border-[#E5E0D8] bg-white rounded-lg">
+              <div className="font-headline-md text-headline-md text-primary py-4 text-center border border-surface-variant bg-surface-container-lowest rounded-lg">
                 {selectedCandidate.authoritativeText}
               </div>
-              <div className="space-y-2 text-xs font-mono">
-                <div><span className="text-[#77756F]">Variation Type:</span> {selectedCandidate.variationType}</div>
-                <div><span className="text-[#77756F]">Provider:</span> {selectedCandidate.provider}</div>
-                <div><span className="text-[#77756F]">Seed:</span> {selectedCandidate.seed}</div>
-                <div><span className="text-[#77756F]">Latency:</span> {selectedCandidate.generationDurationMs}ms</div>
+              <div className="space-y-2 text-xs font-mono text-on-surface">
+                <div>
+                  <span className="text-on-surface-variant">Variation Type:</span>{" "}
+                  {selectedCandidate.variationType}
+                </div>
+                <div>
+                  <span className="text-on-surface-variant">Provider:</span>{" "}
+                  {selectedCandidate.provider}
+                </div>
+                <div>
+                  <span className="text-on-surface-variant">Seed:</span>{" "}
+                  {selectedCandidate.seed}
+                </div>
+                <div>
+                  <span className="text-on-surface-variant">Latency:</span>{" "}
+                  {selectedCandidate.generationDurationMs}ms
+                </div>
               </div>
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded text-emerald-800 text-xs font-mono">
-                ✓ Character & Diacritic Validation: {selectedCandidate.validationStatus}
+              <div className="p-3 bg-surface-container-lowest border border-surface-variant rounded text-on-surface text-xs font-mono">
+                Character &amp; Diacritic Validation:{" "}
+                {selectedCandidate.validationStatus}
               </div>
             </div>
 
-            {/* Panel 2: Structure Guide / Skeleton */}
-            <div className="p-5 bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl space-y-4">
-              <span className="font-mono text-xs text-[#77756F] uppercase tracking-wider block">
+            <div className="p-5 bg-surface-container-low border border-surface-variant rounded-lg space-y-4">
+              <span className="font-label-caps text-label-caps text-on-surface-variant uppercase block">
                 2. Structure / Skeleton Guide
               </span>
-              <div className="aspect-square bg-white border border-[#E5E0D8] rounded-lg overflow-hidden flex items-center justify-center p-4">
+              <div className="aspect-square bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden flex items-center justify-center p-4">
                 {selectedCandidate.structureGuideUrl && (
                   <Image
                     src={selectedCandidate.structureGuideUrl}
@@ -270,18 +328,17 @@ export default function AdminCalligraphyDiagnosticsPage() {
                   />
                 )}
               </div>
-              <p className="text-xs text-[#77756F]">
+              <p className="font-body-md text-xs text-on-surface-variant">
                 High-contrast glyph contour enforcing mathematical stroke bounds.
               </p>
             </div>
 
-            {/* Panel 3: Generated Calligraphy Art & Human Review */}
-            <div className="p-5 bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl space-y-4 flex flex-col justify-between">
+            <div className="p-5 bg-surface-container-low border border-surface-variant rounded-lg space-y-4 flex flex-col justify-between">
               <div>
-                <span className="font-mono text-xs text-[#77756F] uppercase tracking-wider block mb-2">
+                <span className="font-label-caps text-label-caps text-on-surface-variant uppercase block mb-2">
                   3. Generated Brush Output
                 </span>
-                <div className="aspect-square bg-[#0B0B0B] border border-[#222222] rounded-lg overflow-hidden flex items-center justify-center p-4">
+                <div className="aspect-square bg-tertiary-container border border-outline/30 rounded-lg overflow-hidden flex items-center justify-center p-4">
                   {selectedCandidate.previewAssetUrl && (
                     <Image
                       src={selectedCandidate.previewAssetUrl}
@@ -289,41 +346,56 @@ export default function AdminCalligraphyDiagnosticsPage() {
                       width={512}
                       height={512}
                       unoptimized
-                      className="max-h-full max-w-full w-auto h-auto object-contain filter invert"
+                      className="max-h-full max-w-full w-auto h-auto object-contain invert"
                     />
                   )}
                 </div>
               </div>
 
-              {/* Human Review Gate */}
-              <div className="space-y-3 pt-3 border-t border-[#E5E0D8]">
-                <span className="text-xs font-mono uppercase tracking-wider text-[#111111] font-bold block">
+              <div className="space-y-3 pt-3 border-t border-surface-variant">
+                <span className="font-label-caps text-label-caps uppercase text-primary block">
                   Human Quality Review Gate
                 </span>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => setHumanReviewStatus(prev => ({ ...prev, [selectedCandidate.id]: "APPROVED" }))}
-                    className={`flex-1 py-2 text-xs font-mono rounded flex items-center justify-center gap-1.5 transition-colors ${
+                  <Button
+                    size="sm"
+                    variant={
                       humanReviewStatus[selectedCandidate.id] === "APPROVED"
-                        ? "bg-emerald-600 text-white"
-                        : "bg-white border border-[#E5E0D8] text-[#111111] hover:bg-emerald-50"
-                    }`}
+                        ? "primary"
+                        : "outline"
+                    }
+                    onClick={() =>
+                      setHumanReviewStatus((prev) => ({
+                        ...prev,
+                        [selectedCandidate.id]: "APPROVED",
+                      }))
+                    }
+                    className="flex-1"
                   >
-                    <ThumbsUp className="w-3.5 h-3.5" /> Approve
-                  </button>
-                  <button
-                    onClick={() => setHumanReviewStatus(prev => ({ ...prev, [selectedCandidate.id]: "REJECTED" }))}
-                    className={`flex-1 py-2 text-xs font-mono rounded flex items-center justify-center gap-1.5 transition-colors ${
+                    <ThumbsUp className="w-3.5 h-3.5" aria-hidden="true" />
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={
                       humanReviewStatus[selectedCandidate.id] === "REJECTED"
-                        ? "bg-rose-600 text-white"
-                        : "bg-white border border-[#E5E0D8] text-[#111111] hover:bg-rose-50"
-                    }`}
+                        ? "destructive"
+                        : "outline"
+                    }
+                    onClick={() =>
+                      setHumanReviewStatus((prev) => ({
+                        ...prev,
+                        [selectedCandidate.id]: "REJECTED",
+                      }))
+                    }
+                    className="flex-1"
                   >
-                    <ThumbsDown className="w-3.5 h-3.5" /> Reject
-                  </button>
+                    <ThumbsDown className="w-3.5 h-3.5" aria-hidden="true" />
+                    Reject
+                  </Button>
                 </div>
                 {humanReviewStatus[selectedCandidate.id] && (
-                  <p className="text-[11px] font-mono text-[#77756F] text-center">
+                  <p className="font-label-caps text-label-caps text-on-surface-variant text-center">
                     Recorded: {humanReviewStatus[selectedCandidate.id]}
                   </p>
                 )}
@@ -331,7 +403,7 @@ export default function AdminCalligraphyDiagnosticsPage() {
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

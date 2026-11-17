@@ -1588,8 +1588,10 @@ test("T-201, T-104, INV-003..006: /api/checkout & /api/checkout/gallery reject c
   assert.equal(physicalRes.status, 200);
   const physicalData = (await physicalRes.json()) as { orderId: string };
   const physicalOrder = state.orders.get(physicalData.orderId)!;
-  // Unit = 499n (artwork) + 300n (personalization) + (2999n + 500n back placement) = 4298n; x 2 = 8596n
-  assert.equal(physicalOrder.totalMinor, 8596n);
+  // Unit = 499n (artwork) + 300n (personalization) + (2999n + 500n back placement) = 4298n; x 2 = 8596n + US flat shipping (599n + 200n = 799n) = 9395n
+  assert.equal(physicalOrder.subtotalMinor, 8596n);
+  assert.equal(physicalOrder.shippingMinor, 799n);
+  assert.equal(physicalOrder.totalMinor, 9395n);
   const stripeCall2 = state.stripeCalls[1];
   assert.equal(stripeCall2.line_items?.[0]?.price_data?.unit_amount, 4298);
   assert.equal(stripeCall2.line_items?.[0]?.quantity, 2);
@@ -1652,7 +1654,9 @@ test("T-201, T-104, INV-003..006: /api/checkout & /api/checkout/gallery reject c
   const validGalJson = (await validGalRes.json()) as { orderId: string };
   const galOrder = state.orders.get(validGalJson.orderId)!;
   assert.equal(galOrder.status, "PENDING_PAYMENT");
-  assert.equal(galOrder.totalMinor, 5499n);
+  assert.equal(galOrder.subtotalMinor, 5499n);
+  assert.equal(galOrder.shippingMinor, 599n);
+  assert.equal(galOrder.totalMinor, 6098n);
   const stripeCall3 = state.stripeCalls[2];
   assert.equal(stripeCall3.line_items?.[0]?.price_data?.unit_amount, 5499);
   assert.equal(stripeCall3.metadata?.orderId, galOrder.id);
@@ -1752,8 +1756,10 @@ test("T-204: Cart actions isolate anonymous visitors, reject raster designDataUr
   assert.equal(cartCheckoutRes.status, 200);
   const cartCheckoutJson = (await cartCheckoutRes.json()) as { orderId: string };
   const cartOrder = state.orders.get(cartCheckoutJson.orderId)!;
-  // Unit front = 499n + 300n + 2999n = 3798n; x 2 = 7596n
-  assert.equal(cartOrder.totalMinor, 7596n);
+  // Unit front = 499n + 300n + 2999n = 3798n; x 2 = 7596n + US flat shipping (599n + 200n = 799n) = 8395n
+  assert.equal(cartOrder.subtotalMinor, 7596n);
+  assert.equal(cartOrder.shippingMinor, 799n);
+  assert.equal(cartOrder.totalMinor, 8395n);
   assert.equal(state.carts.get(addARes.cartId!)?.status, "CHECKOUT");
 });
 

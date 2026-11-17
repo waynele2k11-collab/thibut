@@ -1,40 +1,51 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "default" | "outline" | "ghost" | "link" | "accent"
-  size?: "default" | "sm" | "lg" | "icon"
+export type ButtonVariant = "primary" | "outline" | "ghost" | "destructive";
+export type ButtonSize = "default" | "sm" | "lg" | "icon";
+
+export interface ButtonProps extends React.ComponentPropsWithRef<"button"> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "default", ...props }, ref) => {
-    const baseStyles = "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-stone-400 disabled:pointer-events-none disabled:opacity-50"
-    
-    const variants = {
-      default: "bg-text-primary text-bg-primary hover:bg-stone-300 shadow",
-      outline: "border border-neutral-800 bg-transparent hover:bg-neutral-900 text-text-primary",
-      ghost: "hover:bg-neutral-900 hover:text-text-primary text-neutral-400",
-      link: "text-text-primary underline-offset-4 hover:underline",
-      accent: "bg-accent-seal text-text-primary hover:bg-accent-seal/90 shadow-lg",
-    }
-    
-    const sizes = {
-      default: "h-9 px-4 py-2",
-      sm: "h-8 rounded-md px-3 text-xs",
-      lg: "h-10 rounded-md px-8 text-base",
-      icon: "h-9 w-9",
-    }
-    
-    return (
-      <button
-        ref={ref}
-        className={cn(baseStyles, variants[variant], sizes[size], className)}
-        {...props}
-      />
-    )
-  }
-)
-Button.displayName = "Button"
+const VARIANT_STYLES: Record<ButtonVariant, string> = {
+  primary:
+    "bg-primary text-on-primary font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary",
+  outline:
+    "border border-outline bg-transparent text-primary font-label-caps text-label-caps uppercase hover:bg-surface-container-high",
+  ghost:
+    "bg-transparent text-on-surface-variant font-body-md text-body-md hover:bg-surface-container-high hover:text-primary",
+  destructive:
+    "bg-error text-on-primary font-label-caps text-label-caps uppercase hover:opacity-90",
+};
 
-export { Button }
+const SIZE_STYLES: Record<ButtonSize, string> = {
+  default: "h-11 px-6 py-2.5",
+  sm: "h-9 px-4 py-2",
+  lg: "h-12 px-8 py-3.5",
+  icon: "h-10 w-10 p-0",
+};
+
+export function Button({
+  className,
+  variant = "primary",
+  size = "default",
+  type = "button",
+  ref,
+  ...props
+}: ButtonProps) {
+  return (
+    <button
+      ref={ref}
+      type={type}
+      className={cn(
+        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50",
+        VARIANT_STYLES[variant],
+        SIZE_STYLES[size],
+        className
+      )}
+      {...props}
+    />
+  );
+}

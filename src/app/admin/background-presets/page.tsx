@@ -1,8 +1,9 @@
-import prisma from "@/lib/prisma";
 import type { BackgroundPreset } from "@prisma/client";
 import Link from "next/link";
-import { PresetRow } from "./PresetRow";
 import { Plus } from "lucide-react";
+import prisma from "@/lib/prisma";
+import { Card } from "@/components/ui/card";
+import { PresetRow } from "./PresetRow";
 
 export default async function BackgroundPresetsPage() {
   const presets: BackgroundPreset[] = prisma.backgroundPreset
@@ -16,44 +17,67 @@ export default async function BackgroundPresetsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="font-display-md text-display-sm text-[#111111] mb-2">Background Presets</h1>
-          <p className="font-body text-[#A09D96]">Manage prompts and styles for the AI Background Generator.</p>
+          <h1 className="font-headline-md text-headline-md text-primary mb-2">
+            Background Presets
+          </h1>
+          <p className="font-body-md text-body-md text-on-surface-variant">
+            Manage prompts and styles for the AI Background Generator.
+          </p>
         </div>
-        <Link 
+        <Link
           href="/admin/background-presets/new"
-          className="flex items-center gap-2 bg-[#111111] text-white px-4 py-2 rounded-lg font-label-caps text-sm uppercase hover:bg-black/80 transition-colors"
+          className="inline-flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4" aria-hidden="true" />
           New Preset
         </Link>
       </div>
 
-      <div className="bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#F4EFE6] border-b border-[#E5E0D8]">
-            <tr>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Name / Key</th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Category</th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Settings</th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Sort</th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 text-right font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#E5E0D8]">
-            {presets.map((preset) => (
-              <PresetRow key={preset.id} preset={preset} />
-            ))}
-            {presets.length === 0 && (
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-surface-container-low border-b border-surface-variant">
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-[#A09D96]">No presets found.</td>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Name / Key
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Category
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Settings
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Sort
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-right font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Actions
+                </th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-surface-variant">
+              {presets.map((preset) => (
+                <PresetRow key={preset.id} preset={preset} />
+              ))}
+              {presets.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-8 text-center font-body-md text-body-md text-on-surface-variant"
+                  >
+                    No presets found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 }

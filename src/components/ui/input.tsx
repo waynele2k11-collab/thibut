@@ -1,23 +1,24 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
-export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
+export type InputProps = React.ComponentPropsWithRef<"input">;
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, ...props }, ref) => {
-    return (
-      <input
-        type={type}
-        className={cn(
-          "flex h-9 w-full rounded-md border border-neutral-800 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-stone-400 disabled:cursor-not-allowed disabled:opacity-50",
-          className
-        )}
-        ref={ref}
-        {...props}
-      />
-    )
-  }
-)
-Input.displayName = "Input"
-
-export { Input }
+/**
+ * Editorial form `<input>` primitive styled with Stitch light-mode tokens.
+ *
+ * Accessibility requirement: Always pair `<Input id="..." />` with an explicit
+ * `<label htmlFor="...">` element. Never rely on `placeholder` alone as a label.
+ */
+export function Input({ className, type = "text", ref, ...props }: InputProps) {
+  return (
+    <input
+      ref={ref}
+      type={type}
+      className={cn(
+        "flex h-11 w-full rounded border border-outline-variant bg-surface-container-lowest px-3.5 py-2.5 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant transition-colors motion-reduce:transition-none file:border-0 file:bg-transparent file:font-body-md file:text-body-md file:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary aria-invalid:border-error disabled:cursor-not-allowed disabled:bg-surface-dim disabled:opacity-60",
+        className
+      )}
+      {...props}
+    />
+  );
+}

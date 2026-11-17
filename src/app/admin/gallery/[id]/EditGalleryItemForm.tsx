@@ -1,15 +1,18 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Upload } from "lucide-react";
+import { formatMinor } from "@/lib/money";
+import { Button } from "@/components/ui/button";
 
 interface EditGalleryItemFormProps {
   id: string;
   currentCustomImage?: string;
   productImageUrl: string;
-  listedPriceMinor?: bigint | number | string;
+  listedPriceMinor?: bigint | string;
+  currency?: string;
 }
 
 export default function EditGalleryItemForm({
@@ -17,6 +20,7 @@ export default function EditGalleryItemForm({
   currentCustomImage,
   productImageUrl,
   listedPriceMinor,
+  currency = "USD",
 }: EditGalleryItemFormProps) {
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
@@ -26,7 +30,7 @@ export default function EditGalleryItemForm({
 
   const formattedListedPrice =
     listedPriceMinor !== undefined
-      ? `$${(Number(listedPriceMinor) / 100).toFixed(2)}`
+      ? formatMinor(listedPriceMinor, currency)
       : null;
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,44 +113,52 @@ export default function EditGalleryItemForm({
   return (
     <div className="space-y-6">
       {formattedListedPrice && (
-        <p className="text-sm text-gray-600">
-          Listed Price: <strong className="text-gray-900">{formattedListedPrice}</strong>
+        <p className="font-body-md text-sm text-on-surface-variant">
+          Listed Price:{" "}
+          <strong className="text-on-surface">{formattedListedPrice}</strong>
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">
+          <h3 className="font-label-caps text-label-caps uppercase text-on-surface-variant mb-2">
             Original Dynamic Background
           </h3>
-          <div className="aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-            <img
+          <div className="aspect-[4/5] bg-surface-container-low rounded-lg overflow-hidden border border-surface-variant relative">
+            <Image
               src={productImageUrl}
               alt="Original Mockup"
-              className="w-full h-full object-cover mix-blend-multiply"
+              fill
+              unoptimized
+              className="object-cover mix-blend-multiply"
             />
           </div>
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="font-body-md text-xs text-on-surface-variant mt-2">
             The blank product mockup (without SVG overlay).
           </p>
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">
+          <h3 className="font-label-caps text-label-caps uppercase text-on-surface-variant mb-2">
             Custom Rendered Image Override
           </h3>
-          <div className="aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden border border-gray-200 flex flex-col items-center justify-center relative">
+          <div className="aspect-[4/5] bg-surface-container-low rounded-lg overflow-hidden border border-surface-variant flex flex-col items-center justify-center relative">
             {previewUrl ? (
-              <img
+              <Image
                 src={previewUrl}
                 alt="Custom Override"
-                className="w-full h-full object-cover"
+                fill
+                unoptimized
+                className="object-cover"
               />
             ) : (
-              <div className="text-gray-400 text-center p-4">
-                <Upload className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No custom image set</p>
-                <p className="text-xs mt-1">
+              <div className="text-on-surface-variant text-center p-4">
+                <Upload
+                  className="w-8 h-8 mx-auto mb-2 opacity-50"
+                  aria-hidden="true"
+                />
+                <p className="font-body-md text-sm">No custom image set</p>
+                <p className="font-body-md text-xs mt-1">
                   Frontend uses dynamic SVG rendering
                 </p>
               </div>
@@ -155,24 +167,34 @@ export default function EditGalleryItemForm({
         </div>
       </div>
 
-      <div className="pt-4 border-t border-gray-100">
+      <div className="pt-4 border-t border-surface-variant">
         {error && (
-          <p className="text-red-600 text-sm mb-4 font-medium">{error}</p>
+          <p
+            role="alert"
+            className="text-on-error-container bg-error-container border border-error/30 rounded p-3 text-sm mb-4"
+          >
+            {error}
+          </p>
         )}
         {success && (
-          <p className="text-green-600 text-sm mb-4 font-medium">{success}</p>
+          <p
+            role="status"
+            className="text-on-surface bg-surface-container border border-surface-variant rounded p-3 text-sm mb-4"
+          >
+            {success}
+          </p>
         )}
 
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <label
-            className={`flex-1 flex justify-center items-center py-3 px-4 border border-transparent rounded-md text-sm font-medium text-white bg-[#B3261E] hover:bg-[#9A2119] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B3261E] cursor-pointer transition-colors ${
+            className={`flex-1 flex justify-center items-center py-3 px-4 rounded font-label-caps text-label-caps uppercase text-on-primary bg-primary hover:bg-secondary cursor-pointer transition-colors motion-reduce:transition-none ${
               isUploading ? "opacity-50 pointer-events-none" : ""
             }`}
           >
             {isUploading ? "Uploading..." : "Upload Custom Screenshot"}
             <input
               type="file"
-              className="hidden"
+              className="sr-only"
               accept="image/png, image/jpeg, image/webp"
               onChange={handleUpload}
               disabled={isUploading}
@@ -180,19 +202,17 @@ export default function EditGalleryItemForm({
           </label>
 
           {previewUrl && (
-            <button
-              type="button"
+            <Button
+              variant="outline"
               onClick={handleClear}
               disabled={isUploading}
-              className="px-6 py-3 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B3261E]"
             >
               Clear Override
-            </button>
+            </Button>
           )}
         </div>
-        <p className="text-xs text-gray-500 mt-3 text-center">
-          Uploading an image will immediately override the dynamic rendering on
-          the storefront for this item.
+        <p className="font-body-md text-xs text-on-surface-variant mt-3 text-center">
+          Uploading an image immediately overrides dynamic rendering on the storefront for this item.
         </p>
       </div>
     </div>

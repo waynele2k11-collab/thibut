@@ -1,11 +1,19 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2 } from "lucide-react";
 import type { GalleryItem } from "@prisma/client";
+import { formatMinor } from "@/lib/money";
+
+export type GalleryCardItem = Omit<
+  GalleryItem,
+  "listedPriceMinor" | "createdAt" | "updatedAt"
+> & {
+  listedPriceMinor: bigint | string;
+};
 
 interface PrintAreaPct {
   topPct?: number;
@@ -81,7 +89,7 @@ function parseMockupTransform(raw: unknown): ParsedMockupTransform | null {
 }
 
 export interface GalleryCardProps {
-  item: GalleryItem;
+  item: GalleryCardItem;
 }
 
 export function GalleryCard({ item }: GalleryCardProps) {
@@ -92,8 +100,12 @@ export function GalleryCard({ item }: GalleryCardProps) {
   );
   const [showVariantSelector, setShowVariantSelector] = useState(false);
 
-  const formattedPrice = (Number(item.listedPriceMinor) / 100).toFixed(2);
+  const formattedPrice = formatMinor(item.listedPriceMinor, item.currency);
   const mt = parseMockupTransform(item.mockupTransform);
+  const isVietnamese = Boolean(
+    item.sourceLanguage?.toLowerCase().includes("vi") ||
+      item.tradition?.includes("VIETNAMESE")
+  );
 
   const handleMakeItYours = () => {
     const params = new URLSearchParams();
@@ -170,25 +182,28 @@ export function GalleryCard({ item }: GalleryCardProps) {
     : undefined;
 
   return (
-    <div className="flex flex-col bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden transition-colors hover:border-outline">
-      {/* Product Image */}
+    <article className="flex flex-col bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden transition-colors motion-reduce:transition-none hover:border-outline">
       <Link
         href={`/gallery/${item.slug}`}
         className="aspect-[4/5] bg-background relative overflow-hidden flex items-center justify-center group"
       >
         {item.productImageUrl ? (
           mt?.customImageUrl ? (
-            <img
+            <Image
               src={mt.customImageUrl}
               alt={item.title}
-              className="absolute inset-0 w-full h-full object-cover"
+              fill
+              unoptimized
+              className="object-cover"
             />
           ) : (
             <>
-              <img
+              <Image
                 src={item.productImageUrl}
                 alt={item.title}
-                className="absolute inset-0 w-full h-full object-cover mix-blend-multiply"
+                fill
+                unoptimized
+                className="object-cover mix-blend-multiply"
                 style={bgTransformStyle}
               />
               {item.artworkPreviewUrl &&
@@ -197,18 +212,23 @@ export function GalleryCard({ item }: GalleryCardProps) {
                   className="absolute z-10 flex items-center justify-center"
                   style={printAreaStyle}
                 >
-                  <img
+                  <Image
                     src={item.artworkPreviewUrl}
                     alt=""
+                    width={320}
+                    height={320}
+                    unoptimized
                     className="max-w-full max-h-full w-auto h-auto object-contain pointer-events-none select-none"
                     style={artTransformStyle}
                   />
                 </div>
               ) : item.artworkPreviewUrl ? (
-                <img
+                <Image
                   src={item.artworkPreviewUrl}
                   alt=""
-                  className="absolute inset-0 w-full h-full object-contain scale-75 pointer-events-none select-none"
+                  fill
+                  unoptimized
+                  className="object-contain scale-75 pointer-events-none select-none"
                 />
               ) : null}
             </>
@@ -220,33 +240,35 @@ export function GalleryCard({ item }: GalleryCardProps) {
         )}
       </Link>
 
-      {/* Metadata & Actions */}
       <div className="p-5 flex flex-col gap-4 flex-1">
         <Link
           href={`/gallery/${item.slug}`}
-          className="hover:opacity-80 transition-opacity block"
+          className="hover:opacity-80 transition-opacity motion-reduce:transition-none block"
         >
-          <h3 className="font-headline-sm text-headline-sm text-on-background line-clamp-1">
+          <h3
+            lang={isVietnamese ? "vi" : undefined}
+            className="font-headline-sm text-headline-sm text-on-background line-clamp-1"
+          >
             {item.title}
           </h3>
           <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-            {item.productType} &middot; ${formattedPrice}
+            {item.productType} &middot; {formattedPrice}
           </p>
         </Link>
 
         <div className="mt-auto flex flex-col gap-3">
           {showVariantSelector && item.requiresSize && (
             <div className="flex flex-col gap-2 p-3 bg-surface-container-low border border-surface-variant rounded-lg mb-2">
-              <label className="font-label-caps text-label-caps text-on-background uppercase">
+              <span className="font-label-caps text-label-caps text-on-background uppercase">
                 Select Size
-              </label>
+              </span>
               <div className="flex gap-2 flex-wrap">
                 {item.availableSizes.map((size) => (
                   <button
                     key={size}
                     type="button"
                     onClick={() => setSelectedVariant(size)}
-                    className={`px-3 py-1.5 font-label-caps text-label-caps rounded border transition-colors ${
+                    className={`px-3 py-1.5 font-label-caps text-label-caps rounded border transition-colors motion-reduce:transition-none ${
                       selectedVariant === size
                         ? "bg-primary text-on-primary border-primary"
                         : "bg-surface-container-lowest text-on-background border-surface-variant hover:border-primary"
@@ -263,13 +285,12 @@ export function GalleryCard({ item }: GalleryCardProps) {
             type="button"
             onClick={handleBuyAsShown}
             disabled={isBuying || !item.purchasable}
-            className="w-full bg-primary text-on-primary py-3.5 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors flex items-center justify-center disabled:opacity-50"
-            title="Get this exact design."
+            className="w-full bg-primary text-on-primary py-3.5 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none flex items-center justify-center disabled:opacity-50"
           >
             {isBuying ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
             ) : showVariantSelector ? (
-              `Buy Now — $${formattedPrice}`
+              `Buy Now — ${formattedPrice}`
             ) : (
               "Buy As Shown"
             )}
@@ -278,13 +299,12 @@ export function GalleryCard({ item }: GalleryCardProps) {
           <button
             type="button"
             onClick={handleMakeItYours}
-            className="w-full bg-surface-container-lowest text-primary py-3.5 rounded font-label-caps text-label-caps uppercase border border-outline-variant hover:border-primary hover:bg-surface-container-high transition-colors flex items-center justify-center gap-2"
-            title="Start with these words and create your own Thi Bút."
+            className="w-full bg-surface-container-lowest text-primary py-3.5 rounded font-label-caps text-label-caps uppercase border border-outline-variant hover:border-primary hover:bg-surface-container-high transition-colors motion-reduce:transition-none flex items-center justify-center gap-2"
           >
-            Make It Yours <ArrowRight className="w-4 h-4" />
+            Make It Yours <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

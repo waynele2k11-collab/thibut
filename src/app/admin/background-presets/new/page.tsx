@@ -1,17 +1,25 @@
-import { PresetForm } from "../PresetForm";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { PresetForm } from "../PresetForm";
 
 export default function NewBackgroundPresetPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/admin/background-presets" className="text-[#A09D96] hover:text-[#111111] transition-colors">
-          <ArrowLeft className="w-6 h-6" />
+        <Link
+          href="/admin/background-presets"
+          aria-label="Back to background presets"
+          className="text-on-surface-variant hover:text-primary transition-colors motion-reduce:transition-none"
+        >
+          <ArrowLeft className="w-6 h-6" aria-hidden="true" />
         </Link>
         <div>
-          <h1 className="font-display-md text-display-sm text-[#111111] mb-2">New Preset</h1>
-          <p className="font-body text-[#A09D96]">Create a new generative AI background style.</p>
+          <h1 className="font-headline-md text-headline-md text-primary mb-1">
+            New Preset
+          </h1>
+          <p className="font-body-md text-body-md text-on-surface-variant">
+            Create a new generative AI background style.
+          </p>
         </div>
       </div>
 

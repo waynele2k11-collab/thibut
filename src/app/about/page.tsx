@@ -1,68 +1,76 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "About Thi Bút — Meaning Before Style",
-  description: "Learn how Thi Bút transforms names, words, and personal stories into culturally meaningful calligraphy-inspired art.",
+  description:
+    "Learn how Thi Bút transforms names, words, and personal stories into culturally meaningful calligraphy-inspired art.",
 };
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-background text-on-background selection:bg-secondary selection:text-on-secondary">
-      
-      {/* 1. HERO */}
-      <section className="pt-32 pb-24 px-margin-mobile md:px-margin-desktop text-center">
-        <h1 className="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant mb-8">
+    <main className="min-h-screen bg-background text-on-background selection:bg-secondary/20">
+      <section className="pt-24 pb-20 px-margin-mobile md:px-margin-desktop text-center">
+        <p className="font-label-caps text-label-caps uppercase text-on-surface-variant mb-6">
           About Thi Bút
-        </h1>
-        <h2 className="font-display-lg text-display-lg md:text-[80px] leading-[0.9] text-on-background max-w-4xl mx-auto mb-12">
+        </p>
+        <h1 className="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-on-background max-w-4xl mx-auto mb-8">
           Words carry meaning. <br className="hidden md:block" />
           Strokes give them character.
-        </h2>
-        <p className="font-body text-body-xl md:text-[24px] text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
+        </h1>
+        <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
           Thi Bút transforms names, words, and personal stories into meaningful calligraphy-inspired art.
         </p>
       </section>
 
-      {/* 2. WHAT DOES THI BÚT MEAN? */}
-      <section className="py-24 bg-surface px-margin-mobile md:px-margin-desktop">
+      <section className="py-24 bg-surface-container-low border-y border-surface-variant px-margin-mobile md:px-margin-desktop">
         <div className="max-w-container-max mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           <div>
-            <h3 className="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant mb-6">
-              What does Thi Bút mean?
-            </h3>
+            <h2 className="font-label-caps text-label-caps uppercase text-on-surface-variant mb-6">
+              What does <span lang="vi">Thi Bút</span> mean?
+            </h2>
             <div className="space-y-8">
               <div>
-                <p className="font-display-md text-display-md mb-2">Thi / 詩</p>
-                <p className="font-body text-body-lg text-on-surface-variant">Poetry</p>
+                <p className="font-headline-md text-headline-md text-primary mb-2">
+                  <span lang="vi">Thi</span> / <span lang="zh">詩</span>
+                </p>
+                <p className="font-body-lg text-body-lg text-on-surface-variant">
+                  Poetry
+                </p>
               </div>
-              <div className="h-px w-16 bg-surface-variant" />
+              <div className="h-px w-16 bg-outline-variant" />
               <div>
-                <p className="font-display-md text-display-md mb-2">Bút / 筆</p>
-                <p className="font-body text-body-lg text-on-surface-variant">Pen · Brush</p>
+                <p className="font-headline-md text-headline-md text-primary mb-2">
+                  <span lang="vi">Bút</span> / <span lang="zh">筆</span>
+                </p>
+                <p className="font-body-lg text-body-lg text-on-surface-variant">
+                  Pen · Brush
+                </p>
               </div>
             </div>
-            <p className="font-body text-body-lg mt-12 leading-relaxed">
-              Together, Thi Bút evokes the poetic brush — words expressed through artistic strokes.
+            <p className="font-body-lg text-body-lg mt-12 text-on-surface">
+              Together, <span lang="vi">Thi Bút</span> evokes the poetic brush — words expressed through artistic strokes.
             </p>
           </div>
-          <div className="relative aspect-square md:aspect-[4/3] bg-background rounded-3xl overflow-hidden flex items-center justify-center p-12">
-             <div className="text-center">
-               <span className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.2em]">Words Become Art.</span>
-               <p className="font-body text-body-lg mt-6 max-w-sm text-on-surface-variant">
-                 A name can carry identity. A phrase can carry conviction. A family name can carry history. Thi Bút gives those words a visual form.
-               </p>
-             </div>
+          <div className="bg-surface-container-lowest border border-surface-variant rounded-lg flex items-center justify-center p-12">
+            <div className="text-center">
+              <span className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.2em]">
+                Words Become Art.
+              </span>
+              <p className="font-body-lg text-body-lg mt-6 max-w-sm text-on-surface-variant">
+                A name can carry identity. A phrase can carry conviction. A family name can carry history. Thi Bút gives those words a visual form.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 3. HOW IT WORKS */}
-      <section className="py-32 px-margin-mobile md:px-margin-desktop">
+      <section className="py-24 px-margin-mobile md:px-margin-desktop">
         <div className="max-w-container-max mx-auto">
-          <h3 className="font-label-caps text-label-caps uppercase tracking-widest text-center text-on-surface-variant mb-20">
+          <h2 className="font-label-caps text-label-caps uppercase text-center text-on-surface-variant mb-16">
             How it works
-          </h3>
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
             {[
               {
@@ -83,88 +91,94 @@ export default function AboutPage() {
               {
                 step: "04",
                 title: "Make It Yours",
-                desc: "Create artwork for digital use, display, or wearable products as those options become available.",
+                desc: "Create artwork for digital use, fine prints, or wearable garments.",
               },
-            ].map((item, i) => (
-              <div key={i} className="flex flex-col">
-                <span className="font-display-sm text-display-sm text-secondary mb-6">{item.step}</span>
-                <h4 className="font-display-md text-title-lg mb-4">{item.title}</h4>
-                <p className="font-body text-body-md text-on-surface-variant leading-relaxed">{item.desc}</p>
+            ].map((item) => (
+              <div key={item.step} className="flex flex-col">
+                <span className="font-headline-sm text-headline-sm text-secondary mb-4">
+                  {item.step}
+                </span>
+                <h3 className="font-headline-sm text-headline-sm text-primary mb-3">
+                  {item.title}
+                </h3>
+                <p className="font-body-md text-body-md text-on-surface-variant">
+                  {item.desc}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 4. CULTURAL INTEGRITY */}
-      <section className="py-32 bg-on-background text-background px-margin-mobile md:px-margin-desktop">
-        <div className="max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+      <section className="py-24 bg-tertiary-container text-on-tertiary px-margin-mobile md:px-margin-desktop">
+        <div className="max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
-            <h2 className="font-display-lg text-display-md mb-8">Meaning Before Style.</h2>
-            <p className="font-body text-body-lg text-surface-variant leading-relaxed mb-8">
+            <h2 className="font-headline-md text-headline-md mb-6">
+              Meaning Before Style.
+            </h2>
+            <p className="font-body-lg text-body-lg text-on-tertiary/85 mb-6">
               Beautiful lettering means little if the words are wrong.
             </p>
-            <p className="font-body text-body-md text-surface-variant leading-relaxed mb-8">
-              Thi Bút distinguishes between phonetic transliteration, literal translation, natural phrasing, poetic idiom, and cultural artistic rendering — and shows you what a phrase means before it becomes artwork.
-            </p>
-            <p className="font-body text-body-md text-surface-variant leading-relaxed">
-              Thi Bút uses technology to assist interpretation and composition while keeping meaning, language, and design choices visible to the customer.
+            <p className="font-body-md text-body-md text-on-tertiary-container mb-6">
+              Thi Bút distinguishes between phonetic transliteration, literal translation, natural phrasing, poetic idiom, and cultural artistic rendering — and shows you what a phrase means before it becomes artwork (INV-011).
             </p>
           </div>
-          
-          <div className="bg-background/10 rounded-3xl p-8 md:p-12 border border-surface-variant/20">
-            <h3 className="font-label-caps text-label-caps text-surface-variant uppercase tracking-widest mb-10">
+
+          <div className="bg-on-tertiary/5 rounded-lg p-8 md:p-10 border border-on-tertiary/15">
+            <h3 className="font-label-caps text-label-caps text-on-tertiary-container uppercase mb-8">
               Example: The Name &ldquo;David&rdquo;
             </h3>
-            <div className="space-y-10">
+            <div className="space-y-8">
               <div>
-                <p className="font-label-caps text-label-caps text-surface-variant uppercase mb-2">Original</p>
-                <p className="font-display-md text-title-lg">David</p>
+                <p className="font-label-caps text-label-caps text-on-tertiary-container uppercase mb-2">
+                  Original
+                </p>
+                <p className="font-headline-sm text-headline-sm">David</p>
               </div>
-              <div className="h-px w-full bg-surface-variant/20" />
+              <div className="h-px w-full bg-on-tertiary/15" />
               <div>
-                <p className="font-label-caps text-label-caps text-surface-variant uppercase mb-2">Vietnamese Phonetic</p>
-                <p className="font-display-md text-title-lg">Đa-vít</p>
+                <p className="font-label-caps text-label-caps text-on-tertiary-container uppercase mb-2">
+                  Vietnamese Phonetic
+                </p>
+                <p lang="vi" className="font-headline-sm text-headline-sm">
+                  Đa-vít
+                </p>
               </div>
-              <div className="h-px w-full bg-surface-variant/20" />
+              <div className="h-px w-full bg-on-tertiary/15" />
               <div>
-                <p className="font-label-caps text-label-caps text-surface-variant uppercase mb-2">Sino-Vietnamese Artistic Rendering</p>
-                <p className="font-display-md text-[40px] leading-none mb-2">大衛</p>
-                <p className="font-body text-body-md text-surface-variant">Đại Vệ</p>
+                <p className="font-label-caps text-label-caps text-on-tertiary-container uppercase mb-2">
+                  Sino-Vietnamese Artistic Rendering
+                </p>
+                <p lang="zh" className="font-display-lg text-display-lg mb-2">
+                  大衛
+                </p>
+                <p lang="vi" className="font-body-md text-body-md text-on-tertiary-container">
+                  Đại Vệ
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5. BRAND PRINCIPLE */}
-      <section className="py-32 px-margin-mobile md:px-margin-desktop text-center">
-        <h2 className="font-display-md text-display-md md:text-display-lg max-w-4xl mx-auto leading-tight mb-8">
-          Your words remain yours.<br/>
-          Thi Bút helps you give them form.
-        </h2>
-        <p className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.2em]">
-          Meaning first. Strokes second.
-        </p>
-      </section>
-
-      {/* 6. FINAL CTA */}
-      <section className="py-32 bg-surface px-margin-mobile md:px-margin-desktop text-center border-t border-surface-variant">
-        <h2 className="font-display-md text-headline-lg mb-12">
+      <section className="py-24 bg-surface-container-low px-margin-mobile md:px-margin-desktop text-center border-t border-surface-variant">
+        <h2 className="font-headline-md text-headline-md text-primary mb-10">
           What will your words become?
         </h2>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-          <Link 
-            href="/create" 
-            className="inline-flex items-center justify-center bg-secondary text-on-secondary px-10 py-4 rounded-full font-label-caps text-label-caps uppercase hover:bg-secondary/90 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-1"
+          <Link
+            href="/create"
+            className="inline-flex items-center justify-center bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none"
           >
-            Create Your Thi Bút <ArrowRight className="w-5 h-5 ml-2" />
+            Create Your Thi Bút{" "}
+            <ArrowRight className="w-4 h-4 ml-2" aria-hidden="true" />
           </Link>
-          <Link 
-            href="/gallery" 
-            className="inline-flex items-center justify-center text-on-surface font-label-caps text-label-caps uppercase hover:text-secondary transition-colors"
+          <Link
+            href="/gallery"
+            className="inline-flex items-center justify-center text-on-surface font-label-caps text-label-caps uppercase hover:text-secondary transition-colors motion-reduce:transition-none"
           >
-            Explore the Gallery <ArrowRight className="w-4 h-4 ml-2" />
+            Explore the Gallery{" "}
+            <ArrowRight className="w-4 h-4 ml-2" aria-hidden="true" />
           </Link>
         </div>
       </section>

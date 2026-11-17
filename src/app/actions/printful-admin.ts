@@ -5,6 +5,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { PrintfulProvider } from "@/lib/fulfillment/PrintfulProvider";
 import type { ProviderProduct } from "@/lib/fulfillment/types";
+import { formatMinor } from "@/lib/money";
 import { PricingValidationError } from "@/lib/pricing/quote";
 import { CatalogSyncService } from "@/lib/services/CatalogSyncService";
 import { requireAdmin } from "@/utils/admin/auth";
@@ -32,7 +33,8 @@ export interface ImportedProductStatusEntry {
   id: string;
   slug: string;
   status: string;
-  priceMinor?: number;
+  priceMinor?: string;
+  formattedCost?: string;
 }
 
 export async function getPrintfulMasterCatalog(
@@ -84,17 +86,24 @@ export async function getImportedProductsStatus(
 
     for (const p of importedProducts) {
       let minCostMinor: bigint | null = null;
+      let costCurrency = "USD";
       for (const v of p.variants) {
         for (const pv of v.providerVariants) {
           if (pv.costMinor > 0n) {
             if (minCostMinor === null || pv.costMinor < minCostMinor) {
               minCostMinor = pv.costMinor;
+              costCurrency = pv.currency || "USD";
             }
           }
         }
       }
 
-      const minPrice = minCostMinor !== null ? Number(minCostMinor) : undefined;
+      const serializedCostMinor =
+        minCostMinor !== null ? minCostMinor.toString() : undefined;
+      const formattedCost =
+        minCostMinor !== null
+          ? formatMinor(minCostMinor, costCurrency)
+          : undefined;
 
       for (const v of p.variants) {
         for (const mapping of v.providerVariants) {
@@ -103,7 +112,8 @@ export async function getImportedProductsStatus(
               id: p.id,
               slug: p.slug,
               status: p.status,
-              priceMinor: minPrice,
+              priceMinor: serializedCostMinor,
+              formattedCost,
             };
           }
         }

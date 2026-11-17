@@ -1,7 +1,7 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { MOCK_PRODUCTS } from "@/components/studio/ProductSelectionModal";
 import type { WordTreatment } from "@/components/studio/StudioInspector";
 import { StudioOnboardingModal } from "@/components/studio/StudioOnboardingModal";
 import { StudioWorkspace } from "@/components/studio/StudioWorkspace";
@@ -13,6 +13,13 @@ import {
   verifyAnonSessionToken,
 } from "@/lib/security/tokens";
 import { createClient } from "@/utils/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Personalization Session — Calligraphy Studio",
+  description:
+    "Customize your calligraphy brush strokes, cultural interpretation, and merchandise placement.",
+  robots: { index: false, follow: false },
+};
 
 const SessionUuidSchema = z
   .string()
@@ -44,11 +51,7 @@ export default async function CreateSessionPage({
   }>;
 }) {
   const [{ sessionId }, query] = await Promise.all([params, searchParams]);
-
-  let products = await getActiveProductsForStudio();
-  if (!products || products.length === 0) {
-    products = MOCK_PRODUCTS;
-  }
+  const products = await getActiveProductsForStudio();
 
   let verifiedSessionId: string | undefined;
   let initialComposition: DesignComposition | null = null;
@@ -98,7 +101,6 @@ export default async function CreateSessionPage({
           initialComposition = parsedComp.data;
         }
       } else {
-        // Do not expose or bind another visitor's session ID
         verifiedSessionId = undefined;
       }
     }

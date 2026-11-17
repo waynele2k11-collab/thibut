@@ -3,27 +3,21 @@ import { HeroInteractive } from "./HeroInteractive";
 
 export function Hero() {
   return (
-    <div className="w-full min-h-screen flex flex-col items-center bg-tb-ink text-tb-light-on-dark pt-12 md:pt-24 pb-16 px-4 sm:px-6 relative selection:bg-tb-red selection:text-white overflow-hidden">
-      
-      {/* Background Texture/Glow (Subtle) */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#2a2a2a] via-[#0B0B0B] to-[#0B0B0B] opacity-50 pointer-events-none" />
-
-      {/* 1. Hero Content & Headlines */}
+    <div className="w-full flex flex-col items-center bg-background text-on-background pt-12 md:pt-20 pb-section-gap px-margin-mobile md:px-margin-desktop relative selection:bg-secondary/20 overflow-hidden border-b border-surface-variant">
       <div className="relative z-20 flex flex-col items-center text-center max-w-3xl mx-auto mb-6">
-        <h1 className="font-vn-dancing text-6xl sm:text-7xl md:text-8xl font-bold tracking-normal mb-6">
-          Words Become <span className="text-transparent bg-clip-text bg-gradient-to-r from-tb-light-on-dark to-tb-muted">Art.</span>
+        <p className="font-label-caps text-label-caps uppercase text-secondary mb-4">
+          Thi Bút · Cultural Calligraphy Studio
+        </p>
+        <h1 className="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-primary mb-5">
+          Words Become Art.
         </h1>
-        <p className="text-base sm:text-lg text-tb-muted leading-relaxed max-w-xl mx-auto font-light">
+        <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl mx-auto">
           Turn your name, words, or story into meaningful calligraphy and wearable art.
         </p>
       </div>
 
-      {/* 2. Primary Conversion Element */}
       <HeroCreateInput />
-
-      {/* 3. Interactive Stage (Tabs + Artwork Slider) */}
       <HeroInteractive />
-
     </div>
   );
 }

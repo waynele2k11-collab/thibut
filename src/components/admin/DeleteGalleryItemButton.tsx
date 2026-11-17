@@ -1,15 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 
-export function DeleteGalleryItemButton({ id, title }: { id: string; title: string }) {
+export function DeleteGalleryItemButton({
+  id,
+  title,
+}: {
+  id: string;
+  title: string;
+}) {
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
   const handleDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${title}"? This cannot be undone.`
+      )
+    ) {
       return;
     }
 
@@ -20,7 +30,7 @@ export function DeleteGalleryItemButton({ id, title }: { id: string; title: stri
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data: { error?: string } = await res.json();
         throw new Error(data.error || "Failed to delete");
       }
 
@@ -33,16 +43,17 @@ export function DeleteGalleryItemButton({ id, title }: { id: string; title: stri
 
   return (
     <button
+      type="button"
       onClick={handleDelete}
       disabled={isDeleting}
-      className={`p-2 rounded-lg transition-colors ${
-        isDeleting 
-          ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400" 
-          : "text-red-500 hover:bg-red-50 hover:text-red-700"
+      aria-label={`Delete ${title}`}
+      className={`p-2 rounded transition-colors motion-reduce:transition-none ${
+        isDeleting
+          ? "opacity-50 cursor-not-allowed bg-surface-container text-on-surface-variant"
+          : "text-error hover:bg-error-container hover:text-on-error-container"
       }`}
-      title="Delete Gallery Item"
     >
-      <Trash2 className="w-4 h-4" />
+      <Trash2 className="w-4 h-4" aria-hidden="true" />
     </button>
   );
 }

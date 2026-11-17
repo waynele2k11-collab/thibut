@@ -1,9 +1,12 @@
-/* eslint-disable @next/next/no-img-element */
-import prisma from "@/lib/prisma";
+import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
+import prisma from "@/lib/prisma";
+import { formatMinor } from "@/lib/money";
 import { DeleteGalleryItemButton } from "@/components/admin/DeleteGalleryItemButton";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { requireAdmin } from "@/utils/admin/auth";
 
 export default async function AdminGalleryPage() {
@@ -16,112 +19,113 @@ export default async function AdminGalleryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="font-display-md text-display-sm text-[#111111] mb-2">
+          <h1 className="font-headline-md text-headline-md text-primary mb-2">
             Gallery
           </h1>
-          <p className="font-body text-[#A09D96]">
+          <p className="font-body-md text-body-md text-on-surface-variant">
             Manage shoppable design catalog.
           </p>
         </div>
         <Link
           href="/admin/gallery/new"
-          className="inline-flex items-center justify-center bg-[#B3261E] text-white px-6 py-2.5 rounded-full font-label-caps text-xs tracking-wider uppercase hover:bg-[#9A2119] transition-colors"
+          className="inline-flex items-center justify-center bg-primary text-on-primary px-6 py-3 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none"
         >
-          <Plus className="w-4 h-4 mr-2" /> New Gallery Product
+          <Plus className="w-4 h-4 mr-2" aria-hidden="true" /> New Gallery Product
         </Link>
       </div>
 
-      <div className="bg-[#FCFAF6] border border-[#E5E0D8] rounded-xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#F4EFE6] border-b border-[#E5E0D8]">
-            <tr>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">
-                Image
-              </th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">
-                Title
-              </th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">
-                Product Name
-              </th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">
-                Price
-              </th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider">
-                Created
-              </th>
-              <th className="px-6 py-4 font-label-caps text-xs text-[#A09D96] uppercase tracking-wider text-right">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#E5E0D8]">
-            {galleryProducts.map((gp) => (
-              <tr
-                key={gp.id}
-                className="hover:bg-[#F4EFE6]/50 transition-colors group"
-              >
-                <td className="px-6 py-4">
-                  <div className="w-12 h-12 rounded-md overflow-hidden bg-[#EAE4DA]">
-                    {gp.productImageUrl && (
-                      <img
-                        src={gp.productImageUrl}
-                        alt={gp.title}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <Link
-                    href={`/admin/gallery/${gp.id}`}
-                    className="font-medium text-[#B3261E] hover:underline"
-                  >
-                    {gp.title}
-                  </Link>
-                </td>
-                <td className="px-6 py-4 text-sm text-[#4A4844]">
-                  {gp.productName}
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`inline-flex px-2 py-1 text-[10px] rounded-full font-medium ${
-                      gp.published
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    {gp.published ? "ACTIVE" : "DRAFT"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-[#4A4844]">
-                  ${(Number(gp.listedPriceMinor) / 100).toFixed(2)}
-                </td>
-                <td className="px-6 py-4 text-sm text-[#A09D96]">
-                  {format(new Date(gp.createdAt), "MMM d, yyyy")}
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end text-gray-400 hover:text-red-600 transition-colors">
-                    <DeleteGalleryItemButton id={gp.id} title={gp.title} />
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {galleryProducts.length === 0 && (
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-surface-container-low border-b border-surface-variant">
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-[#A09D96]">
-                  No gallery products found.
-                </td>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Image
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Title
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Product Name
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Status
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Price
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                  Created
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase text-right">
+                  Actions
+                </th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-surface-variant">
+              {galleryProducts.map((gp) => (
+                <tr
+                  key={gp.id}
+                  className="hover:bg-surface-container-low transition-colors motion-reduce:transition-none"
+                >
+                  <td className="px-6 py-4">
+                    <div className="w-12 h-12 rounded overflow-hidden bg-surface-container border border-surface-variant relative">
+                      {gp.productImageUrl && (
+                        <Image
+                          src={gp.productImageUrl}
+                          alt={gp.title}
+                          fill
+                          unoptimized
+                          className="object-cover"
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <Link
+                      href={`/admin/gallery/${gp.id}`}
+                      className="font-medium text-secondary hover:underline"
+                    >
+                      {gp.title}
+                    </Link>
+                  </td>
+                  <td className="px-6 py-4 font-body-md text-sm text-on-surface">
+                    {gp.productName}
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge variant={gp.published ? "default" : "outline"}>
+                      {gp.published ? "ACTIVE" : "DRAFT"}
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-4 font-body-md text-sm text-on-surface">
+                    {formatMinor(gp.listedPriceMinor, gp.currency)}
+                  </td>
+                  <td className="px-6 py-4 font-body-md text-sm text-on-surface-variant">
+                    {format(new Date(gp.createdAt), "MMM d, yyyy")}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end">
+                      <DeleteGalleryItemButton id={gp.id} title={gp.title} />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {galleryProducts.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-6 py-8 text-center font-body-md text-body-md text-on-surface-variant"
+                  >
+                    No gallery products found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 }

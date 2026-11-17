@@ -14,6 +14,11 @@ import {
   type NormalizedTransform,
 } from "@/lib/print/types";
 import { escapeXml } from "@/lib/security/xml";
+import {
+  PURE_WHITE_HEX,
+  SEAL_VERMILION_HEX,
+  STAGE_PAPER_HEX,
+} from "@/lib/studio/inkPalette";
 
 const STAGE_SIZE = 800;
 const SAFE_PADDING = 48;
@@ -34,6 +39,7 @@ export interface MainStageCanvasRef {
 }
 
 export interface MainStageCanvasProps {
+  stageRef?: React.Ref<MainStageCanvasRef>;
   viewMode: "RAW_ART" | "MOCKUP";
   artworkSvgUrl: string;
   fontFamily: string;
@@ -56,8 +62,8 @@ function clamp(val: number, min: number, max: number): number {
 
 function normalizeAngle(rawAngle: number): number {
   if (!Number.isFinite(rawAngle)) return 0;
-  const wrapped = ((((rawAngle % 360) + 540) % 360) - 180);
-  return clamp(Number(wrapped.toFixed(2)), -360, 360);
+  const wrapped = (((rawAngle % 360) + 540) % 360) - 180;
+  return clamp(Math.round(wrapped * 100) / 100, -360, 360);
 }
 
 function extractNormalizedTransform(
@@ -128,6 +134,7 @@ export const MainStageCanvas = forwardRef<
   MainStageCanvasProps
 >(function MainStageCanvas(
   {
+    stageRef,
     viewMode,
     artworkSvgUrl,
     fontFamily,
@@ -186,7 +193,7 @@ export const MainStageCanvas = forwardRef<
   }, []);
 
   useImperativeHandle(
-    ref,
+    stageRef ?? ref,
     () => ({
       getNormalizedTransform: (): StageNormalizedTransforms => {
         if (!canvas) {
@@ -251,7 +258,7 @@ export const MainStageCanvas = forwardRef<
     let isCancelled = false;
 
     if (viewMode === "RAW_ART" || !productImageUrl) {
-      canvas.backgroundColor = "#FAF7F2";
+      canvas.backgroundColor = STAGE_PAPER_HEX;
       canvas.backgroundImage = undefined;
       canvas.requestRenderAll();
     } else {
@@ -278,7 +285,7 @@ export const MainStageCanvas = forwardRef<
         })
         .catch(() => {
           if (isCancelled) return;
-          canvas.backgroundColor = "#FAF7F2";
+          canvas.backgroundColor = STAGE_PAPER_HEX;
           canvas.backgroundImage = undefined;
           canvas.requestRenderAll();
         });
@@ -352,10 +359,10 @@ export const MainStageCanvas = forwardRef<
             angle: appliedAngle,
             selectable: !lockedRef.current,
             evented: !lockedRef.current,
-            cornerColor: "#B71032",
+            cornerColor: SEAL_VERMILION_HEX,
             cornerStyle: "circle",
             transparentCorners: false,
-            borderColor: "#B71032",
+            borderColor: SEAL_VERMILION_HEX,
             globalCompositeOperation: "source-over",
           });
 
@@ -429,7 +436,7 @@ export const MainStageCanvas = forwardRef<
 
     const rawSealText = (sealText || "印").trim() || "印";
     const safeSealText = escapeXml(rawSealText);
-    const safeSealColor = escapeXml(sealColor || "#B71032");
+    const safeSealColor = escapeXml(sealColor || SEAL_VERMILION_HEX);
     const cleanSealFont =
       (sealFontFamily || DEFAULT_SEAL_FONT_FAMILY).replace(
         /[^A-Za-z0-9\u00C0-\u024F\u1E00-\u1EFF _-]/g,
@@ -442,7 +449,7 @@ export const MainStageCanvas = forwardRef<
     const renderSeal = () => {
       if (isCancelled) return;
 
-      const sealSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="5" y="5" width="90" height="90" fill="${safeSealColor}" stroke="none"/><rect x="9" y="9" width="82" height="82" fill="none" stroke="#FFFFFF" stroke-width="2"/><text x="50" y="54" font-family="${safeSealFont}" font-size="${fontSize}" font-weight="bold" fill="#FFFFFF" text-anchor="middle" dominant-baseline="middle">${safeSealText}</text></svg>`;
+      const sealSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="5" y="5" width="90" height="90" fill="${safeSealColor}" stroke="none"/><rect x="9" y="9" width="82" height="82" fill="none" stroke="${PURE_WHITE_HEX}" stroke-width="2"/><text x="50" y="54" font-family="${safeSealFont}" font-size="${fontSize}" font-weight="bold" fill="${PURE_WHITE_HEX}" text-anchor="middle" dominant-baseline="middle">${safeSealText}</text></svg>`;
 
       const blob = new Blob([sealSvg], { type: "image/svg+xml" });
       const blobUrl = URL.createObjectURL(blob);
@@ -485,10 +492,10 @@ export const MainStageCanvas = forwardRef<
             originY: "center",
             selectable: !lockedRef.current,
             evented: !lockedRef.current,
-            cornerColor: "#B71032",
+            cornerColor: SEAL_VERMILION_HEX,
             cornerStyle: "circle",
             transparentCorners: false,
-            borderColor: "#B71032",
+            borderColor: SEAL_VERMILION_HEX,
             globalCompositeOperation: "source-over",
           });
 

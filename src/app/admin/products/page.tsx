@@ -1,7 +1,10 @@
-import { getPrintfulMasterCatalog, getImportedProductsStatus } from "@/app/actions/printful-admin";
-import { ProductsGrid } from "./ProductsGrid";
-import { RefreshCcw } from "lucide-react";
 import Link from "next/link";
+import { RefreshCcw } from "lucide-react";
+import {
+  getImportedProductsStatus,
+  getPrintfulMasterCatalog,
+} from "@/app/actions/printful-admin";
+import { ProductsGrid } from "./ProductsGrid";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +14,16 @@ export default async function AdminProductsPage() {
 
   if (!catalogRes.success) {
     return (
-      <div className="p-8">
-        <h1 className="text-3xl font-display text-red-600 mb-4">Error Loading Catalog</h1>
-        <p>{catalogRes.error}</p>
-        <p className="text-sm text-gray-500 mt-2">Ensure your Printful API token is valid and you have internet access.</p>
+      <div className="p-8 bg-surface-container-lowest border border-surface-variant rounded-lg">
+        <h1 className="font-headline-md text-headline-md text-error mb-3">
+          Error Loading Catalog
+        </h1>
+        <p className="font-body-md text-body-md text-on-surface">
+          {catalogRes.error}
+        </p>
+        <p className="font-body-md text-sm text-on-surface-variant mt-2">
+          Ensure your Printful API token is valid and network connectivity is available.
+        </p>
       </div>
     );
   }
@@ -24,15 +33,20 @@ export default async function AdminProductsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-display text-[#111111]">Printful Catalog Sync</h1>
-          <p className="text-[#666666] mt-1 font-body">
-            Browse the live Printful catalog. Import new blanks to sync their high-resolution assets into your database.
+          <h1 className="font-headline-md text-headline-md text-primary">
+            Printful Catalog Sync
+          </h1>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-1">
+            Browse the live Printful catalog. Import blanks to sync high-resolution mockups and variants into PostgreSQL.
           </p>
         </div>
-        <Link href="/admin/products" className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-md hover:bg-gray-50 text-sm font-medium transition-colors">
-          <RefreshCcw className="w-4 h-4" />
+        <Link
+          href="/admin/products"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded font-label-caps text-label-caps uppercase text-primary hover:bg-surface-container-high transition-colors motion-reduce:transition-none w-fit"
+        >
+          <RefreshCcw className="w-4 h-4" aria-hidden="true" />
           Refresh Status
         </Link>
       </div>

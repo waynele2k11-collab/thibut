@@ -18,7 +18,10 @@ import {
   PRINT_MASTER_PIXELS_PER_METER,
   PRINT_MASTER_WIDTH,
 } from "@/lib/print/types";
-import { DEFAULT_SEAL_FONT_FAMILY } from "@/lib/fonts/fontCatalog";
+import {
+  DEFAULT_SEAL_FONT_FAMILY,
+  isUnverifiedLegacyArchiveFile,
+} from "@/lib/fonts/fontCatalog";
 import { signDownloadToken, verifyDownloadToken } from "@/lib/security/tokens";
 import { stripe } from "@/lib/stripe";
 
@@ -822,6 +825,17 @@ function createQaE2EDatabase() {
           ) ?? null
         );
       },
+      async findMany(args: { where?: { orderId?: string; status?: string } }) {
+        return Array.from(state.refunds.values()).filter((r) => {
+          if (args.where?.orderId && r.orderId !== args.where.orderId) {
+            return false;
+          }
+          if (args.where?.status && r.status !== args.where.status) {
+            return false;
+          }
+          return true;
+        });
+      },
       async create(args: { data: Omit<QaRefundRow, "id"> }) {
         const row: QaRefundRow = {
           id: crypto.randomUUID(),
@@ -867,14 +881,30 @@ function createQaE2EDatabase() {
         state.creatorEarnings.set(row.id, row);
         return row;
       },
+      async findMany(args: { where?: { orderItemId?: { in: string[] } } }) {
+        return Array.from(state.creatorEarnings.values()).filter((ce) =>
+          args.where?.orderItemId?.in
+            ? args.where.orderItemId.in.includes(ce.orderItemId)
+            : true
+        );
+      },
+      async update(args: {
+        where: { id: string };
+        data: Partial<QaCreatorEarningRow>;
+      }) {
+        const existing = state.creatorEarnings.get(args.where.id);
+        if (!existing) throw new Error("CreatorEarning not found");
+        Object.assign(existing, args.data);
+        return existing;
+      },
       async updateMany(args: {
         where: { orderItemId: { in: string[] } };
-        data: { status: string };
+        data: Partial<QaCreatorEarningRow>;
       }) {
         let count = 0;
         for (const ce of state.creatorEarnings.values()) {
           if (args.where.orderItemId.in.includes(ce.orderItemId)) {
-            ce.status = args.data.status;
+            Object.assign(ce, args.data);
             count++;
           }
         }
@@ -1641,7 +1671,49 @@ test("QA End-to-End Contract: Quote -> Checkout + Frozen Snapshot -> Stripe Sett
       `Expected > 1000 rendered ink pixels in 4500x5400 master, got ${inkPixels}`
     );
 
-    // 6. Process signed Stripe charge.refunded webhook -> reverses earnings, revokes license, balances ledger, and revokes download (403)!
+    // 5b. Partial refund (500n of 1499n) MUST keep LicenseGrant active and /api/download returning 200 (R-102)!
+    const partialRefundRes = await stripeWebhookPost(
+      buildSignedStripeWebhook({
+        id: "evt_qa_charge_partial_refund_001",
+        object: "event",
+        type: "charge.refunded",
+        data: {
+          object: {
+            id: "ch_qa_e2e_001",
+            payment_intent: "pi_qa_e2e_001",
+            amount: 1499,
+            amount_refunded: 500,
+            currency: "usd",
+            refunds: {
+              data: [
+                {
+                  id: "re_qa_partial_500",
+                  amount: 500,
+                  reason: "requested_by_customer",
+                },
+              ],
+            },
+          },
+        },
+      })
+    );
+    assert.equal(partialRefundRes.status, 200);
+    assert.equal(
+      qaDb.state.orders.get(createdOrder.id)?.status,
+      "PARTIALLY_REFUNDED"
+    );
+    const partialDownloadRes = await downloadGet(
+      new Request(
+        `https://thibut.com/api/download?token=${encodeURIComponent(downloadToken)}`
+      )
+    );
+    assert.equal(
+      partialDownloadRes.status,
+      200,
+      "Partial refund must NOT revoke active digital download license (R-102)"
+    );
+
+    // 6. Process full remaining Stripe charge.refunded webhook (500 + 999 = 1499) -> reverses earnings, revokes license, balances ledger, and revokes download (403)!
     const refundRes = await stripeWebhookPost(
       buildSignedStripeWebhook({
         id: "evt_qa_charge_refunded_001",
@@ -1657,8 +1729,13 @@ test("QA End-to-End Contract: Quote -> Checkout + Frozen Snapshot -> Stripe Sett
             refunds: {
               data: [
                 {
+                  id: "re_qa_partial_500",
+                  amount: 500,
+                  reason: "requested_by_customer",
+                },
+                {
                   id: "re_qa_e2e_001",
-                  amount: 1499,
+                  amount: 999,
                   reason: "requested_by_customer",
                 },
               ],
@@ -1674,7 +1751,7 @@ test("QA End-to-End Contract: Quote -> Checkout + Frozen Snapshot -> Stripe Sett
     const refundedEarning = Array.from(qaDb.state.creatorEarnings.values())[0]!;
     assert.equal(refundedOrder.status, "REFUNDED");
     assert.equal(refundedOrder.paymentStatus, "REFUNDED");
-    assert.equal(qaDb.state.refunds.size, 1);
+    assert.equal(qaDb.state.refunds.size, 2);
     assert.equal(refundedEarning.status, "REVERSED");
     assert.ok(
       refundedGrant.revokedAt instanceof Date,
@@ -1682,7 +1759,7 @@ test("QA End-to-End Contract: Quote -> Checkout + Frozen Snapshot -> Stripe Sett
     );
 
     // Reversal ledger postings must sum to 0n and bring net account balances back to 0n
-    assert.equal(qaDb.state.ledgerTransactions.size, 2);
+    assert.equal(qaDb.state.ledgerTransactions.size, 3);
     for (const txRow of qaDb.state.ledgerTransactions.values()) {
       const postings = qaDb.state.ledgerPostings.filter(
         (p) => p.transactionId === txRow.id
@@ -1725,5 +1802,348 @@ test("QA End-to-End Contract: Quote -> Checkout + Frozen Snapshot -> Stripe Sett
     } else {
       delete process.env.RESEND_API_KEY;
     }
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUITE 3: ROUND-2 REGRESSION GATE (R-000..R-602)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function collectTsFiles(dir: string): string[] {
+  const results: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...collectTsFiles(fullPath));
+    } else if (/\.ts$/.test(entry.name)) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
+test("QA Round-2 Regression Gate: fonts quarantine & tracing, zero mock/float/hex violations, API <300 LOC, CI/env/vercel/migrations/E2E/Postgres contracts", async () => {
+  // 1. R-107: public/fonts removed; assets/fonts holds only verified fonts; next.config.ts narrows tracing to 3 render routes
+  const publicFontsDir = path.join(REPO_ROOT, "public", "fonts");
+  assert.equal(
+    fs.existsSync(publicFontsDir),
+    false,
+    "public/fonts must not exist (R-107)"
+  );
+
+  const assetsFontsDir = path.join(REPO_ROOT, "assets", "fonts");
+  assert.equal(
+    fs.existsSync(assetsFontsDir),
+    true,
+    "assets/fonts must exist (R-107)"
+  );
+  const assetFontFiles = fs
+    .readdirSync(assetsFontsDir)
+    .filter((f) => /\.(ttf|otf|woff2)$/i.test(f));
+  assert.ok(
+    assetFontFiles.length >= 14,
+    `Expected >= 14 approved font files in assets/fonts, got ${assetFontFiles.length}`
+  );
+  for (const requiredFont of [
+    "UtmThuphapThienAn.ttf",
+    "MaShanZheng-Regular.ttf",
+    "YujiBoku-Regular.ttf",
+    "NanumBrushScript-Regular.ttf",
+  ]) {
+    assert.ok(
+      assetFontFiles.includes(requiredFont),
+      `assets/fonts must contain approved font ${requiredFont}`
+    );
+  }
+  for (const fileName of assetFontFiles) {
+    assert.equal(
+      isUnverifiedLegacyArchiveFile(fileName),
+      false,
+      `Unverified legacy archive font "${fileName}" must not reside in assets/fonts (R-107)`
+    );
+  }
+
+  const nextConfigMod = await import("../next.config");
+  const nextConfig = nextConfigMod.default;
+  assert.deepEqual(
+    nextConfig.outputFileTracingIncludes,
+    {
+      "/api/print-master": ["./assets/fonts/**/*"],
+      "/api/download": ["./assets/fonts/**/*"],
+      "/api/inngest": ["./assets/fonts/**/*"],
+    },
+    "next.config.ts must trace ./assets/fonts/**/* strictly into /api/print-master, /api/download, and /api/inngest (R-107)"
+  );
+
+  // 2. R-108 & R-506: Zero MOCK_, aida-public, Number(*Minor), or toFixed(2) anywhere in src/
+  const allSrcFiles = collectSourceFiles(SRC_ROOT);
+  const floatMoneyRegex = /Number\([^)]*Minor\)|toFixed\(2\)/;
+  for (const filePath of allSrcFiles) {
+    const rel = path.relative(REPO_ROOT, filePath);
+    const content = fs.readFileSync(filePath, "utf8");
+
+    assert.equal(
+      content.includes("MOCK_"),
+      false,
+      `Banned mock identifier MOCK_ found in ${rel} (R-108)`
+    );
+    assert.equal(
+      content.includes("aida-public"),
+      false,
+      `Expired hotlinked Stitch URL aida-public found in ${rel} (R-108)`
+    );
+    assert.equal(
+      floatMoneyRegex.test(content),
+      false,
+      `Float money conversion Number(*Minor) or toFixed(2) found in ${rel} (R-506)`
+    );
+  }
+
+  // 3. R-201: Zero Number( in src/lib/pricing/
+  const pricingFiles = collectSourceFiles(
+    path.join(SRC_ROOT, "lib", "pricing")
+  );
+  assert.ok(pricingFiles.length >= 2, "Expected pricing modules in src/lib/pricing");
+  for (const filePath of pricingFiles) {
+    const rel = path.relative(REPO_ROOT, filePath);
+    const content = fs.readFileSync(filePath, "utf8");
+    assert.equal(
+      content.includes("Number("),
+      false,
+      `Prohibited Number( conversion found in ${rel} (R-201)`
+    );
+  }
+
+  // 4. R-510: Every .ts file under src/app/api/ is < 300 lines
+  const apiTsFiles = collectTsFiles(path.join(SRC_ROOT, "app", "api"));
+  assert.ok(apiTsFiles.length >= 20, "Expected >= 20 API route .ts files");
+  for (const apiFile of apiTsFiles) {
+    const rel = path.relative(REPO_ROOT, apiFile);
+    const content = fs.readFileSync(apiFile, "utf8");
+    const lineCount = content.split(/\r?\n/).length;
+    assert.ok(
+      lineCount < 300,
+      `API module ${rel} has ${lineCount} lines; must be < 300 lines (R-510)`
+    );
+  }
+
+  // 5. R-501: Zero [# arbitrary hex classes, zero undefined bg-bg-/text-text-/ring-offset-bg- classes,
+  //    zero #RRGGBB inside className strings, and < 30 #RRGGBB literals outside globals.css
+  const uiFiles = [
+    ...collectSourceFiles(path.join(SRC_ROOT, "app")),
+    ...collectSourceFiles(path.join(SRC_ROOT, "components")),
+  ];
+  const globalsCssAbs = path.join(SRC_ROOT, "app", "globals.css");
+  const hexLiteralRegex = /#[0-9a-fA-F]{6}\b/g;
+  const classNameHexRegex =
+    /className\s*=\s*(?:"[^"]*#[0-9a-fA-F]{6}[^"]*"|'[^']*#[0-9a-fA-F]{6}[^']*'|`[^`]*#[0-9a-fA-F]{6}[^`]*`)/;
+  let totalUiHexLiterals = 0;
+
+  for (const filePath of uiFiles) {
+    const rel = path.relative(REPO_ROOT, filePath);
+    const content = fs.readFileSync(filePath, "utf8");
+
+    assert.equal(
+      content.includes("[#"),
+      false,
+      `Arbitrary Tailwind hex class "[#" found in ${rel} (R-501)`
+    );
+    for (const undefinedToken of ["bg-bg-", "text-text-", "ring-offset-bg-"]) {
+      assert.equal(
+        content.includes(undefinedToken),
+        false,
+        `Undefined token class "${undefinedToken}" found in ${rel} (R-501)`
+      );
+    }
+    assert.equal(
+      classNameHexRegex.test(content),
+      false,
+      `Raw #RRGGBB hex literal inside className attribute in ${rel} (R-501)`
+    );
+
+    if (filePath !== globalsCssAbs) {
+      const matches = content.match(hexLiteralRegex);
+      if (matches) {
+        totalUiHexLiterals += matches.length;
+      }
+    }
+  }
+  assert.ok(
+    totalUiHexLiterals < 30,
+    `Expected < 30 #RRGGBB literals across src/app & src/components (excl globals.css), got ${totalUiHexLiterals} (R-501)`
+  );
+
+  // 6. R-001, R-002, R-204, R-400, R-600, R-601: Repo config, migrations, E2E & Postgres integration suites
+  const gitignoreContent = fs.readFileSync(
+    path.join(REPO_ROOT, ".gitignore"),
+    "utf8"
+  );
+  assert.match(gitignoreContent, /^!\.env\.example$/m);
+  assert.match(gitignoreContent, /\.local-private-uploads/);
+  assert.match(gitignoreContent, /\.quarantined-fonts/);
+
+  const envExamplePath = path.join(REPO_ROOT, ".env.example");
+  assert.equal(fs.existsSync(envExamplePath), true, ".env.example must exist (R-002)");
+  const envExampleContent = fs.readFileSync(envExamplePath, "utf8");
+  for (const requiredEnvKey of [
+    "DATABASE_URL=",
+    "NEXT_PUBLIC_SUPABASE_URL=",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY=",
+    "STRIPE_SECRET_KEY=",
+    "STRIPE_WEBHOOK_SECRET=",
+    "PRINTFUL_API_KEY=",
+    "PRINTFUL_WEBHOOK_SECRET=",
+    "ADMIN_SESSION_SECRET=",
+    "ADMIN_MASTER_PASSWORD=",
+    "DEVICE_TRUST_SECRET=",
+    "DOWNLOAD_TOKEN_SECRET=",
+    "ANON_SESSION_SECRET=",
+    "FULFILLMENT_SECRET_KEY=",
+    "BLOB_READ_WRITE_TOKEN=",
+    "RESEND_API_KEY=",
+    "INNGEST_SIGNING_KEY=",
+    "INNGEST_EVENT_KEY=",
+    "OPENAI_API_KEY=",
+    "FAL_KEY=",
+  ]) {
+    assert.ok(
+      envExampleContent.includes(requiredEnvKey),
+      `.env.example must document ${requiredEnvKey} (R-002)`
+    );
+  }
+
+  const pkgJson = JSON.parse(
+    fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8")
+  ) as {
+    engines?: { node?: string };
+    scripts?: Record<string, string>;
+  };
+  assert.equal(pkgJson.engines?.node, ">=22.15");
+  assert.equal(pkgJson.scripts?.postinstall, "prisma generate");
+
+  const ciYamlPath = path.join(REPO_ROOT, ".github", "workflows", "ci.yml");
+  assert.equal(fs.existsSync(ciYamlPath), true, ".github/workflows/ci.yml must exist (R-001)");
+  const ciYaml = fs.readFileSync(ciYamlPath, "utf8");
+  assert.match(ciYaml, /npm ci/);
+  assert.match(ciYaml, /npx prisma generate/);
+  assert.match(ciYaml, /npm run typecheck/);
+  assert.match(ciYaml, /npx eslint --max-warnings=0/);
+  assert.match(ciYaml, /npm test/);
+  assert.match(ciYaml, /npm run build/);
+  assert.match(ciYaml, /postgres:16/);
+  assert.match(ciYaml, /npx prisma migrate deploy/);
+  assert.match(ciYaml, /npm run test:db/);
+
+  const vercelJsonPath = path.join(REPO_ROOT, "vercel.json");
+  assert.equal(fs.existsSync(vercelJsonPath), true, "vercel.json must exist (R-400)");
+  const vercelConfig = JSON.parse(fs.readFileSync(vercelJsonPath, "utf8")) as {
+    functions?: Record<string, { memory?: number; maxDuration?: number }>;
+  };
+  for (const renderFn of [
+    "src/app/api/print-master/route.ts",
+    "src/app/api/download/route.ts",
+    "src/app/api/inngest/route.ts",
+  ]) {
+    assert.equal(
+      vercelConfig.functions?.[renderFn]?.memory,
+      3009,
+      `${renderFn} must configure 3009 MB memory in vercel.json (R-400)`
+    );
+    assert.equal(
+      vercelConfig.functions?.[renderFn]?.maxDuration,
+      60,
+      `${renderFn} must configure maxDuration=60 in vercel.json (R-400)`
+    );
+  }
+
+  const migration0002Path = path.join(
+    REPO_ROOT,
+    "prisma/migrations/0002_reaudit_hardening/migration.sql"
+  );
+  assert.equal(
+    fs.existsSync(migration0002Path),
+    true,
+    "prisma/migrations/0002_reaudit_hardening/migration.sql must exist (R-204)"
+  );
+  const migration0002Sql = fs.readFileSync(migration0002Path, "utf8");
+  assert.match(
+    migration0002Sql,
+    /CREATE TRIGGER enforce_ledger_posting_append_only[\s\S]*BEFORE UPDATE OR DELETE ON "LedgerPosting"/
+  );
+  assert.match(
+    migration0002Sql,
+    /CREATE TRIGGER enforce_ledger_transaction_append_only[\s\S]*BEFORE UPDATE OR DELETE ON "LedgerTransaction"/
+  );
+  assert.match(migration0002Sql, /ADD COLUMN "attempts" INTEGER/);
+  assert.match(migration0002Sql, /ADD COLUMN "webEmbedAllowed" BOOLEAN/);
+
+  const e2eSmokePath = path.join(REPO_ROOT, "e2e", "smoke.spec.ts");
+  assert.equal(fs.existsSync(e2eSmokePath), true, "e2e/smoke.spec.ts must exist (R-601)");
+  const e2eSmokeSrc = fs.readFileSync(e2eSmokePath, "utf8");
+  assert.match(e2eSmokeSrc, /securitypolicyviolation/);
+  assert.match(e2eSmokeSrc, /\/auth\/login/);
+  assert.match(e2eSmokeSrc, /Escape/);
+
+  const pgIntegrationPath = path.join(
+    REPO_ROOT,
+    "tests",
+    "postgres-integration.integration.ts"
+  );
+  assert.equal(
+    fs.existsSync(pgIntegrationPath),
+    true,
+    "tests/postgres-integration.integration.ts must exist (R-600)"
+  );
+  const pgIntegrationSrc = fs.readFileSync(pgIntegrationPath, "utf8");
+  assert.match(pgIntegrationSrc, /enforce_ledger_posting_append_only/);
+  assert.match(pgIntegrationSrc, /enforce_ledger_transaction_append_only/);
+  assert.match(pgIntegrationSrc, /Promise\.all/);
+
+  // 7. Verify all 5 Inngest functions registered in /api/inngest/route.ts, instrumentation.ts boot validation,
+  //    zero eslint-disable comments, and clean globals.css @font-face rules
+  const inngestLibMod = await import("@/lib/inngest");
+  assert.equal(
+    inngestLibMod.inngestFunctions.length,
+    5,
+    "inngestFunctions must contain all 5 Inngest functions (R-105, R-203, R-301)"
+  );
+  const inngestRouteSrc = fs.readFileSync(
+    path.join(SRC_ROOT, "app", "api", "inngest", "route.ts"),
+    "utf8"
+  );
+  assert.match(
+    inngestRouteSrc,
+    /functions:\s*inngestFunctions/,
+    "/api/inngest/route.ts must pass inngestFunctions to serve()"
+  );
+
+  const instrumentationPath = path.join(SRC_ROOT, "instrumentation.ts");
+  assert.equal(
+    fs.existsSync(instrumentationPath),
+    true,
+    "src/instrumentation.ts must exist for boot-time env validation (R-002 / R-303)"
+  );
+  const instrumentationSrc = fs.readFileSync(instrumentationPath, "utf8");
+  assert.match(instrumentationSrc, /validateServerEnv/);
+
+  const globalsCssSrc = fs.readFileSync(globalsCssAbs, "utf8");
+  assert.equal(
+    globalsCssSrc.includes("url('/fonts/"),
+    false,
+    "globals.css must not reference deleted /fonts/* static paths (R-107)"
+  );
+  assert.ok(
+    globalsCssSrc.includes("/api/fonts/utm-thuphap-thien-an"),
+    "globals.css must load UTM ThuPhap Thien An via gated /api/fonts/[id]"
+  );
+
+  for (const filePath of allSrcFiles) {
+    const rel = path.relative(REPO_ROOT, filePath);
+    const content = fs.readFileSync(filePath, "utf8");
+    assert.equal(
+      content.includes("eslint-disable"),
+      false,
+      `eslint-disable suppression is prohibited in ${rel}`
+    );
   }
 });

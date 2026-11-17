@@ -12,26 +12,30 @@ export function Footer() {
   ];
 
   return (
-    <footer className="bg-[#0B0B0B] text-[#F6F1E7] border-t border-[#222222] mt-auto">
+    <footer className="bg-tertiary-container text-on-tertiary border-t border-outline/30 mt-auto">
       <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-16">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 pb-12 border-b border-[#222222]">
-          {/* Brand Identity */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 pb-12 border-b border-outline/25">
           <div className="space-y-3 max-w-sm">
-            <Link href="/" className="font-serif text-2xl font-bold tracking-tight text-[#F6F1E7] hover:opacity-90 transition-opacity">
+            <Link
+              href="/"
+              className="font-headline-sm text-headline-sm text-on-tertiary hover:opacity-90 transition-opacity motion-reduce:transition-none"
+            >
               Thi Bút
             </Link>
-            <p className="text-[#A8A399] text-sm leading-relaxed">
+            <p className="font-body-md text-body-md text-on-tertiary-container">
               Preserving the art of the brush. Elevating modern expression.
             </p>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="flex flex-wrap gap-x-6 gap-y-3 font-mono text-xs uppercase tracking-widest text-[#A8A399]">
+          <nav
+            aria-label="Footer"
+            className="flex flex-wrap gap-x-6 gap-y-3 font-label-caps text-label-caps uppercase text-on-tertiary-container"
+          >
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="hover:text-[#F6F1E7] transition-colors relative after:content-[''] after:absolute after:bottom-[-2px] after:left-0 after:w-0 after:h-[1px] after:bg-[#B3261E] hover:after:w-full after:transition-all"
+                className="hover:text-on-tertiary transition-colors motion-reduce:transition-none relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-px after:bg-secondary hover:after:w-full after:transition-all motion-reduce:after:transition-none"
               >
                 {link.label}
               </Link>
@@ -39,10 +43,9 @@ export function Footer() {
           </nav>
         </div>
 
-        {/* Bottom Metadata & Copyright */}
-        <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-mono text-[#666666] tracking-wider">
+        <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 font-label-caps text-label-caps text-on-tertiary-container">
           <p>© 2026 Thi Bút Marketplace. All rights reserved.</p>
-          <p className="uppercase tracking-widest text-[10px] text-[#A8A399]/60">
+          <p className="uppercase tracking-widest opacity-80">
             Meaning Before Strokes · 詩筆
           </p>
         </div>
