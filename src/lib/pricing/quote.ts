@@ -39,6 +39,27 @@ export const DIGITAL_TOTAL_MINOR =
   DEFAULT_PERSONALIZATION_FEE_MINOR +
   DEFAULT_DIGITAL_PRODUCT_MINOR; // 1499n
 
+/**
+ * Authoritative Flat-Rate Shipping Schedule in USD minor units (R-202).
+ */
+export const US_FLAT_SHIPPING_MINOR = 599n;
+export const INTL_FLAT_SHIPPING_MINOR = 1199n;
+export const EXTRA_ITEM_SHIPPING_MINOR = 200n;
+
+export function calculateFlatShippingMinor(params: {
+  countryCode?: string | null;
+  physicalQuantity: number;
+}): bigint {
+  if (!Number.isInteger(params.physicalQuantity) || params.physicalQuantity <= 0) {
+    return 0n;
+  }
+  const normalizedCountry = (params.countryCode ?? "US").trim().toUpperCase();
+  const baseMinor =
+    normalizedCountry === "US" ? US_FLAT_SHIPPING_MINOR : INTL_FLAT_SHIPPING_MINOR;
+  const extraUnits = BigInt(params.physicalQuantity - 1);
+  return baseMinor + extraUnits * EXTRA_ITEM_SHIPPING_MINOR;
+}
+
 export interface QuoteProviderVariantInput {
   costMinor: bigint;
   currency?: string;
@@ -79,6 +100,7 @@ export interface ItemQuoteInput {
   isPersonalized?: boolean;
   licenseOffer?: QuoteLicenseOfferInput | null;
   shippingMinor?: bigint;
+  shippingCountry?: string | null;
   taxMinor?: bigint;
 }
 
@@ -89,6 +111,7 @@ export interface GalleryQuoteOptions {
   personalizationMinor?: bigint;
   licenseOffer?: QuoteLicenseOfferInput | null;
   shippingMinor?: bigint;
+  shippingCountry?: string | null;
   taxMinor?: bigint;
 }
 
@@ -147,8 +170,8 @@ export function parseUsdDecimalToMinor(raw: string | number | bigint): bigint {
   const dollars = BigInt(match[2]);
   const fraction = match[3] ?? "";
   const centsTwoDigits = fraction.slice(0, 2).padEnd(2, "0");
-  const thirdDigit = fraction.length >= 3 ? Number(fraction[2]) : 0;
-  const cents = BigInt(centsTwoDigits) + (thirdDigit >= 5 ? 1n : 0n);
+  const roundUpHalf = fraction.length >= 3 && (fraction[2] ?? "0") >= "5";
+  const cents = BigInt(centsTwoDigits) + (roundUpHalf ? 1n : 0n);
   return sign * (dollars * 100n + cents);
 }
 
@@ -409,8 +432,17 @@ export function calculateItemQuote(input: ItemQuoteInput): ItemQuote {
   const qty = BigInt(quantity);
   const placement = parsePlacement(input.placement ?? "front");
   const placementFeeMinor = PLACEMENT_FEE_MINOR[placement];
+  const resolvedShippingMinor =
+    input.shippingMinor !== undefined
+      ? input.shippingMinor
+      : input.shippingCountry
+        ? calculateFlatShippingMinor({
+            countryCode: input.shippingCountry,
+            physicalQuantity: quantity,
+          })
+        : 0n;
   const shippingMinor = validateNonNegativeFee(
-    input.shippingMinor ?? 0n,
+    resolvedShippingMinor,
     "INVALID_SHIPPING",
     "Shipping"
   );
@@ -532,9 +564,18 @@ export function calculateGalleryItemQuote(
   const subtotalMinor = artworkMinor + personalizationMinor + productMinor;
   const creatorRoyaltyMinor = artworkMinor;
   const platformMinor = subtotalMinor - creatorRoyaltyMinor - fulfillmentCostMinor;
+  const resolvedGalleryShippingMinor =
+    options?.shippingMinor !== undefined
+      ? options.shippingMinor
+      : options?.shippingCountry
+        ? calculateFlatShippingMinor({
+            countryCode: options.shippingCountry,
+            physicalQuantity: quantity,
+          })
+        : 0n;
   const shippingMinor = isDigital
     ? 0n
-    : validateNonNegativeFee(options?.shippingMinor ?? 0n, "INVALID_SHIPPING", "Shipping");
+    : validateNonNegativeFee(resolvedGalleryShippingMinor, "INVALID_SHIPPING", "Shipping");
   const taxMinor = validateNonNegativeFee(options?.taxMinor ?? 0n, "INVALID_TAX", "Tax");
   const totalMinor = subtotalMinor + shippingMinor + taxMinor;
 

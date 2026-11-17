@@ -22,6 +22,10 @@ import {
 import { interpretationEngine } from "@/lib/ai/InterpretationEngine";
 import { visualAI } from "@/lib/ai/visual-provider";
 import { CalligraphyService } from "@/lib/calligraphy/CalligraphyService";
+import {
+  sendDigitalDownloadEmail,
+  type DigitalDownloadEmailParams,
+} from "@/lib/email";
 import { PrintfulProvider } from "@/lib/fulfillment/PrintfulProvider";
 import type { FulfillmentOrderRequest } from "@/lib/fulfillment/types";
 import {
@@ -86,6 +90,23 @@ export type PersonalizationRequestedPayload = z.infer<
 export const OrderPlacedEventSchema = z.object({
   orderId: z.string().trim().min(1),
 });
+
+export const OrderPaidEventSchema = z.object({
+  orderId: z.string().trim().min(1),
+  orderNumber: z.string().trim().min(1),
+  buyerEmail: z.string().email().nullable().optional(),
+  hasPhysicalItems: z.boolean().default(false),
+  digitalItems: z
+    .array(
+      z.object({
+        orderItemId: z.string().trim().min(1),
+        productName: z.string().trim().min(1),
+      })
+    )
+    .default([]),
+});
+
+export type OrderPaidEventPayload = z.infer<typeof OrderPaidEventSchema>;
 
 const StripeNestedShippingSchema = z.object({
   name: z.string().trim().min(1).nullable().optional(),
@@ -812,3 +833,253 @@ export async function triggerOrderFulfillment(
   });
   return (result as { ids?: string[] }).ids?.[0] ?? "queued";
 }
+
+// ── 3. Durable Post-Commit Order Paid Side Effects (R-203) ───────────────────
+
+export async function executeDeliverOrderPaidEffects(params: {
+  event: { data: unknown };
+  step: InngestStepRunner;
+  emailSender?: (
+    input: DigitalDownloadEmailParams
+  ) => Promise<{ sent: boolean; downloadLink: string }>;
+}) {
+  const payload = OrderPaidEventSchema.parse(params.event.data);
+  const { step } = params;
+  const emailSender = params.emailSender ?? sendDigitalDownloadEmail;
+
+  const sentItemIds: string[] = [];
+  if (payload.buyerEmail && payload.digitalItems.length > 0) {
+    for (const item of payload.digitalItems) {
+      await step.run(`send-digital-email-${item.orderItemId}`, async () =>
+        emailSender({
+          email: payload.buyerEmail!,
+          orderNumber: payload.orderNumber,
+          orderId: payload.orderId,
+          orderItemId: item.orderItemId,
+          productName: item.productName,
+        })
+      );
+      sentItemIds.push(item.orderItemId);
+    }
+  }
+
+  return {
+    orderId: payload.orderId,
+    emailsDispatched: sentItemIds.length,
+    sentItemIds,
+  };
+}
+
+export const deliverOrderPaidEffects = inngest.createFunction(
+  {
+    id: "deliver-order-paid-effects",
+    name: "Deliver Order Paid Effects",
+    retries: 5,
+    triggers: [{ event: "order/paid" }],
+  },
+  async ({ event, step }) =>
+    executeDeliverOrderPaidEffects({
+      event: { data: event.data },
+      step: {
+        run: async <T>(id: string, fn: () => Promise<T> | T): Promise<T> =>
+          (await step.run(id, fn)) as T,
+      },
+    })
+);
+
+// ── 4. Hourly Abandoned Pending Order Cleanup Cron (R-105) ───────────────────
+
+export const PENDING_ORDER_TTL_MS = 24 * 60 * 60 * 1000;
+
+export async function executeCleanupExpiredPendingOrders(params: {
+  step: InngestStepRunner;
+  now?: Date;
+}) {
+  const { step } = params;
+  const now = params.now ?? new Date();
+  const staleCutoff = new Date(now.getTime() - PENDING_ORDER_TTL_MS);
+
+  return step.run("cancel-expired-pending-orders", async () => {
+    const expiredOrders = await prisma.order.findMany({
+      where: {
+        status: "PENDING_PAYMENT",
+        createdAt: { lt: staleCutoff },
+      },
+      include: {
+        items: {
+          include: {
+            personalizationVersion: true,
+          },
+        },
+      },
+      take: 250,
+    });
+
+    if (expiredOrders.length === 0) {
+      return { cancelledOrders: 0, unlockedSessions: 0, revertedCarts: 0 };
+    }
+
+    const orderIds = expiredOrders.map((o) => o.id);
+    const sessionIds = Array.from(
+      new Set(
+        expiredOrders.flatMap((o) =>
+          o.items
+            .map((i) => i.personalizationVersion?.sessionId)
+            .filter((id): id is string => typeof id === "string" && id.length > 0)
+        )
+      )
+    );
+
+    const linkedQuotes = await prisma.priceQuote.findMany({
+      where: { orderId: { in: orderIds } },
+      select: { cartId: true },
+    });
+    const cartIds = Array.from(
+      new Set(
+        linkedQuotes
+          .map((q) => q.cartId)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
+
+    return prisma.$transaction(async (tx) => {
+      const cancelled = await tx.order.updateMany({
+        where: {
+          id: { in: orderIds },
+          status: "PENDING_PAYMENT",
+        },
+        data: {
+          status: "CANCELLED",
+          paymentStatus: "CANCELLED",
+          cancelledAt: now,
+        },
+      });
+
+      const unlocked =
+        sessionIds.length > 0
+          ? await tx.personalizationSession.updateMany({
+              where: {
+                id: { in: sessionIds },
+                status: "CHECKED_OUT",
+              },
+              data: { status: "SELECTED" },
+            })
+          : { count: 0 };
+
+      const reverted =
+        cartIds.length > 0
+          ? await tx.cart.updateMany({
+              where: {
+                id: { in: cartIds },
+                status: "CHECKOUT",
+              },
+              data: { status: "ACTIVE" },
+            })
+          : { count: 0 };
+
+      return {
+        cancelledOrders: cancelled.count,
+        unlockedSessions: unlocked.count,
+        revertedCarts: reverted.count,
+      };
+    });
+  });
+}
+
+export const cleanupExpiredPendingOrders = inngest.createFunction(
+  {
+    id: "cleanup-expired-pending-orders",
+    name: "Cleanup Expired Pending Orders",
+    triggers: [{ cron: "0 * * * *" }],
+  },
+  async ({ step }) =>
+    executeCleanupExpiredPendingOrders({
+      step: {
+        run: async <T>(id: string, fn: () => Promise<T> | T): Promise<T> =>
+          (await step.run(id, fn)) as T,
+      },
+    })
+);
+
+// ── 5. Stale Unversioned Draft Session Cleanup Cron (R-301) ──────────────────
+
+export const STALE_DRAFT_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+export async function executeCleanupStaleDraftSessions(params: {
+  step: InngestStepRunner;
+  now?: Date;
+}) {
+  const { step } = params;
+  const now = params.now ?? new Date();
+  const staleCutoff = new Date(now.getTime() - STALE_DRAFT_SESSION_TTL_MS);
+
+  return step.run("delete-stale-draft-sessions", async () => {
+    const staleSessions = await prisma.personalizationSession.findMany({
+      where: {
+        status: "DRAFT",
+        createdAt: { lt: staleCutoff },
+        versions: { none: {} },
+      },
+      select: { id: true },
+      take: 500,
+    });
+
+    if (staleSessions.length === 0) {
+      return { deletedSessions: 0 };
+    }
+
+    const sessionIds = staleSessions.map((s) => s.id);
+    return prisma.$transaction(async (tx) => {
+      const comps = await tx.userComposition.findMany({
+        where: { sessionId: { in: sessionIds } },
+        select: { id: true },
+      });
+      if (comps.length > 0) {
+        const compIds = comps.map((c) => c.id);
+        await tx.userCompositionLayer.deleteMany({
+          where: { compositionId: { in: compIds } },
+        });
+        await tx.userComposition.deleteMany({
+          where: { id: { in: compIds } },
+        });
+      }
+      await tx.personalizationCandidate.deleteMany({
+        where: { sessionId: { in: sessionIds } },
+      });
+      await tx.interpretation.deleteMany({
+        where: { sessionId: { in: sessionIds } },
+      });
+      const deleted = await tx.personalizationSession.deleteMany({
+        where: {
+          id: { in: sessionIds },
+          status: "DRAFT",
+          versions: { none: {} },
+        },
+      });
+      return { deletedSessions: deleted.count };
+    });
+  });
+}
+
+export const cleanupStaleDraftSessions = inngest.createFunction(
+  {
+    id: "cleanup-stale-draft-sessions",
+    name: "Cleanup Stale Draft Sessions",
+    triggers: [{ cron: "15 3 * * *" }],
+  },
+  async ({ step }) =>
+    executeCleanupStaleDraftSessions({
+      step: {
+        run: async <T>(id: string, fn: () => Promise<T> | T): Promise<T> =>
+          (await step.run(id, fn)) as T,
+      },
+    })
+);
+
+export const inngestFunctions = [
+  generatePersonalizationJob,
+  processOrderFulfillment,
+  deliverOrderPaidEffects,
+  cleanupExpiredPendingOrders,
+  cleanupStaleDraftSessions,
+];

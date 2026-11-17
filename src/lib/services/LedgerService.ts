@@ -16,9 +16,14 @@ export type StandardLedgerAccountCode =
   | "FULFILLMENT_PAYABLE"
   | "TAX_PAYABLE"
   | "SHIPPING_REVENUE"
-  | "REFUND_EXPENSE";
+  | "REFUND_EXPENSE"
+  | "DISPUTE_RESERVE";
 
-export type LedgerAccountCategory = "ASSET" | "LIABILITY" | "REVENUE" | "EXPENSE";
+export type LedgerAccountCategory =
+  | "ASSET"
+  | "LIABILITY"
+  | "REVENUE"
+  | "EXPENSE";
 
 export interface LedgerAccountSpec {
   code: StandardLedgerAccountCode;
@@ -88,6 +93,13 @@ export const STANDARD_LEDGER_ACCOUNTS: Record<
     category: "EXPENSE",
     ownerType: "PLATFORM",
   },
+  DISPUTE_RESERVE: {
+    code: "DISPUTE_RESERVE",
+    name: "Dispute Reserve Hold",
+    prismaType: "REFUND_LIABILITY",
+    category: "EXPENSE",
+    ownerType: "PLATFORM",
+  },
 };
 
 export interface DraftLedgerPosting {
@@ -120,6 +132,10 @@ export interface OrderItemLedgerInput {
   totalMinor: bigint;
 }
 
+export interface RefundPostingOptions {
+  alreadyRefundedMinor?: bigint;
+}
+
 /**
  * Minimal structural subset of Prisma.TransactionClient used by LedgerService.
  * Prisma.TransactionClient satisfies this interface natively without casts.
@@ -146,10 +162,14 @@ export function assertBalancedPostings(
       throw new LedgerImbalanceError("Posting amountMinor must be a BigInt");
     }
     if (p.amountMinor === 0n) {
-      throw new LedgerImbalanceError("Zero-amount ledger postings are not permitted");
+      throw new LedgerImbalanceError(
+        "Zero-amount ledger postings are not permitted"
+      );
     }
     if (p.currency && p.currency.toUpperCase() !== "USD") {
-      throw new LedgerImbalanceError(`Unsupported ledger currency: ${p.currency}`);
+      throw new LedgerImbalanceError(
+        `Unsupported ledger currency: ${p.currency}`
+      );
     }
   }
 
@@ -164,7 +184,9 @@ export function assertBalancedPostings(
 function normalizeCurrency(currency: string): "USD" {
   const upper = currency.trim().toUpperCase();
   if (upper !== "USD") {
-    throw new LedgerImbalanceError(`Unsupported order currency for ledger: ${currency}`);
+    throw new LedgerImbalanceError(
+      `Unsupported order currency for ledger: ${currency}`
+    );
   }
   return "USD";
 }
@@ -204,7 +226,10 @@ function summarizeOrderComponents(
   // Net merchandise revenue after creator royalty, AI fee, fulfillment cost, and any promo discount
   const netMerchandise = order.subtotalMinor - discountMinor;
   const platformProductRevenue =
-    netMerchandise - totalCreatorRoyalty - totalAiRevenue - totalFulfillmentCost;
+    netMerchandise -
+    totalCreatorRoyalty -
+    totalAiRevenue -
+    totalFulfillmentCost;
 
   return {
     currency,
@@ -291,19 +316,26 @@ export function buildOrderSalePostings(
 }
 
 /**
- * Pure builder for refund/dispute reversal postings (SUM(amountMinor) === 0n).
+ * Pure builder for refund/dispute reversal postings (SUM(amountMinor) === 0n, R-102).
  */
 export function buildOrderRefundPostings(
   order: OrderLedgerInput,
   refundAmountMinor: bigint,
-  items: ReadonlyArray<OrderItemLedgerInput>
+  items: ReadonlyArray<OrderItemLedgerInput>,
+  options?: RefundPostingOptions
 ): DraftLedgerPosting[] {
+  const alreadyRefundedMinor = options?.alreadyRefundedMinor ?? 0n;
   if (refundAmountMinor <= 0n) {
-    throw new LedgerImbalanceError("Refund amountMinor must be strictly positive");
-  }
-  if (refundAmountMinor > order.totalMinor) {
     throw new LedgerImbalanceError(
-      `Refund amount (${refundAmountMinor.toString()}) cannot exceed order total (${order.totalMinor.toString()})`
+      "Refund amountMinor must be strictly positive"
+    );
+  }
+  if (alreadyRefundedMinor < 0n) {
+    throw new LedgerImbalanceError("alreadyRefundedMinor cannot be negative");
+  }
+  if (alreadyRefundedMinor + refundAmountMinor > order.totalMinor) {
+    throw new LedgerImbalanceError(
+      `Cumulative refund (${(alreadyRefundedMinor + refundAmountMinor).toString()}) cannot exceed order total (${order.totalMinor.toString()})`
     );
   }
 
@@ -312,7 +344,6 @@ export function buildOrderRefundPostings(
     totalCreatorRoyalty,
     totalAiRevenue,
     totalFulfillmentCost,
-    platformProductRevenue,
   } = summarizeOrderComponents(order, items);
 
   const postings: DraftLedgerPosting[] = [
@@ -323,85 +354,100 @@ export function buildOrderRefundPostings(
     },
   ];
 
-  if (refundAmountMinor === order.totalMinor) {
-    // Exact full reversal of order sale components
-    if (totalCreatorRoyalty !== 0n) {
-      postings.push({
-        accountCode: "CREATOR_PAYABLE",
-        amountMinor: totalCreatorRoyalty, // Debit (reverses creator payable)
-        currency,
-      });
+  // Telescoping cumulative pro-rata allocation across all order components (R-102, INV-009):
+  // Guarantees SUM(postings) === 0n on every partial step AND guarantees every revenue/payable
+  // account nets to 0n when cumulative refunds reach order.totalMinor.
+  const cumulativeBefore = alreadyRefundedMinor;
+  const cumulativeAfter = alreadyRefundedMinor + refundAmountMinor;
+  const orderTotal = order.totalMinor;
+
+  const proRataCumulative = (componentTotal: bigint, cumulative: bigint): bigint => {
+    if (componentTotal === 0n || cumulative <= 0n) {
+      return 0n;
     }
-    if (totalAiRevenue !== 0n) {
-      postings.push({
-        accountCode: "PLATFORM_AI_REVENUE",
-        amountMinor: totalAiRevenue,
-        currency,
-      });
+    if (cumulative >= orderTotal) {
+      return componentTotal;
     }
-    if (platformProductRevenue !== 0n) {
-      postings.push({
-        accountCode: "PLATFORM_PRODUCT_REVENUE",
-        amountMinor: platformProductRevenue,
-        currency,
-      });
-    }
-    if (totalFulfillmentCost !== 0n) {
-      const alreadyInProductionOrShipped =
-        order.fulfillmentStatus === "IN_PRODUCTION" ||
-        order.fulfillmentStatus === "SHIPPED" ||
-        order.fulfillmentStatus === "DELIVERED";
-      postings.push({
-        accountCode: alreadyInProductionOrShipped
-          ? "REFUND_EXPENSE"
-          : "FULFILLMENT_PAYABLE",
-        amountMinor: totalFulfillmentCost,
-        currency,
-      });
-    }
-    if (order.shippingMinor !== 0n) {
-      postings.push({
-        accountCode: "SHIPPING_REVENUE",
-        amountMinor: order.shippingMinor,
-        currency,
-      });
-    }
-    if (order.taxMinor !== 0n) {
-      postings.push({
-        accountCode: "TAX_PAYABLE",
-        amountMinor: order.taxMinor,
-        currency,
-      });
-    }
-  } else {
-    // Partial refund: reverse creator payable first if covered, remainder to REFUND_EXPENSE
-    if (totalCreatorRoyalty > 0n && refundAmountMinor >= totalCreatorRoyalty) {
-      postings.push({
-        accountCode: "CREATOR_PAYABLE",
-        amountMinor: totalCreatorRoyalty,
-        currency,
-      });
-      const remainder = refundAmountMinor - totalCreatorRoyalty;
-      if (remainder > 0n) {
-        postings.push({
-          accountCode: "REFUND_EXPENSE",
-          amountMinor: remainder,
-          currency,
-        });
-      }
-    } else {
-      postings.push({
-        accountCode: "REFUND_EXPENSE",
-        amountMinor: refundAmountMinor,
-        currency,
-      });
-    }
+    return (componentTotal * cumulative) / orderTotal;
+  };
+
+  const creatorDelta =
+    proRataCumulative(totalCreatorRoyalty, cumulativeAfter) -
+    proRataCumulative(totalCreatorRoyalty, cumulativeBefore);
+  const aiDelta =
+    proRataCumulative(totalAiRevenue, cumulativeAfter) -
+    proRataCumulative(totalAiRevenue, cumulativeBefore);
+  const fulfillmentDelta =
+    proRataCumulative(totalFulfillmentCost, cumulativeAfter) -
+    proRataCumulative(totalFulfillmentCost, cumulativeBefore);
+  const shippingDelta =
+    proRataCumulative(order.shippingMinor, cumulativeAfter) -
+    proRataCumulative(order.shippingMinor, cumulativeBefore);
+  const taxDelta =
+    proRataCumulative(order.taxMinor, cumulativeAfter) -
+    proRataCumulative(order.taxMinor, cumulativeBefore);
+
+  // Residual goes to PLATFORM_PRODUCT_REVENUE (which equals platformProductRevenue at cumulativeAfter === orderTotal)
+  const productDelta =
+    refundAmountMinor -
+    (creatorDelta + aiDelta + fulfillmentDelta + shippingDelta + taxDelta);
+
+  if (creatorDelta !== 0n) {
+    postings.push({
+      accountCode: "CREATOR_PAYABLE",
+      amountMinor: creatorDelta,
+      currency,
+    });
+  }
+  if (aiDelta !== 0n) {
+    postings.push({
+      accountCode: "PLATFORM_AI_REVENUE",
+      amountMinor: aiDelta,
+      currency,
+    });
+  }
+  if (productDelta !== 0n) {
+    postings.push({
+      accountCode: "PLATFORM_PRODUCT_REVENUE",
+      amountMinor: productDelta,
+      currency,
+    });
+  }
+  if (fulfillmentDelta !== 0n) {
+    const alreadyInProductionOrShipped =
+      order.fulfillmentStatus === "IN_PRODUCTION" ||
+      order.fulfillmentStatus === "SHIPPED" ||
+      order.fulfillmentStatus === "DELIVERED";
+    postings.push({
+      accountCode: alreadyInProductionOrShipped
+        ? "REFUND_EXPENSE"
+        : "FULFILLMENT_PAYABLE",
+      amountMinor: fulfillmentDelta,
+      currency,
+    });
+  }
+  if (shippingDelta !== 0n) {
+    postings.push({
+      accountCode: "SHIPPING_REVENUE",
+      amountMinor: shippingDelta,
+      currency,
+    });
+  }
+  if (taxDelta !== 0n) {
+    postings.push({
+      accountCode: "TAX_PAYABLE",
+      amountMinor: taxDelta,
+      currency,
+    });
   }
 
   // Merge any duplicate accountCode entries if e.g. REFUND_EXPENSE appeared twice
   const mergedMap = new Map<StandardLedgerAccountCode, bigint>();
   for (const p of postings) {
-    mergedMap.set(p.accountCode, (mergedMap.get(p.accountCode) ?? 0n) + p.amountMinor);
+    mergedMap.set(
+      p.accountCode,
+      (mergedMap.get(p.accountCode) ?? 0n) + p.amountMinor
+    );
   }
 
   const normalized: DraftLedgerPosting[] = [];
@@ -413,6 +459,64 @@ export function buildOrderRefundPostings(
 
   assertBalancedPostings(normalized);
   return normalized;
+}
+
+/**
+ * Pure builder for dispute hold postings (R-103): Credit STRIPE_CLEARING, Debit DISPUTE_RESERVE.
+ */
+export function buildOrderDisputeHoldPostings(
+  order: Pick<OrderLedgerInput, "currency" | "totalMinor">,
+  holdAmountMinor: bigint
+): DraftLedgerPosting[] {
+  const currency = normalizeCurrency(order.currency);
+  if (holdAmountMinor <= 0n || holdAmountMinor > order.totalMinor) {
+    throw new LedgerImbalanceError(
+      `Invalid dispute hold amount (${holdAmountMinor.toString()}) for order total (${order.totalMinor.toString()})`
+    );
+  }
+  const postings: DraftLedgerPosting[] = [
+    {
+      accountCode: "STRIPE_CLEARING",
+      amountMinor: -holdAmountMinor,
+      currency,
+    },
+    {
+      accountCode: "DISPUTE_RESERVE",
+      amountMinor: holdAmountMinor,
+      currency,
+    },
+  ];
+  assertBalancedPostings(postings);
+  return postings;
+}
+
+/**
+ * Pure builder for dispute release postings when dispute is won/reinstated or resolved (R-103).
+ */
+export function buildOrderDisputeReleasePostings(
+  order: Pick<OrderLedgerInput, "currency" | "totalMinor">,
+  releaseAmountMinor: bigint
+): DraftLedgerPosting[] {
+  const currency = normalizeCurrency(order.currency);
+  if (releaseAmountMinor <= 0n || releaseAmountMinor > order.totalMinor) {
+    throw new LedgerImbalanceError(
+      `Invalid dispute release amount (${releaseAmountMinor.toString()}) for order total (${order.totalMinor.toString()})`
+    );
+  }
+  const postings: DraftLedgerPosting[] = [
+    {
+      accountCode: "STRIPE_CLEARING",
+      amountMinor: releaseAmountMinor,
+      currency,
+    },
+    {
+      accountCode: "DISPUTE_RESERVE",
+      amountMinor: -releaseAmountMinor,
+      currency,
+    },
+  ];
+  assertBalancedPostings(postings);
+  return postings;
 }
 
 async function ensureStandardLedgerAccounts(
@@ -446,9 +550,13 @@ async function ensureStandardLedgerAccounts(
 async function commitLedgerPostings(
   tx: LedgerTxClient,
   params: {
-    type: "ORDER_SALE" | "ORDER_REFUND";
+    type:
+      | "ORDER_SALE"
+      | "ORDER_REFUND"
+      | "DISPUTE_HOLD"
+      | "DISPUTE_RELEASE";
     description: string;
-    referenceType: "ORDER" | "REFUND";
+    referenceType: "ORDER" | "REFUND" | "DISPUTE";
     referenceId: string;
     currency: "USD";
     postings: DraftLedgerPosting[];
@@ -521,20 +629,66 @@ export async function postOrderSaleLedger(
 }
 
 /**
- * Posts balanced double-entry reversal entries for an Order refund or lost/created dispute inside $transaction.
+ * Posts balanced double-entry reversal entries for an Order refund or lost dispute inside $transaction.
  */
 export async function postOrderRefundLedger(
   tx: LedgerTxClient,
   order: OrderLedgerInput,
   refundAmountMinor: bigint,
-  items: ReadonlyArray<OrderItemLedgerInput>
+  items: ReadonlyArray<OrderItemLedgerInput>,
+  options?: RefundPostingOptions
 ) {
-  const postings = buildOrderRefundPostings(order, refundAmountMinor, items);
+  const postings = buildOrderRefundPostings(
+    order,
+    refundAmountMinor,
+    items,
+    options
+  );
   return commitLedgerPostings(tx, {
     type: "ORDER_REFUND",
     description: `Order ${order.orderNumber} refund/dispute reversal`,
     referenceType: "REFUND",
     referenceId: order.id,
+    currency: "USD",
+    postings,
+  });
+}
+
+/**
+ * Posts balanced DISPUTE_RESERVE hold when a charge dispute is created or funds withdrawn (R-103).
+ */
+export async function postOrderDisputeHoldLedger(
+  tx: LedgerTxClient,
+  order: OrderLedgerInput,
+  holdAmountMinor: bigint,
+  disputeId: string
+) {
+  const postings = buildOrderDisputeHoldPostings(order, holdAmountMinor);
+  return commitLedgerPostings(tx, {
+    type: "DISPUTE_HOLD",
+    description: `Order ${order.orderNumber} dispute hold (${disputeId})`,
+    referenceType: "DISPUTE",
+    referenceId: disputeId,
+    currency: "USD",
+    postings,
+  });
+}
+
+/**
+ * Releases DISPUTE_RESERVE hold when a dispute is won, reinstated, or settled (R-103).
+ */
+export async function postOrderDisputeReleaseLedger(
+  tx: LedgerTxClient,
+  order: OrderLedgerInput,
+  releaseAmountMinor: bigint,
+  disputeId: string
+) {
+  const postings = buildOrderDisputeReleasePostings(order, releaseAmountMinor);
+  return commitLedgerPostings(tx, {
+    type: "DISPUTE_RELEASE",
+    description: `Order ${order.orderNumber} dispute hold release (${disputeId})`,
+    referenceType: "DISPUTE",
+    referenceId: disputeId,
     currency: "USD",
     postings,
   });

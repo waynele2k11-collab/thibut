@@ -17,6 +17,10 @@ import {
   type CompositionLayer,
 } from "@/lib/print/types";
 import {
+  RateLimitError,
+  enforceDistributedRateLimit,
+} from "@/lib/security/rate-limit";
+import {
   ANON_SESSION_COOKIE,
   signAnonSessionToken,
   verifyAnonSessionToken,
@@ -375,6 +379,13 @@ export async function addToCartAction(
       });
     }
 
+    await enforceDistributedRateLimit({
+      bucket: "action:cart-add",
+      key: userId ? `user:${userId}` : `anon:${anonId ?? "guest"}`,
+      limit: 30,
+      windowMs: 60_000,
+    });
+
     const cookieCartId = cookieStore.get(CART_ID_COOKIE)?.value;
     const compositionJsonValue = JSON.parse(
       JSON.stringify(input.composition)
@@ -637,6 +648,12 @@ export async function addToCartAction(
       count: result.count,
     };
   } catch (err: unknown) {
+    if (err instanceof RateLimitError) {
+      return {
+        success: false,
+        error: "Too many cart requests. Please wait a moment and try again.",
+      };
+    }
     if (
       err instanceof PricingValidationError ||
       err instanceof CreatorPolicyViolationError

@@ -1,25 +1,21 @@
+import "server-only";
 import type { Prisma } from "@prisma/client";
-import prisma from "@/lib/prisma";
 import {
   PrintfulProvider,
   PrintfulWebhookPayloadSchema,
 } from "@/lib/fulfillment/PrintfulProvider";
+import prisma from "@/lib/prisma";
 import {
   SecurityConfigError,
   timingSafeEqualString,
   verifyHmacSha256,
 } from "@/lib/security/tokens";
+import { claimWebhookEventLease } from "@/lib/services/stripe/webhookLease";
 
-function isPrismaUniqueConstraintError(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: unknown }).code === "P2002"
-  );
-}
-
-function authenticatePrintfulWebhook(req: Request, rawBodyText: string): boolean {
+function authenticatePrintfulWebhook(
+  req: Request,
+  rawBodyText: string
+): boolean {
   const configuredSecret = process.env.PRINTFUL_WEBHOOK_SECRET;
   if (!configuredSecret || configuredSecret.trim().length < 16) {
     return false;
@@ -49,7 +45,8 @@ function authenticatePrintfulWebhook(req: Request, rawBodyText: string): boolean
   try {
     const parsedUrl = new URL(req.url);
     urlToken =
-      parsedUrl.searchParams.get("secret") ?? parsedUrl.searchParams.get("token");
+      parsedUrl.searchParams.get("secret") ??
+      parsedUrl.searchParams.get("token");
   } catch {
     urlToken = null;
   }
@@ -84,24 +81,28 @@ export async function POST(req: Request) {
   const provider = new PrintfulProvider();
   const event = await provider.parseWebhook(validated.data, rawBodyText);
 
-  // Race-free idempotency (INV-007): insert WebhookEvent first; treat P2002 as 200 duplicate
+  // Race-free idempotency + stale PROCESSING lease reclamation (INV-007, R-104)
   try {
-    await prisma.webhookEvent.create({
-      data: {
-        provider: "PRINTFUL",
-        externalEventId: event.externalEventId,
-        eventType: event.rawType,
-        payloadJson: validated.data as Prisma.InputJsonValue,
-        status: "PROCESSING",
-      },
+    const lease = await claimWebhookEventLease({
+      provider: "PRINTFUL",
+      externalEventId: event.externalEventId,
+      eventType: event.rawType,
+      payloadJson: validated.data as Prisma.InputJsonValue,
     });
-  } catch (err: unknown) {
-    if (isPrismaUniqueConstraintError(err)) {
+
+    if (lease.outcome === "ALREADY_PROCESSED") {
       return Response.json(
         { received: true, duplicate: true },
         { status: 200 }
       );
     }
+    if (lease.outcome === "IN_PROGRESS") {
+      return Response.json(
+        { received: true, inProgress: true },
+        { status: 409 }
+      );
+    }
+  } catch (err: unknown) {
     console.error("[Printful Webhook] Failed to record WebhookEvent:", err);
     return Response.json(
       { error: "Webhook persistence error" },

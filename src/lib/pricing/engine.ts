@@ -8,15 +8,15 @@ import {
 export * from "./quote";
 
 export interface PricingBreakdown {
-  fulfillmentCostMinor: number;
-  baseVariantCostMinor: number;
-  printCostMinor: number;
-  additionalPlacementCostMinor: number;
-  galleryPriceMinor: number;
-  personalizationFeeMinor: number;
-  personalizedPriceMinor: number;
-  digitalGalleryPriceMinor: number;
-  digitalPersonalizedPriceMinor: number;
+  fulfillmentCostMinor: bigint;
+  baseVariantCostMinor: bigint;
+  printCostMinor: bigint;
+  additionalPlacementCostMinor: bigint;
+  galleryPriceMinor: bigint;
+  personalizationFeeMinor: bigint;
+  personalizedPriceMinor: bigint;
+  digitalGalleryPriceMinor: bigint;
+  digitalPersonalizedPriceMinor: bigint;
 }
 
 function toMinorBigInt(value: number | bigint): bigint {
@@ -30,23 +30,23 @@ function toMinorBigInt(value: number | bigint): bigint {
 }
 
 /**
- * Facade helper over authoritative BigInt roundUpTo99Minor.
+ * Pure BigInt helper over authoritative roundUpTo99Minor (R-201, INV-006).
  */
-export function roundUpTo99(cents: number | bigint): number {
+export function roundUpTo99(cents: number | bigint): bigint {
   const minor = toMinorBigInt(cents);
   if (minor <= 0n) {
-    return 99;
+    return 99n;
   }
-  return Number(roundUpTo99Minor(minor));
+  return roundUpTo99Minor(minor);
 }
 
 /**
- * Clean compatibility facade over src/lib/pricing/quote.ts (BigInt math only).
+ * Pure BigInt pricing breakdown helper over src/lib/pricing/quote.ts (R-201).
  */
 export function calculatePricing(
   baseVariantCostMinor: number | bigint,
-  printCostMinor: number | bigint = 0,
-  additionalPlacementCostMinor: number | bigint = 0
+  printCostMinor: number | bigint = 0n,
+  additionalPlacementCostMinor: number | bigint = 0n
 ): PricingBreakdown {
   const baseMinor = toMinorBigInt(baseVariantCostMinor);
   const printMinor = toMinorBigInt(printCostMinor);
@@ -59,17 +59,19 @@ export function calculatePricing(
   const galleryMinor =
     fulfillmentMinor > 0n ? roundUpTo99Minor(fulfillmentMinor * 2n) : 0n;
   const personalizedMinor =
-    galleryMinor > 0n ? galleryMinor + personalizationAdderMinor : personalizationAdderMinor;
+    galleryMinor > 0n
+      ? galleryMinor + personalizationAdderMinor
+      : personalizationAdderMinor;
 
   return {
-    fulfillmentCostMinor: Number(fulfillmentMinor),
-    baseVariantCostMinor: Number(baseMinor),
-    printCostMinor: Number(printMinor),
-    additionalPlacementCostMinor: Number(placementMinor),
-    galleryPriceMinor: Number(galleryMinor),
-    personalizationFeeMinor: Number(DEFAULT_PERSONALIZATION_FEE_MINOR),
-    personalizedPriceMinor: Number(personalizedMinor),
-    digitalGalleryPriceMinor: Number(DIGITAL_TOTAL_MINOR),
-    digitalPersonalizedPriceMinor: Number(DIGITAL_TOTAL_MINOR),
+    fulfillmentCostMinor: fulfillmentMinor,
+    baseVariantCostMinor: baseMinor,
+    printCostMinor: printMinor,
+    additionalPlacementCostMinor: placementMinor,
+    galleryPriceMinor: galleryMinor,
+    personalizationFeeMinor: DEFAULT_PERSONALIZATION_FEE_MINOR,
+    personalizedPriceMinor: personalizedMinor,
+    digitalGalleryPriceMinor: DIGITAL_TOTAL_MINOR,
+    digitalPersonalizedPriceMinor: DIGITAL_TOTAL_MINOR,
   };
 }

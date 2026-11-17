@@ -1,9 +1,10 @@
 "use server";
 
 import { z } from "zod";
-import prisma from "@/lib/prisma";
 import type { ProductConfig } from "@/config/catalog";
-import { calculatePricing, roundUpTo99Minor } from "@/lib/pricing/engine";
+import { formatMinor } from "@/lib/money";
+import { calculateItemQuote, PricingValidationError } from "@/lib/pricing/quote";
+import prisma from "@/lib/prisma";
 
 const PrintAreaSchemaJsonSchema = z.object({
   topPct: z.number(),
@@ -13,11 +14,20 @@ const PrintAreaSchemaJsonSchema = z.object({
 });
 
 function normalizeCategory(raw: string): ProductConfig["category"] {
-  if (raw === "apparel" || raw === "wall_art" || raw === "merch" || raw === "digital") {
+  if (
+    raw === "apparel" ||
+    raw === "wall_art" ||
+    raw === "merch" ||
+    raw === "digital"
+  ) {
     return raw;
   }
   const lower = raw.toLowerCase();
-  if (lower.includes("canvas") || lower.includes("poster") || lower.includes("wall")) {
+  if (
+    lower.includes("canvas") ||
+    lower.includes("poster") ||
+    lower.includes("wall")
+  ) {
     return "wall_art";
   }
   if (lower.includes("mug") || lower.includes("tote")) {
@@ -26,13 +36,9 @@ function normalizeCategory(raw: string): ProductConfig["category"] {
   return "apparel";
 }
 
-function minorBigIntToDollarsNumber(minor: bigint): number {
-  const wholeDollars = Number(minor / 100n);
-  const cents = Number(minor % 100n);
-  return wholeDollars + cents / 100;
-}
-
-export async function getCatalogProducts(): Promise<Record<string, ProductConfig>> {
+export async function getCatalogProducts(): Promise<
+  Record<string, ProductConfig>
+> {
   const products = await prisma.catalogProduct.findMany({
     where: { status: "ACTIVE" },
     include: {
@@ -65,6 +71,7 @@ export async function getCatalogProducts(): Promise<Record<string, ProductConfig
   };
 
   for (const p of products) {
+    const category = normalizeCategory(p.category);
     const colorsMap = new Map<
       string,
       { id: string; name: string; hex: string; mockup: string }
@@ -80,7 +87,7 @@ export async function getCatalogProducts(): Promise<Record<string, ProductConfig
         const colorId = v.color.toLowerCase().replace(/\s+/g, "-");
 
         let mockupUrl = `/mockups/printful/${p.slug}-${colorId}.jpg`;
-        if (v.mockups && v.mockups.length > 0 && v.mockups[0].asset) {
+        if (v.mockups && v.mockups.length > 0 && v.mockups[0]?.asset) {
           mockupUrl = v.mockups[0].asset.objectKey;
         }
 
@@ -114,42 +121,64 @@ export async function getCatalogProducts(): Promise<Record<string, ProductConfig
       : sizes.includes("18x24 in")
         ? "18x24 in"
         : sizes[0] || "";
-    const defaultColor = colors.length > 0 ? colors[0].name : "";
+    const defaultColor = colors.length > 0 ? colors[0]!.name : "";
 
-    let baseCostMinor = 0n;
-    let minVariantRetailMinor = 0n;
+    const defaultVariant =
+      p.variants.find(
+        (v) =>
+          (!defaultColor || v.color === defaultColor) &&
+          (!defaultSize || v.size === defaultSize)
+      ) ??
+      p.variants.find((v) => !defaultSize || v.size === defaultSize) ??
+      p.variants[0] ??
+      null;
 
-    for (const v of p.variants) {
-      if (v.baseRetailMinor > 0n) {
-        if (minVariantRetailMinor === 0n || v.baseRetailMinor < minVariantRetailMinor) {
-          minVariantRetailMinor = v.baseRetailMinor;
-        }
-      }
-      for (const pv of v.providerVariants) {
-        if (pv.costMinor > 0n) {
-          if (baseCostMinor === 0n || pv.costMinor < baseCostMinor) {
-            baseCostMinor = pv.costMinor;
-          }
-        }
-      }
+    if (category !== "digital" && !defaultVariant) {
+      continue;
     }
 
-    const pricing = calculatePricing(baseCostMinor);
-    const authoritativeRetailMinor =
-      baseCostMinor > 0n
-        ? roundUpTo99Minor(baseCostMinor * 2n)
-        : minVariantRetailMinor;
+    let quote;
+    try {
+      quote =
+        category === "digital"
+          ? calculateItemQuote({ isDigital: true, isPersonalized: true })
+          : calculateItemQuote({
+              isDigital: false,
+              variant: defaultVariant
+                ? {
+                    id: defaultVariant.id,
+                    active: defaultVariant.active,
+                    ...(defaultVariant.baseRetailMinor > 0n
+                      ? { baseRetailMinor: defaultVariant.baseRetailMinor }
+                      : {}),
+                    product: {
+                      status: p.status,
+                      defaultMarkupMinor: p.defaultMarkupMinor,
+                    },
+                    providerVariants: defaultVariant.providerVariants,
+                  }
+                : null,
+              placement: "front",
+              quantity: 1,
+              isPersonalized: true,
+            });
+    } catch (err: unknown) {
+      if (err instanceof PricingValidationError) {
+        continue;
+      }
+      throw err;
+    }
 
     const rawSchema =
-      p.printAreas.length > 0 ? p.printAreas[0].schemaJson : undefined;
+      p.printAreas.length > 0 ? p.printAreas[0]?.schemaJson : undefined;
     const parsedPrintArea = PrintAreaSchemaJsonSchema.safeParse(rawSchema);
 
     catalog[p.name] = {
       id: p.name,
       name: p.name,
-      price: minorBigIntToDollarsNumber(authoritativeRetailMinor),
-      pricing,
-      category: normalizeCategory(p.category),
+      priceMinor: quote.totalMinor.toString(),
+      formattedPrice: formatMinor(quote.totalMinor, quote.currency),
+      category,
       sizes,
       colors,
       defaultSize,
