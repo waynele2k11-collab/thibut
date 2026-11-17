@@ -11,6 +11,7 @@ import {
   PRINT_MASTER_HEIGHT,
   PRINT_MASTER_PIXELS_PER_METER,
   PRINT_MASTER_WIDTH,
+  adaptLegacyComposition,
   type CompositionLayer,
   type DesignComposition,
 } from "@/lib/print/types";
@@ -24,6 +25,7 @@ import {
   SecurityConfigError,
   verifyHmacSha256,
 } from "@/lib/security/tokens";
+import { UploadService } from "@/lib/services/UploadService";
 import { deterministicUid, escapeXml } from "@/lib/security/xml";
 import { z } from "zod";
 
@@ -146,9 +148,17 @@ const DEFAULT_ALLOWED_ASSET_HOST_SUFFIXES = [
 
 const DEFAULT_ALLOWED_ASSET_HOSTS = new Set<string>([
   "storage.thibut.com",
-  "fal.media",
-  "v3.fal.media",
 ]);
+
+let printMasterRenderCount = 0;
+
+export function getPrintMasterRenderCount(): number {
+  return printMasterRenderCount;
+}
+
+export function resetPrintMasterRenderCountForTests(): void {
+  printMasterRenderCount = 0;
+}
 
 // Precompute IEEE 802.3 CRC-32 lookup table for PNG chunk integrity
 const CRC32_TABLE = (() => {
@@ -316,11 +326,15 @@ async function resolveAssetDataUri(assetId: string): Promise<{
   width: number;
   height: number;
 }> {
-  let asset: { objectKey: string; mimeType: string } | null = null;
+  let asset: {
+    objectKey: string;
+    mimeType: string;
+    storageProvider?: string;
+  } | null = null;
   try {
     asset = await prisma.asset.findUnique({
       where: { id: assetId },
-      select: { objectKey: true, mimeType: true },
+      select: { objectKey: true, mimeType: true, storageProvider: true },
     });
   } catch {
     throw new AssetResolutionError(
@@ -335,7 +349,16 @@ async function resolveAssetDataUri(assetId: string): Promise<{
   let rawBytes: Buffer;
   const objectKey = asset.objectKey.trim();
 
-  if (objectKey.startsWith("/")) {
+  if (
+    objectKey.startsWith("local-private://") ||
+    asset.storageProvider === "local-private"
+  ) {
+    const localBuf = await UploadService.readPrivateLocalObject(objectKey);
+    if (!localBuf) {
+      throw new AssetResolutionError("Private local asset file is missing on disk");
+    }
+    rawBytes = localBuf;
+  } else if (objectKey.startsWith("/")) {
     const publicRoot = path.resolve(process.cwd(), "public");
     const candidatePath = path.resolve(publicRoot, objectKey.slice(1));
     if (!candidatePath.startsWith(publicRoot + path.sep)) {
@@ -360,7 +383,20 @@ async function resolveAssetDataUri(assetId: string): Promise<{
         `Asset host "${parsedUrl.hostname}" is not permitted by SSRF allowlist`
       );
     }
+    const lowerHost = parsedUrl.hostname.toLowerCase();
+    const headers: Record<string, string> = {};
+    const blobToken =
+      process.env.BLOB_READ_WRITE_TOKEN ||
+      process.env.VERCEL_BLOB_READ_WRITE_TOKEN;
+    if (
+      blobToken &&
+      lowerHost.endsWith(".blob.vercel-storage.com") &&
+      !lowerHost.endsWith(".public.blob.vercel-storage.com")
+    ) {
+      headers.Authorization = `Bearer ${blobToken}`;
+    }
     const res = await fetch(parsedUrl.toString(), {
+      headers,
       redirect: "error",
       signal: AbortSignal.timeout(8_000),
     });
@@ -465,8 +501,8 @@ async function renderCalligraphyLayerSvg(
 
   const emblemMarkup = isEmblem
     ? `<g id="${uid}-emblem">
-         <circle cx="0" cy="0" r="${(SAFE_WIDTH * 0.31 * layer.transform.scale).toFixed(2)}" fill="none" stroke="${color}" stroke-width="${(18 * layer.transform.scale).toFixed(2)}" stroke-dasharray="1400 95" stroke-linecap="round" opacity="0.82" />
-         <circle cx="0" cy="0" r="${(SAFE_WIDTH * 0.29 * layer.transform.scale).toFixed(2)}" fill="none" stroke="${color}" stroke-width="${(9 * layer.transform.scale).toFixed(2)}" stroke-dasharray="48 36" stroke-linecap="round" opacity="0.45" />
+         <circle cx="0" cy="0" r="${(SAFE_WIDTH * 0.31 * layer.transform.scale).toFixed(3)}" fill="none" stroke="${color}" stroke-width="${(18 * layer.transform.scale).toFixed(3)}" stroke-dasharray="1400 95" stroke-linecap="round" opacity="0.82" />
+         <circle cx="0" cy="0" r="${(SAFE_WIDTH * 0.29 * layer.transform.scale).toFixed(3)}" fill="none" stroke="${color}" stroke-width="${(9 * layer.transform.scale).toFixed(3)}" stroke-dasharray="48 36" stroke-linecap="round" opacity="0.45" />
        </g>`
     : "";
 
@@ -477,9 +513,9 @@ async function renderCalligraphyLayerSvg(
     )
     .join("");
 
-  return `<g id="${uid}" opacity="${layer.opacity.toFixed(3)}" transform="translate(${anchorX.toFixed(2)}, ${anchorY.toFixed(2)}) rotate(${layer.transform.rotation.toFixed(2)})">
+  return `<g id="${uid}" opacity="${layer.opacity.toFixed(3)}" transform="translate(${anchorX.toFixed(3)}, ${anchorY.toFixed(3)}) rotate(${layer.transform.rotation.toFixed(3)})">
     ${emblemMarkup}
-    <g transform="scale(${finalScale.toFixed(5)}) translate(${(-centerX).toFixed(2)}, ${(-centerY).toFixed(2)})">
+    <g transform="scale(${finalScale.toFixed(5)}) translate(${(-centerX).toFixed(3)}, ${(-centerY).toFixed(3)})">
       ${pathsMarkup}
     </g>
   </g>`;
@@ -548,10 +584,10 @@ async function renderSealLayerSvg(
     .map((d) => `<path d="${d}" fill="#FBF9F4" />`)
     .join("");
 
-  return `<g id="${uid}" opacity="${layer.opacity.toFixed(3)}" transform="translate(${anchorX.toFixed(2)}, ${anchorY.toFixed(2)}) rotate(${layer.transform.rotation.toFixed(2)}) scale(${layer.transform.scale.toFixed(4)})">
+  return `<g id="${uid}" opacity="${layer.opacity.toFixed(3)}" transform="translate(${anchorX.toFixed(3)}, ${anchorY.toFixed(3)}) rotate(${layer.transform.rotation.toFixed(3)}) scale(${layer.transform.scale.toFixed(4)})">
     <rect x="${-halfStamp}" y="${-halfStamp}" width="${baseStampSize}" height="${baseStampSize}" rx="20" ry="20" fill="${sealColor}" />
     <rect x="${-halfStamp + innerInset}" y="${-halfStamp + innerInset}" width="${innerSize}" height="${innerSize}" rx="10" ry="10" fill="none" stroke="#FBF9F4" stroke-width="10" />
-    <g transform="scale(${glyphFitScale.toFixed(5)}) translate(${(-centerX).toFixed(2)}, ${(-centerY).toFixed(2)})">
+    <g transform="scale(${glyphFitScale.toFixed(5)}) translate(${(-centerX).toFixed(3)}, ${(-centerY).toFixed(3)})">
       ${glyphPaths}
     </g>
   </g>`;
@@ -569,44 +605,12 @@ async function renderAssetLayerSvg(
     layer.fillMode === "cover" ? "xMidYMid slice" : "xMidYMid meet";
   const uid = deterministicUid(`${layer.id}|${layer.assetId}`, "ast");
 
-  return `<g id="${uid}" opacity="${layer.opacity.toFixed(3)}" transform="translate(${anchorX.toFixed(2)}, ${anchorY.toFixed(2)}) rotate(${layer.transform.rotation.toFixed(2)})">
-    <image href="${resolved.dataUri}" x="${(-boxW / 2).toFixed(2)}" y="${(-boxH / 2).toFixed(2)}" width="${boxW.toFixed(2)}" height="${boxH.toFixed(2)}" preserveAspectRatio="${preserveAspectRatio}" />
+  return `<g id="${uid}" opacity="${layer.opacity.toFixed(3)}" transform="translate(${anchorX.toFixed(3)}, ${anchorY.toFixed(3)}) rotate(${layer.transform.rotation.toFixed(3)})">
+    <image href="${resolved.dataUri}" x="${(-boxW / 2).toFixed(3)}" y="${(-boxH / 2).toFixed(3)}" width="${boxW.toFixed(3)}" height="${boxH.toFixed(3)}" preserveAspectRatio="${preserveAspectRatio}" />
   </g>`;
 }
 
-/**
- * Converts a legacy pre-Wave-1 composition JSON shape (if encountered on historical orders)
- * into a validated `DesignComposition` conforming to `CompositionSchema`.
- */
-export function adaptLegacyComposition(raw: unknown): DesignComposition {
-  const direct = CompositionSchema.safeParse(raw);
-  if (direct.success) {
-    return direct.data;
-  }
-
-  if (typeof raw === "object" && raw !== null && "layers" in raw) {
-    const candidate = raw as Record<string, unknown>;
-    if (Array.isArray(candidate.layers)) {
-      const normalizedLayers = candidate.layers.map((item) => {
-        if (typeof item !== "object" || item === null) return item;
-        const l = item as Record<string, unknown>;
-        if (
-          l.type === "seal" &&
-          (l.fontFamily === "VNI Ong do" || l.fontFamily === "vni-ong-do")
-        ) {
-          return { ...l, fontFamily: DEFAULT_SEAL_FONT_FAMILY };
-        }
-        return item;
-      });
-      return CompositionSchema.parse({
-        ...candidate,
-        layers: normalizedLayers,
-      });
-    }
-  }
-
-  return CompositionSchema.parse(raw);
-}
+export { adaptLegacyComposition };
 
 /**
  * Deterministically renders a 4500x5400 px @ 300 DPI RGBA transparent Print Master PNG
@@ -622,6 +626,7 @@ export async function generatePrintMasterPng(
   input: DesignComposition
 ): Promise<Buffer> {
   const composition = CompositionSchema.parse(input);
+  printMasterRenderCount += 1;
 
   const sortedLayers = [...composition.layers].sort(
     (a, b) => a.zIndex - b.zIndex

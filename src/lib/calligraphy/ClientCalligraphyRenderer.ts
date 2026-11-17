@@ -128,13 +128,20 @@ export function generateInstantSvgString(options: ClientRenderOptions): string {
     ? sanitizeCssIdentifier(customFontFamily)
     : "";
 
-  let fontFamily = cleanOverrideFont
-    ? `'${cleanOverrideFont}', cursive`
-    : cleanCustomFont && customFontUrl
-      ? `'${cleanCustomFont}', cursive`
-      : fontId && FONT_MAP[fontId]
-        ? FONT_MAP[fontId]
-        : "";
+  const isThienAnOverride =
+    cleanOverrideFont === "UTM Thư Pháp Thiên Ân" ||
+    cleanOverrideFont === "UTM ThuPhap Thien An" ||
+    cleanOverrideFont === "UtmThuphapThienAn";
+
+  let fontFamily = isThienAnOverride
+    ? "'UTM ThuPhap Thien An', 'UTM Thư Pháp Thiên Ân', 'Caveat Brush', cursive"
+    : cleanOverrideFont
+      ? `'${cleanOverrideFont}', cursive`
+      : cleanCustomFont && customFontUrl
+        ? `'${cleanCustomFont}', cursive`
+        : fontId && FONT_MAP[fontId]
+          ? FONT_MAP[fontId]
+          : "";
 
   if (!fontFamily) {
     if (tradition === "JAPANESE_SHODO") {
@@ -184,7 +191,9 @@ export function generateInstantSvgString(options: ClientRenderOptions): string {
   const isCJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(
     trimmed
   );
-  const words = isCJK ? Array.from(trimmed) : trimmed.split(/\s+/);
+  const words = isCJK
+    ? Array.from(trimmed.replace(/\s+/g, ""))
+    : trimmed.split(/\s+/).filter(Boolean);
 
   const width = isVertical
     ? 1000
@@ -255,14 +264,14 @@ export function generateInstantSvgString(options: ClientRenderOptions): string {
 
   let sealFontUrl = "";
   if (resolvedSealFont === "Ma Shan Zheng") {
-    sealFontUrl = "/fonts/MaShanZheng-Regular.ttf";
+    sealFontUrl = "/api/fonts/ma-shan-zheng";
   } else if (
     resolvedSealFont === "UTM Thư Pháp Thiên Ân" ||
     resolvedSealFont === "UTM ThuPhap Thien An"
   ) {
-    sealFontUrl = "/fonts/UtmThuphapThienAn.ttf";
+    sealFontUrl = "/api/fonts/utm-thuphap-thien-an";
   } else if (resolvedSealFont === "Zhi Mang Xing") {
-    sealFontUrl = "/fonts/ZhiMangXing-Regular.ttf";
+    sealFontUrl = "/api/fonts/zhi-mang-xing";
   }
 
   if (sealFontUrl && typeof window !== "undefined") {

@@ -3,7 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@resvg/resvg-js"],
   outputFileTracingIncludes: {
-    "/api/**/*": ["./public/fonts/**/*"],
+    "/api/print-master": ["./assets/fonts/**/*"],
+    "/api/download": ["./assets/fonts/**/*"],
+    "/api/inngest": ["./assets/fonts/**/*"],
+  },
+  outputFileTracingExcludes: {
+    "/checkout": ["./assets/fonts/**/*"],
+    "/api/!(print-master|download|inngest)": ["./assets/fonts/**/*"],
+    "/api/*/**": ["./assets/fonts/**/*"],
   },
   async headers() {
     return [

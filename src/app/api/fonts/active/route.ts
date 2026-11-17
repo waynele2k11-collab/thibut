@@ -14,6 +14,10 @@ export async function GET() {
       category: f.category,
       categoryLabel: f.categoryLabel,
       fileName: f.fileName,
+      webEmbedAllowed: f.webEmbedAllowed,
+      fontUrl: f.webEmbedAllowed
+        ? `/api/fonts/${encodeURIComponent(f.id)}`
+        : null,
       previewText: f.previewText,
       description: f.description,
     }));

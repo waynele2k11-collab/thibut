@@ -12,6 +12,7 @@ import {
   DEFAULT_SEAL_FONT_ID,
   INITIAL_FONT_CATALOG,
   isFontLicensedForPrint,
+  isFontWebEmbeddable,
   isUnverifiedLegacyArchiveFile,
   type FontCatalogItem,
   type FontEntry,
@@ -27,6 +28,7 @@ export {
   DEFAULT_SEAL_FONT_ID,
   INITIAL_FONT_CATALOG,
   isFontLicensedForPrint,
+  isFontWebEmbeddable,
   isUnverifiedLegacyArchiveFile,
 };
 export type { FontCatalogItem, FontEntry, FontLicenseSubject, ScriptCategory };
@@ -75,12 +77,20 @@ function isValidScriptCategory(val: string | null | undefined): val is ScriptCat
   );
 }
 
-function safePublicFontPath(fileName: string): string | null {
+function safeAssetFontPath(fileName: string): string | null {
   const cleanName = path.basename(fileName.trim());
   if (!cleanName || cleanName !== fileName.trim() || cleanName.startsWith(".")) {
     return null;
   }
-  return path.join(process.cwd(), "public", "fonts", cleanName);
+  return path.join(process.cwd(), "assets", "fonts", cleanName);
+}
+
+function safeQuarantinedFontPath(fileName: string): string | null {
+  const cleanName = path.basename(fileName.trim());
+  if (!cleanName || cleanName !== fileName.trim() || cleanName.startsWith(".")) {
+    return null;
+  }
+  return path.join(process.cwd(), ".quarantined-fonts", cleanName);
 }
 
 function parseOpenTypeBuffer(buf: Buffer): OpenTypeFont {
@@ -133,7 +143,7 @@ export class FontRegistryService {
   public static isFontOnDisk(fileName: string): boolean {
     if (!fileName) return false;
     if (this.bufferCache.has(fileName)) return true;
-    const fontPath = safePublicFontPath(fileName);
+    const fontPath = safeAssetFontPath(fileName);
     if (!fontPath) return false;
     try {
       return fs.existsSync(fontPath) && fs.statSync(fontPath).size > 1000;
@@ -143,13 +153,13 @@ export class FontRegistryService {
   }
 
   private static readDiskFontBuffer(fileName: string, aliases?: string[]): Buffer | null {
-    const candidates = [fileName, ...(aliases ?? []).filter((a) => /\.(ttf|otf)$/i.test(a))];
+    const candidates = [fileName, ...(aliases ?? []).filter((a) => /\.(ttf|otf|woff2)$/i.test(a))];
     for (const candidate of candidates) {
       if (!candidate) continue;
       const cached = this.bufferCache.get(candidate);
       if (cached) return cached;
 
-      const fontPath = safePublicFontPath(candidate);
+      const fontPath = safeAssetFontPath(candidate);
       if (!fontPath) continue;
       try {
         if (fs.existsSync(fontPath) && fs.statSync(fontPath).size > 1000) {
@@ -162,6 +172,26 @@ export class FontRegistryService {
         }
       } catch {
         // Ignore read error and try next candidate
+      }
+    }
+    return null;
+  }
+
+  private static readQuarantinedFontBufferForInspection(
+    fileName: string,
+    aliases?: string[]
+  ): Buffer | null {
+    const candidates = [fileName, ...(aliases ?? []).filter((a) => /\.(ttf|otf)$/i.test(a))];
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      const fontPath = safeQuarantinedFontPath(candidate);
+      if (!fontPath) continue;
+      try {
+        if (fs.existsSync(fontPath) && fs.statSync(fontPath).size > 1000) {
+          return fs.readFileSync(fontPath);
+        }
+      } catch {
+        // Ignore read error during offline inspection
       }
     }
     return null;
@@ -228,6 +258,9 @@ export class FontRegistryService {
     const printExportAllowed = isUnverifiedArchive
       ? false
       : dbFont.printExportAllowed;
+    const webEmbedAllowed = isUnverifiedArchive
+      ? false
+      : Boolean(dbFont.webEmbedAllowed);
     const verifiedIso = dbFont.licenseVerifiedAt
       ? dbFont.licenseVerifiedAt.toISOString()
       : null;
@@ -238,6 +271,7 @@ export class FontRegistryService {
       fileName: dbFont.fileName,
       commercialApproved,
       printExportAllowed,
+      webEmbedAllowed,
       licenseVerifiedAt: verifiedIso,
     });
 
@@ -264,6 +298,7 @@ export class FontRegistryService {
       licenseUrl: dbFont.licenseUrl || undefined,
       commercialApproved,
       printExportAllowed,
+      webEmbedAllowed,
       licenseVerifiedAt: verifiedIso,
       licenseVerifiedBy: dbFont.licenseVerifiedBy,
       description: licensed
@@ -316,6 +351,12 @@ export class FontRegistryService {
       const printExportAllowed = dbMatch
         ? dbMatch.printExportAllowed
         : font.printExportAllowed;
+      const webEmbedAllowed =
+        commercialApproved && printExportAllowed
+          ? dbMatch
+            ? Boolean(dbMatch.webEmbedAllowed || font.webEmbedAllowed)
+            : font.webEmbedAllowed
+          : false;
       const licenseVerifiedAt = dbMatch?.licenseVerifiedAt
         ? dbMatch.licenseVerifiedAt.toISOString()
         : font.licenseVerifiedAt ?? null;
@@ -326,6 +367,7 @@ export class FontRegistryService {
         fileName: font.fileName,
         commercialApproved,
         printExportAllowed,
+        webEmbedAllowed,
         licenseVerifiedAt,
       });
 
@@ -337,6 +379,7 @@ export class FontRegistryService {
         ...font,
         commercialApproved,
         printExportAllowed,
+        webEmbedAllowed,
         licenseVerifiedAt,
         isDownloaded: onDisk,
         isActiveOnFrontend: Boolean(desiredActive && onDisk && licensed),
@@ -444,6 +487,7 @@ export class FontRegistryService {
             update: {
               enabled: isActive,
               slug: catalogItem.id,
+              webEmbedAllowed: catalogItem.webEmbedAllowed,
             },
             create: {
               slug: catalogItem.id,
@@ -457,6 +501,7 @@ export class FontRegistryService {
               licenseUrl: catalogItem.licenseUrl ?? null,
               commercialApproved: catalogItem.commercialApproved,
               printExportAllowed: catalogItem.printExportAllowed,
+              webEmbedAllowed: catalogItem.webEmbedAllowed,
               licenseVerifiedAt: catalogItem.licenseVerifiedAt
                 ? new Date(catalogItem.licenseVerifiedAt)
                 : null,
@@ -474,7 +519,7 @@ export class FontRegistryService {
   }
 
   /**
-   * Deactivates a font in the database/memory without calling fs.unlinkSync on public/fonts (T-406).
+   * Deactivates a font in the database/memory without mutating server font assets (T-406).
    */
   public static async deactivateFont(
     fontIdOrSlug: string
@@ -520,6 +565,7 @@ export class FontRegistryService {
               licenseUrl: catalogItem.licenseUrl ?? null,
               commercialApproved: catalogItem.commercialApproved,
               printExportAllowed: catalogItem.printExportAllowed,
+              webEmbedAllowed: catalogItem.webEmbedAllowed,
               licenseVerifiedAt: catalogItem.licenseVerifiedAt
                 ? new Date(catalogItem.licenseVerifiedAt)
                 : null,
@@ -534,6 +580,77 @@ export class FontRegistryService {
     }
 
     return { id, name };
+  }
+
+  /**
+   * Resolves a font binary for web embedding (`/api/fonts/[id]`, R-107).
+   * Serves bytes ONLY when `commercialApproved && printExportAllowed && webEmbedAllowed && enabled`.
+   */
+  public static async resolveWebEmbedFont(fontIdOrSlug: string): Promise<{
+    entry: FontEntry;
+    buffer: Buffer;
+    mimeType: string;
+  }> {
+    const trimmed = fontIdOrSlug.trim();
+    if (!trimmed) {
+      throw new FontNotFoundError(fontIdOrSlug);
+    }
+
+    const allFonts = await this.getAllFonts({ includeBase64: false });
+    const normalized = trimmed.toLowerCase();
+
+    const matched = allFonts.find(
+      (f) =>
+        f.id.toLowerCase() === normalized ||
+        (f.fileName && f.fileName.toLowerCase() === normalized) ||
+        f.familyName.toLowerCase() === normalized ||
+        f.aliases?.some((a) => a.toLowerCase() === normalized)
+    );
+
+    if (!matched) {
+      if (isUnverifiedLegacyArchiveFile(trimmed)) {
+        throw new FontLicenseError(
+          trimmed,
+          "Unverified legacy archive font is prohibited for web embedding"
+        );
+      }
+      throw new FontNotFoundError(trimmed);
+    }
+
+    if (
+      !matched.commercialApproved ||
+      !matched.printExportAllowed ||
+      !matched.webEmbedAllowed ||
+      !matched.licenseVerifiedAt ||
+      matched.isWebFont ||
+      !matched.fileName
+    ) {
+      throw new FontLicenseError(
+        matched.name,
+        "Font is not licensed for self-hosted web embedding"
+      );
+    }
+
+    if (!matched.isActiveOnFrontend) {
+      if (!matched.isDownloaded) {
+        throw new FontNotFoundError(matched.name);
+      }
+      throw new FontLicenseError(matched.name, "Font is disabled");
+    }
+
+    const buffer = this.readDiskFontBuffer(matched.fileName, matched.aliases);
+    if (!buffer) {
+      throw new FontNotFoundError(matched.name);
+    }
+
+    const mimeType =
+      matched.format === "woff2"
+        ? "font/woff2"
+        : matched.format === "otf"
+          ? "font/otf"
+          : "font/ttf";
+
+    return { entry: matched, buffer, mimeType };
   }
 
   /**
@@ -563,6 +680,15 @@ export class FontRegistryService {
       if (diskBuf) {
         return diskBuf;
       }
+      if (options?.allowUnlicensedInspection) {
+        const quarantinedBuf = this.readQuarantinedFontBufferForInspection(
+          catalogItem.fileName,
+          catalogItem.aliases
+        );
+        if (quarantinedBuf) {
+          return quarantinedBuf;
+        }
+      }
       throw new FontNotFoundError(catalogItem.name);
     }
 
@@ -587,6 +713,14 @@ export class FontRegistryService {
       if (diskBuf) {
         return diskBuf;
       }
+      if (options?.allowUnlicensedInspection) {
+        const quarantinedBuf = this.readQuarantinedFontBufferForInspection(
+          dbMatch.fileName
+        );
+        if (quarantinedBuf) {
+          return quarantinedBuf;
+        }
+      }
       throw new FontNotFoundError(dbMatch.name);
     }
 
@@ -597,7 +731,9 @@ export class FontRegistryService {
           "Unverified legacy archive font is prohibited in print rendering"
         );
       }
-      const rawBuf = this.readDiskFontBuffer(fontFamilyOrId);
+      const rawBuf =
+        this.readDiskFontBuffer(fontFamilyOrId) ??
+        this.readQuarantinedFontBufferForInspection(fontFamilyOrId);
       if (rawBuf) return rawBuf;
     }
 
@@ -670,9 +806,9 @@ export class FontRegistryService {
   }
 
   /**
-   * Serverless-safe font ingestion (T-406):
-   * - Never invokes `execSync` / `unzip` or writes to `src/` or `public/fonts`.
-   * - Verifies bundled font presence or fetches direct allowlisted TTF into memory / Vercel Blob + Prisma `Font`.
+   * Serverless-safe font ingestion (T-406, R-107):
+   * - Never invokes `execSync` / `unzip` or writes to `src/` or `public/`.
+   * - Verifies bundled `assets/fonts/` presence or fetches direct allowlisted TTF into memory / private Blob + Prisma `Font`.
    */
   public static async downloadFont(
     fontId: string
@@ -692,7 +828,7 @@ export class FontRegistryService {
       };
     }
 
-    // If already bundled in public/fonts, preload into memory and mark active in DB
+    // If already bundled in assets/fonts, preload into memory and mark active in DB
     const existingBuf = this.readDiskFontBuffer(font.fileName, font.aliases);
     if (existingBuf) {
       await this.toggleActive(font.id, true);
@@ -742,15 +878,16 @@ export class FontRegistryService {
       this.bufferCache.set(font.fileName, buf);
 
       let storageKey: string | null = null;
-      if (
+      const blobToken =
         process.env.BLOB_READ_WRITE_TOKEN ||
-        process.env.VERCEL_BLOB_READ_WRITE_TOKEN
-      ) {
+        process.env.VERCEL_BLOB_READ_WRITE_TOKEN;
+      if (blobToken) {
         const { put } = await import("@vercel/blob");
         const uploaded = await put(`fonts/${font.fileName}`, buf, {
-          access: "public",
+          access: "private",
           addRandomSuffix: false,
           contentType: "font/ttf",
+          token: blobToken,
         });
         storageKey = uploaded.url;
       }
@@ -761,6 +898,7 @@ export class FontRegistryService {
             where: { fileName: font.fileName },
             update: {
               enabled: true,
+              webEmbedAllowed: font.webEmbedAllowed,
               storageKey: storageKey ?? undefined,
             },
             create: {
@@ -775,6 +913,7 @@ export class FontRegistryService {
               licenseUrl: font.licenseUrl ?? null,
               commercialApproved: font.commercialApproved,
               printExportAllowed: font.printExportAllowed,
+              webEmbedAllowed: font.webEmbedAllowed,
               licenseVerifiedAt: font.licenseVerifiedAt
                 ? new Date(font.licenseVerifiedAt)
                 : null,

@@ -22,6 +22,7 @@ export interface FontCatalogItem {
   licenseUrl?: string;
   commercialApproved: boolean;
   printExportAllowed: boolean;
+  webEmbedAllowed: boolean;
   licenseVerifiedAt?: string | null;
   licenseVerifiedBy?: string | null;
   description: string;
@@ -42,6 +43,7 @@ export interface FontLicenseSubject {
   fileName?: string;
   commercialApproved: boolean;
   printExportAllowed: boolean;
+  webEmbedAllowed?: boolean;
   licenseVerifiedAt?: string | Date | null;
 }
 
@@ -79,13 +81,22 @@ export function isFontLicensedForPrint(font: FontLicenseSubject): boolean {
 }
 
 /**
- * Detects legacy unverified local archive font filenames (VNI-*, HL-*, HY-*, etc.)
+ * R-107 Web-Embedding Gate:
+ * Self-hosted font binary streaming (`/api/fonts/[id]`) is permitted ONLY when
+ * commercial + print-export + web-embedding rights are all verified.
+ */
+export function isFontWebEmbeddable(font: FontLicenseSubject): boolean {
+  return isFontLicensedForPrint(font) && font.webEmbedAllowed === true;
+}
+
+/**
+ * Detects legacy unverified local archive font filenames (VNI-*, HL-*, HY-*, Fz-*, etc.)
  * which must remain commercialApproved=false, printExportAllowed=false until audited.
  */
 export function isUnverifiedLegacyArchiveFile(fileName: string): boolean {
   const clean = fileName.trim();
   if (!clean) return false;
-  return /^(VNI[-_]|VN[A-Za-z]|Vbut|Vong|HL[-_]|hl[a-z]|htf|HY[-_]|TMC[-_]|ThuPhap_|ThuphapXuan)/i.test(
+  return /^(VNI[-_]|VN[A-Za-z]|Vbut|Vong|HL[-_]|hl[a-z]|htf|HY[-_]|Fz[-_A-Za-z]|TMC[-_]|ThuPhap_|ThuphapXuan)/i.test(
     clean
   );
 }
@@ -116,6 +127,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://www.fontspace.com/utm-thuphap-thien-an-font-f32777",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -141,6 +153,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description: "Grand dragon sweeping loop capitals with flowing flourishes.",
@@ -165,6 +178,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description: "Clean, lyrical calligraphic script with full Vietnamese diacritics.",
@@ -189,6 +203,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -214,6 +229,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -239,6 +255,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -264,6 +281,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description: "Classic poetic Vietnamese Thư Pháp script with clean rhythm.",
@@ -286,6 +304,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     license: "Local Archive (Unverified - Blocked for Commercial Print)",
     commercialApproved: false,
     printExportAllowed: false,
+    webEmbedAllowed: false,
     licenseVerifiedAt: null,
     licenseVerifiedBy: null,
     description:
@@ -312,6 +331,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://fonts.adobe.com/fonts/kokuryu#licensing-section",
     commercialApproved: true,
     printExportAllowed: false,
+    webEmbedAllowed: false,
     licenseVerifiedAt: "2026-08-18",
     licenseVerifiedBy: "system-seed",
     description:
@@ -339,6 +359,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -364,6 +385,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -389,6 +411,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -416,6 +439,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -441,6 +465,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -466,6 +491,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -491,6 +517,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -518,6 +545,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description:
@@ -543,6 +571,7 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseUrl: "https://openfontlicense.org",
     commercialApproved: true,
     printExportAllowed: true,
+    webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
     description: "Heavy ancient stone-rubbing style Hangul brush script.",

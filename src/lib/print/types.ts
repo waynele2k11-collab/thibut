@@ -108,3 +108,37 @@ export const CompositionSchema = z.object({
 });
 
 export type DesignComposition = z.infer<typeof CompositionSchema>;
+
+/**
+ * Converts a legacy pre-Wave-1 composition JSON shape (if encountered on historical orders)
+ * into a validated `DesignComposition` conforming to `CompositionSchema`.
+ */
+export function adaptLegacyComposition(raw: unknown): DesignComposition {
+  const direct = CompositionSchema.safeParse(raw);
+  if (direct.success) {
+    return direct.data;
+  }
+
+  if (typeof raw === "object" && raw !== null && "layers" in raw) {
+    const candidate = raw as Record<string, unknown>;
+    if (Array.isArray(candidate.layers)) {
+      const normalizedLayers = candidate.layers.map((item) => {
+        if (typeof item !== "object" || item === null) return item;
+        const l = item as Record<string, unknown>;
+        if (
+          l.type === "seal" &&
+          (l.fontFamily === "VNI Ong do" || l.fontFamily === "vni-ong-do")
+        ) {
+          return { ...l, fontFamily: "Ma Shan Zheng" };
+        }
+        return item;
+      });
+      return CompositionSchema.parse({
+        ...candidate,
+        layers: normalizedLayers,
+      });
+    }
+  }
+
+  return CompositionSchema.parse(raw);
+}
