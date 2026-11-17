@@ -15,7 +15,9 @@
     "test": "node --import ./scripts/test-loader.mjs --test 'tests/**/*.test.ts'",
     "test:db": "node --import ./scripts/test-loader.mjs --test 'tests/postgres-integration.integration.ts'",
     "test:e2e": "playwright test",
-    "db:migrate": "prisma migrate deploy"
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "node --import ./scripts/test-loader.mjs scripts/seed-catalog.ts",
+    "launch:check": "node --import ./scripts/test-loader.mjs scripts/launch-readiness.ts"
   },
   "dependencies": {
     "@fal-ai/client": "^1.10.1",

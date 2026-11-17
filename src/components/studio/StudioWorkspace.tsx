@@ -272,6 +272,10 @@ function StudioWorkspaceContainer({
     selectedProduct?.imageUrl ||
     "/mockups/blank_hoodie.jpg";
 
+  const backgroundAssetUrl = state.backgroundAssetId
+    ? `/api/uploads/background?assetId=${encodeURIComponent(state.backgroundAssetId)}`
+    : undefined;
+
   return (
     <div
       className={
@@ -354,6 +358,8 @@ function StudioWorkspaceContainer({
             productImageUrl={
               state.viewMode === "MOCKUP" ? mockupImage : undefined
             }
+            backgroundAssetUrl={backgroundAssetUrl}
+            backgroundFillMode={state.backgroundFillMode}
             hasSeal={state.hasSeal}
             sealStyle="IMPERIAL_RED"
             sealColor={SEAL_VERMILION_HEX}
@@ -420,6 +426,14 @@ function StudioWorkspaceContainer({
           setSealText={(sealText) => setState({ sealText })}
           sealFontFamily={state.sealFontFamily}
           setSealFontFamily={(sealFontFamily) => setState({ sealFontFamily })}
+          backgroundAssetId={state.backgroundAssetId}
+          backgroundFillMode={state.backgroundFillMode}
+          onChangeBackgroundAsset={(backgroundAssetId) =>
+            setState({ backgroundAssetId })
+          }
+          onChangeBackgroundFillMode={(backgroundFillMode) =>
+            setState({ backgroundFillMode })
+          }
           fulfillmentFormat={state.fulfillmentFormat}
           onChangeFulfillmentFormat={(fulfillmentFormat) =>
             setState((prev) => ({
@@ -517,6 +531,9 @@ export function StudioWorkspace({
   const initialSealLayer = initialComposition?.layers.find(
     (l) => l.type === "seal"
   );
+  const initialBgAssetLayer = initialComposition?.layers.find(
+    (l) => l.type === "asset"
+  );
 
   const resolvedTradition: ScriptCategory =
     initialTradition ?? galleryRemix?.tradition ?? "VIETNAMESE_THU_PHAP";
@@ -573,6 +590,8 @@ export function StudioWorkspace({
       hasSeal: initialComposition ? Boolean(initialSealLayer) : true,
       sealText: initialSealLayer?.sealText || "印",
       sealFontFamily: initialSealLayer?.fontFamily || DEFAULT_SEAL_FONT_FAMILY,
+      backgroundAssetId: initialBgAssetLayer?.assetId ?? null,
+      backgroundFillMode: initialBgAssetLayer?.fillMode ?? "contain",
       placement: initialComposition?.placement || "front",
       selectedProductId: firstProduct?.id,
       selectedVariantId: resolvedInitialVariantId,

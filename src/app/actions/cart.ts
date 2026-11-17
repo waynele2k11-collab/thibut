@@ -75,6 +75,13 @@ export interface AddToCartResult {
 
 const RemoveCartItemSchema = z.string().uuid();
 
+const UpdateCartItemQuantitySchema = z
+  .object({
+    cartItemId: z.string().uuid(),
+    quantity: z.number().int().min(0).max(100),
+  })
+  .strict();
+
 async function resolveAuthenticatedUserId(): Promise<string | null> {
   try {
     const supabase = await createClient();
@@ -781,4 +788,89 @@ export async function removeFromCartFormAction(
   if (typeof itemId === "string" && itemId.length > 0) {
     await removeFromCartAction(itemId);
   }
+}
+
+export async function updateCartItemQuantityAction(
+  rawInput: unknown
+): Promise<{ success: boolean; count: number; error?: string }> {
+  const parsed = UpdateCartItemQuantitySchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return { success: false, count: 0, error: "Invalid quantity update" };
+  }
+
+  const { cartItemId, quantity } = parsed.data;
+  if (quantity === 0) {
+    return removeFromCartAction(cartItemId);
+  }
+
+  try {
+    const cookieStore = await cookies();
+    const userId = await resolveAuthenticatedUserId();
+    const anonId = await verifyAnonSessionToken(
+      cookieStore.get(ANON_SESSION_COOKIE)?.value
+    );
+
+    if (!userId && !anonId) {
+      return { success: false, count: 0, error: "Unauthorized" };
+    }
+
+    await enforceDistributedRateLimit({
+      bucket: "action:cart-update",
+      key: userId ? `user:${userId}` : `anon:${anonId ?? "guest"}`,
+      limit: 60,
+      windowMs: 60_000,
+    });
+
+    const cartItem = await prisma.cartItem.findUnique({
+      where: { id: cartItemId },
+      include: { cart: true },
+    });
+
+    if (!cartItem || cartItem.cart.status !== "ACTIVE") {
+      return { success: false, count: 0, error: "Cart item not found" };
+    }
+
+    const ownsByUser = Boolean(userId && cartItem.cart.userId === userId);
+    const ownsByAnon = Boolean(
+      !userId && anonId && cartItem.cart.anonymousSessionId === anonId
+    );
+    if (!ownsByUser && !ownsByAnon) {
+      return { success: false, count: 0, error: "Forbidden" };
+    }
+
+    await prisma.cartItem.update({
+      where: { id: cartItem.id },
+      data: { quantity },
+    });
+
+    const items = await prisma.cartItem.findMany({
+      where: { cartId: cartItem.cartId },
+      select: { quantity: true },
+    });
+    const count = items.reduce((sum, row) => sum + row.quantity, 0);
+
+    revalidatePath("/cart");
+
+    return { success: true, count };
+  } catch (err: unknown) {
+    if (err instanceof RateLimitError) {
+      return { success: false, count: 0, error: "Too many requests" };
+    }
+    console.error("[updateCartItemQuantityAction] Error:", err);
+    return { success: false, count: 0, error: "Unable to update quantity" };
+  }
+}
+
+export async function updateCartItemQuantityFormAction(
+  formData: FormData
+): Promise<void> {
+  const itemId = formData.get("cartItemId");
+  const rawQty = formData.get("quantity");
+  if (typeof itemId !== "string" || typeof rawQty !== "string") return;
+  const parsedQty = Number.parseInt(rawQty, 10);
+  if (!Number.isInteger(parsedQty)) return;
+  await updateCartItemQuantityAction({
+    cartItemId: itemId,
+    quantity: parsedQty,
+  });
 }

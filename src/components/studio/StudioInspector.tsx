@@ -72,6 +72,10 @@ export interface StudioInspectorProps {
   setSealText: (v: string) => void;
   sealFontFamily: string;
   setSealFontFamily: (v: string) => void;
+  backgroundAssetId: string | null;
+  backgroundFillMode: "cover" | "contain";
+  onChangeBackgroundAsset: (assetId: string | null) => void;
+  onChangeBackgroundFillMode: (fillMode: "cover" | "contain") => void;
   fulfillmentFormat: FulfillmentFormat;
   onChangeFulfillmentFormat: (format: FulfillmentFormat) => void;
   products: readonly ProductMock[];
@@ -134,6 +138,10 @@ export function StudioInspector({
   setSealText,
   sealFontFamily,
   setSealFontFamily,
+  backgroundAssetId,
+  backgroundFillMode,
+  onChangeBackgroundAsset,
+  onChangeBackgroundFillMode,
   fulfillmentFormat,
   onChangeFulfillmentFormat,
   products,
@@ -255,6 +263,10 @@ export function StudioInspector({
               onChangeSealText={setSealText}
               sealFontFamily={sealFontFamily}
               onChangeSealFontFamily={setSealFontFamily}
+              backgroundAssetId={backgroundAssetId}
+              backgroundFillMode={backgroundFillMode}
+              onChangeBackgroundAsset={onChangeBackgroundAsset}
+              onChangeBackgroundFillMode={onChangeBackgroundFillMode}
             />
           </TabsContent>
 

@@ -1,15 +1,134 @@
 import { PrismaClient } from "@prisma/client";
 import { PRODUCT_CATALOG } from "../src/config/catalog";
+import {
+  DEFAULT_LICENSE_ROYALTY_MINOR,
+  DEFAULT_PERSONALIZATION_FEE_MINOR,
+} from "../src/lib/pricing/quote";
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log("Seeding Catalog from src/config/catalog.ts...");
+const BACKGROUND_PRESETS = [
+  {
+    key: "zen-ivory",
+    name: "Zen Ivory",
+    category: "Zen",
+    description: "A soft, warm ivory paper texture with subtle natural grain.",
+    promptTemplate:
+      "Create an elegant editorial background for East Asian calligraphy presentation. Style: Zen minimalist paper. Mood: {{mood}}. Palette: {{palette}}. Intensity: {{intensity}}. Soft, warm ivory paper texture with subtle natural grain. Keep composition minimal and suitable for overlaid calligraphy. Do not include readable text, signage, or calligraphy characters. Leave clean visual space for central artwork. {{userNote}}",
+    defaultMood: "Calm",
+    defaultPalette: "Ivory / Ink",
+    defaultIntensity: "Minimal",
+    sortOrder: 1,
+    enabled: true,
+  },
+  {
+    key: "sumi-mist",
+    name: "Sumi Mist",
+    category: "Abstract",
+    description: "Atmospheric ink wash clouds dissipating in negative space.",
+    promptTemplate:
+      "Create an elegant editorial background for East Asian calligraphy presentation. Style: Sumi-e ink wash mist. Mood: {{mood}}. Palette: {{palette}}. Intensity: {{intensity}}. Atmospheric ink wash clouds dissipating in negative space. Keep composition minimal and suitable for overlaid calligraphy. Do not include readable text, signage, or calligraphy characters. Leave clean visual space for central artwork. {{userNote}}",
+    defaultMood: "Mysterious",
+    defaultPalette: "Beige / Black",
+    defaultIntensity: "Medium",
+    sortOrder: 2,
+    enabled: true,
+  },
+  {
+    key: "bamboo-shadow",
+    name: "Bamboo Shadow",
+    category: "Nature",
+    description:
+      "Soft silhouettes of bamboo leaves cast against a paper screen.",
+    promptTemplate:
+      "Create an elegant editorial background for East Asian calligraphy presentation. Style: Bamboo shadows on shoji screen. Mood: {{mood}}. Palette: {{palette}}. Intensity: {{intensity}}. Soft silhouettes of bamboo leaves cast against a paper screen. Keep composition minimal and suitable for overlaid calligraphy. Do not include readable text, signage, or calligraphy characters. Leave clean visual space for central artwork. {{userNote}}",
+    defaultMood: "Spiritual",
+    defaultPalette: "Soft Gold",
+    defaultIntensity: "Minimal",
+    sortOrder: 3,
+    enabled: true,
+  },
+] as const;
 
-  // 1. Ensure Fulfillment Provider exists
+const CREATOR_PLANS = [
+  {
+    code: "FREE" as const,
+    name: "Artisan Free",
+    activeDesignLimit: 25,
+    monthlyAICredits: 50,
+    priceMinor: 0n,
+  },
+  {
+    code: "CREATOR" as const,
+    name: "Creator Lineage",
+    activeDesignLimit: 100,
+    monthlyAICredits: 300,
+    priceMinor: 1900n,
+  },
+  {
+    code: "CREATOR_PLUS" as const,
+    name: "Master Calligrapher",
+    activeDesignLimit: 500,
+    monthlyAICredits: 1000,
+    priceMinor: 4900n,
+  },
+  {
+    code: "STUDIO" as const,
+    name: "Archival Studio",
+    activeDesignLimit: 2500,
+    monthlyAICredits: 5000,
+    priceMinor: 12900n,
+  },
+] as const;
+
+async function main() {
+  console.log("Seeding Thi Bút roles, creator plans, background presets, and catalog...");
+
+  for (const role of [
+    { code: "BUYER", name: "Buyer" },
+    { code: "CREATOR", name: "Creator" },
+    { code: "ADMIN", name: "Administrator" },
+  ]) {
+    await prisma.role.upsert({
+      where: { code: role.code },
+      update: { name: role.name },
+      create: role,
+    });
+  }
+
+  for (const plan of CREATOR_PLANS) {
+    await prisma.creatorPlan.upsert({
+      where: { code: plan.code },
+      update: {
+        name: plan.name,
+        activeDesignLimit: plan.activeDesignLimit,
+        monthlyAICredits: plan.monthlyAICredits,
+        priceMinor: plan.priceMinor,
+        active: true,
+      },
+      create: {
+        code: plan.code,
+        name: plan.name,
+        activeDesignLimit: plan.activeDesignLimit,
+        monthlyAICredits: plan.monthlyAICredits,
+        priceMinor: plan.priceMinor,
+        currency: "USD",
+        active: true,
+      },
+    });
+  }
+
+  for (const preset of BACKGROUND_PRESETS) {
+    await prisma.backgroundPreset.upsert({
+      where: { key: preset.key },
+      update: preset,
+      create: preset,
+    });
+  }
+
   const printful = await prisma.fulfillmentProviderRecord.upsert({
     where: { code: "PRINTFUL" },
-    update: {},
+    update: { active: true },
     create: {
       code: "PRINTFUL",
       name: "Printful",
@@ -18,28 +137,41 @@ async function main() {
     },
   });
 
-  // 2. Iterate over PRODUCT_CATALOG
-  for (const [key, config] of Object.entries(PRODUCT_CATALOG)) {
-    console.log(`Processing product: ${config.name}`);
+  const feeBundleMinor =
+    DEFAULT_LICENSE_ROYALTY_MINOR + DEFAULT_PERSONALIZATION_FEE_MINOR;
 
-    // Create or update CatalogProduct
-    const slug = config.id.toLowerCase().replace(/\s+/g, "-");
+  for (const config of Object.values(PRODUCT_CATALOG)) {
+    if (config.category === "digital") {
+      continue;
+    }
+
+    const totalMinor = BigInt(config.priceMinor);
+    const baseRetailMinor =
+      totalMinor > feeBundleMinor ? totalMinor - feeBundleMinor : 1999n;
+    const costMinor = baseRetailMinor / 2n > 0n ? baseRetailMinor / 2n : 950n;
+
+    const slug = config.id
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
     const product = await prisma.catalogProduct.upsert({
       where: { slug },
       update: {
         name: config.name,
         category: config.category,
-        defaultMarkupMinor: BigInt(0),
+        status: "ACTIVE",
+        defaultMarkupMinor: 0n,
       },
       create: {
         slug,
         name: config.name,
         category: config.category,
-        defaultMarkupMinor: BigInt(0),
+        status: "ACTIVE",
+        defaultMarkupMinor: 0n,
       },
     });
 
-    // Create or update PrintArea
     if (config.printArea) {
       await prisma.printArea.upsert({
         where: {
@@ -48,9 +180,7 @@ async function main() {
             placement: "FRONT_CENTER",
           },
         },
-        update: {
-          schemaJson: config.printArea,
-        },
+        update: { schemaJson: config.printArea },
         create: {
           catalogProductId: product.id,
           placement: "FRONT_CENTER",
@@ -63,44 +193,46 @@ async function main() {
       });
     }
 
-    // Handle Variants (Sizes + Colors)
-    // We create a variant for each combination of size and color
     for (const color of config.colors) {
-      // In this simple architecture, we'll store the mockup Asset directly
-      // Since Asset requires sha256 and mimeType, we'll just create a dummy one or use the URL as objectKey
-      const assetSlug = `mockup-${slug}-${color.id}`;
+      const objectKey = color.mockup || "/mockups/blank_hoodie.jpg";
       const asset = await prisma.asset.upsert({
-        where: { objectKey: color.mockup || "empty-mockup" },
+        where: { objectKey },
         update: {},
         create: {
-          objectKey: color.mockup || "empty-mockup",
+          objectKey,
           mimeType: "image/jpeg",
-          sha256: assetSlug, // dummy sha256
+          sha256: `mockup-${slug}-${color.id}`,
+          visibility: "PUBLIC",
         },
       });
 
       for (const size of config.sizes) {
-        const variantSku = `${slug}-${color.id}-${size}`.toLowerCase();
-        
+        const cleanSize = size
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+        const variantSku = `${slug}-${color.id}-${cleanSize}`;
+
         const variant = await prisma.catalogVariant.upsert({
           where: { sku: variantSku },
           update: {
             color: color.name,
             colorHex: color.hex,
-            size: size,
-            baseRetailMinor: BigInt(Math.round(config.price * 100)),
+            size,
+            baseRetailMinor,
+            active: true,
           },
           create: {
             productId: product.id,
             sku: variantSku,
             color: color.name,
             colorHex: color.hex,
-            size: size,
-            baseRetailMinor: BigInt(Math.round(config.price * 100)),
+            size,
+            baseRetailMinor,
+            active: true,
           },
         });
 
-        // Ensure ProviderVariant exists
         await prisma.providerVariant.upsert({
           where: {
             providerId_catalogVariantId: {
@@ -108,21 +240,38 @@ async function main() {
               catalogVariantId: variant.id,
             },
           },
-          update: {},
+          update: {
+            costMinor,
+            currency: "USD",
+            active: true,
+          },
           create: {
             providerId: printful.id,
             catalogVariantId: variant.id,
-            externalProductId: "TBD", // Printful API would provide this
-            externalVariantId: "TBD", // Printful API would provide this
-            costMinor: BigInt(Math.round(config.price * 100 * 0.6)), // Dummy cost
+            externalProductId: `seed-${slug}`,
+            externalVariantId: `seed-${variantSku}`,
+            costMinor,
             currency: "USD",
+            active: true,
+          },
+        });
+
+        await prisma.productMockup.upsert({
+          where: { id: `mockup-${variant.id}` },
+          update: { assetId: asset.id },
+          create: {
+            id: `mockup-${variant.id}`,
+            catalogVariantId: variant.id,
+            assetId: asset.id,
+            provider: "PRINTFUL",
+            status: "READY",
           },
         });
       }
     }
   }
 
-  console.log("Catalog seeded successfully!");
+  console.log("Production defaults & catalog seeded cleanly with BigInt pricing.");
 }
 
 main()

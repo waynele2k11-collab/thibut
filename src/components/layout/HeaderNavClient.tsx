@@ -184,7 +184,14 @@ export function HeaderNavClient({
             })}
           </nav>
 
-          <div className="mt-auto pt-6 border-t border-surface-variant">
+          <div className="mt-auto pt-6 border-t border-surface-variant space-y-1">
+            <Link
+              href="/orders"
+              onClick={closeDrawer}
+              className="flex items-center gap-3 py-3 px-4 rounded-lg font-label-caps text-label-caps uppercase text-on-surface hover:bg-surface-container-high transition-colors motion-reduce:transition-none"
+            >
+              Orders &amp; Downloads
+            </Link>
             <Link
               href="/auth/login"
               onClick={closeDrawer}

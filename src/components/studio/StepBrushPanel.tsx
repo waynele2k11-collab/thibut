@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertTriangle, Check, CircleDot, MoveHorizontal, MoveVertical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { BackgroundLayerControls } from "./BackgroundLayerControls";
 import type {
   StrokePresetOption,
   VariationTypeOption,
@@ -102,6 +103,10 @@ export interface StepBrushPanelProps {
   onChangeSealText: (sealText: string) => void;
   sealFontFamily: string;
   onChangeSealFontFamily: (font: string) => void;
+  backgroundAssetId?: string | null;
+  backgroundFillMode?: "cover" | "contain";
+  onChangeBackgroundAsset?: (assetId: string | null) => void;
+  onChangeBackgroundFillMode?: (fillMode: "cover" | "contain") => void;
 }
 
 export function StepBrushPanel({
@@ -126,6 +131,10 @@ export function StepBrushPanel({
   onChangeSealText,
   sealFontFamily,
   onChangeSealFontFamily,
+  backgroundAssetId = null,
+  backgroundFillMode = "contain",
+  onChangeBackgroundAsset = () => {},
+  onChangeBackgroundFillMode = () => {},
 }: StepBrushPanelProps) {
   const [showGlobalLatin, setShowGlobalLatin] = useState(false);
   const canToggleGlobalLatin =
@@ -484,6 +493,14 @@ export function StepBrushPanel({
           </div>
         )}
       </section>
+
+      <BackgroundLayerControls
+        locked={locked}
+        backgroundAssetId={backgroundAssetId}
+        backgroundFillMode={backgroundFillMode}
+        onChangeBackgroundAsset={onChangeBackgroundAsset}
+        onChangeBackgroundFillMode={onChangeBackgroundFillMode}
+      />
     </div>
   );
 }

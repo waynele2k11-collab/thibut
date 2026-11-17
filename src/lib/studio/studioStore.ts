@@ -53,6 +53,8 @@ export interface StudioState {
   hasSeal: boolean;
   sealText: string;
   sealFontFamily: string;
+  backgroundAssetId: string | null;
+  backgroundFillMode: "cover" | "contain";
   placement: PlacementValue;
   selectedProductId: string | undefined;
   selectedVariantId: string | undefined;
@@ -69,12 +71,16 @@ export type StudioStateInput = Omit<
   | "creationMode"
   | "fulfillmentFormat"
   | "selectedInterpretationId"
+  | "backgroundAssetId"
+  | "backgroundFillMode"
   | "cartConfirmation"
 > & {
   activeStep?: StudioStep;
   creationMode?: CreationMode;
   fulfillmentFormat?: FulfillmentFormat;
   selectedInterpretationId?: string | null;
+  backgroundAssetId?: string | null;
+  backgroundFillMode?: "cover" | "contain";
   cartConfirmation?: CartConfirmationBanner | null;
 };
 
@@ -93,6 +99,8 @@ export function createStudioStore(initialInput: StudioStateInput): StudioStore {
     creationMode: initialInput.creationMode ?? "QUOTE",
     fulfillmentFormat: initialInput.fulfillmentFormat ?? "PHYSICAL",
     selectedInterpretationId: initialInput.selectedInterpretationId ?? null,
+    backgroundAssetId: initialInput.backgroundAssetId ?? null,
+    backgroundFillMode: initialInput.backgroundFillMode ?? "contain",
     cartConfirmation: initialInput.cartConfirmation ?? null,
   };
   const listeners = new Set<() => void>();

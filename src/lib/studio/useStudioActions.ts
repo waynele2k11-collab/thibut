@@ -12,6 +12,7 @@ import {
   DEFAULT_SEAL_FONT_FAMILY,
 } from "@/lib/fonts/fontCatalog";
 import {
+  AssetLayerSchema,
   CompositionSchema,
   HexColorSchema,
   type CompositionLayer,
@@ -57,19 +58,39 @@ export function useStudioActions({
       "Thi Bút"
     ).slice(0, 200);
 
-    const layers: CompositionLayer[] = [
-      {
-        id: "layer-calligraphy-main",
-        type: "calligraphy",
-        text: calligraphyText,
-        fontFamily: state.fontFamily || DEFAULT_CALLIGRAPHY_FONT_FAMILY,
-        layout: state.layoutMode,
-        colorHex: safeHex,
-        zIndex: 10,
+    const layers: CompositionLayer[] = [];
+
+    if (state.backgroundAssetId) {
+      const parsedBgLayer = AssetLayerSchema.safeParse({
+        id: "layer-background-asset",
+        type: "asset",
+        assetId: state.backgroundAssetId,
+        fillMode: state.backgroundFillMode,
+        zIndex: 0,
         opacity: 1,
-        transform: artworkTransform,
-      },
-    ];
+        transform: {
+          x: 0.5,
+          y: 0.5,
+          scale: 1,
+          rotation: 0,
+        },
+      });
+      if (parsedBgLayer.success) {
+        layers.push(parsedBgLayer.data);
+      }
+    }
+
+    layers.push({
+      id: "layer-calligraphy-main",
+      type: "calligraphy",
+      text: calligraphyText,
+      fontFamily: state.fontFamily || DEFAULT_CALLIGRAPHY_FONT_FAMILY,
+      layout: state.layoutMode,
+      colorHex: safeHex,
+      zIndex: 10,
+      opacity: 1,
+      transform: artworkTransform,
+    });
 
     if (state.hasSeal) {
       layers.push({
@@ -103,6 +124,8 @@ export function useStudioActions({
     canvasRef,
     effectiveVariantId,
     renderedText,
+    state.backgroundAssetId,
+    state.backgroundFillMode,
     state.fontFamily,
     state.fulfillmentFormat,
     state.hasSeal,

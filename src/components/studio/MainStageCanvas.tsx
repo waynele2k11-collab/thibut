@@ -26,7 +26,7 @@ const MIN_DISPLAY_SIZE = 210;
 const SAFE_PADDING = 48;
 const SAFE_SPAN = STAGE_SIZE - SAFE_PADDING * 2; // 704px
 
-type StageLayerRole = "artwork" | "seal" | "guide";
+type StageLayerRole = "background" | "artwork" | "seal" | "guide";
 
 const objectRoleMap = new WeakMap<fabric.FabricObject, StageLayerRole>();
 const baseFitScaleMap = new WeakMap<fabric.FabricObject, number>();
@@ -50,6 +50,8 @@ export interface MainStageCanvasProps {
   fontFamily: string;
   inkColor: string;
   productImageUrl?: string;
+  backgroundAssetUrl?: string;
+  backgroundFillMode?: "cover" | "contain";
   hasSeal: boolean;
   sealStyle: string;
   sealColor: string;
@@ -159,6 +161,8 @@ export const MainStageCanvas = forwardRef<
     fontFamily,
     inkColor,
     productImageUrl,
+    backgroundAssetUrl,
+    backgroundFillMode = "contain",
     hasSeal,
     sealStyle,
     sealColor,
@@ -199,7 +203,7 @@ export const MainStageCanvas = forwardRef<
     canvas.selection = !locked;
     for (const obj of canvas.getObjects()) {
       const role = objectRoleMap.get(obj);
-      if (role === "guide") continue;
+      if (role === "guide" || role === "background") continue;
       obj.set({
         selectable: !locked,
         evented: !locked,
@@ -472,6 +476,67 @@ export const MainStageCanvas = forwardRef<
       isCancelled = true;
     };
   }, [canvas, viewMode, productImageUrl]);
+
+  // 1b. Private uploaded / AI-generated background asset layer (zIndex 0, INV-013, INV-014, TB-CALLI-005)
+  useEffect(() => {
+    if (!canvas) return;
+    let isCancelled = false;
+
+    const existingBg = findObjectByRole(canvas, "background");
+    if (existingBg) {
+      canvas.remove(existingBg);
+    }
+
+    if (!backgroundAssetUrl) {
+      canvas.requestRenderAll();
+      return;
+    }
+
+    fabric.FabricImage.fromURL(backgroundAssetUrl)
+      .then((bgImg) => {
+        if (isCancelled) return;
+        const stale = findObjectByRole(canvas, "background");
+        if (stale) {
+          canvas.remove(stale);
+        }
+
+        const scaleX = SAFE_SPAN / (bgImg.width || SAFE_SPAN);
+        const scaleY = SAFE_SPAN / (bgImg.height || SAFE_SPAN);
+        const fitScale =
+          backgroundFillMode === "cover"
+            ? Math.max(scaleX, scaleY)
+            : Math.min(scaleX, scaleY);
+
+        bgImg.set({
+          left: STAGE_SIZE / 2,
+          top: STAGE_SIZE / 2,
+          originX: "center",
+          originY: "center",
+          scaleX: fitScale,
+          scaleY: fitScale,
+          selectable: false,
+          evented: false,
+        });
+
+        objectRoleMap.set(bgImg, "background");
+        canvas.add(bgImg);
+        canvas.sendObjectToBack(bgImg);
+        const guide = findObjectByRole(canvas, "guide");
+        if (guide) {
+          canvas.bringObjectToFront(guide);
+        }
+        canvas.requestRenderAll();
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          canvas.requestRenderAll();
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [canvas, backgroundAssetUrl, backgroundFillMode]);
 
   // 2. Calligraphy vector load — runs ONLY when artworkSvgUrl or fontFamily changes (TB-CALLI-005)
   useEffect(() => {
