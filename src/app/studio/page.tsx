@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Upload, MoreHorizontal, PieChart, DollarSign, Filter, ArrowUpDown } from "lucide-react";
 
@@ -83,10 +84,12 @@ export default function CreatorStudioPage() {
           {/* Earnings Card */}
           <div className="bg-surface-container-lowest border border-surface-variant p-8 flex flex-col gap-6 col-span-1 md:col-span-2 relative overflow-hidden group">
             <div className="absolute inset-0 z-0">
-              <img
-                className="w-full h-full object-cover opacity-20 grayscale transition-transform duration-1000 group-hover:scale-105"
+              <Image
+                className="object-cover opacity-20 grayscale transition-transform duration-1000 group-hover:scale-105"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCTgMfnrchTlvv-KOlSb1nZCxH52sUORClsu3QyWLSaGi2BhplcEj2eVyr4X6oujFuPu0jLwcA8mKyCbU5s50qzxs14IFOer_DSafmwaBZStLUcdra3HcRgCH446Wv2jS8aVObVmchMuSm25B3oi-lJb0rJ1JvGs9CuJhzxV6kqVqUvxYeY86CRj1WSBJERl4WsHNuvKgStw08s6f4ANAQdfLU5jHxXpCp5Dw9eh-hnwgBEVU1d31R"
                 alt=""
+                fill
+                unoptimized
               />
             </div>
             <div className="relative z-10 flex justify-between items-start">
@@ -134,8 +137,8 @@ export default function CreatorStudioPage() {
                   <tr key={design.id} className="border-b border-surface-variant hover:bg-surface-container-low transition-colors">
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-surface-container border border-surface-variant overflow-hidden flex-shrink-0">
-                          <img className="w-full h-full object-cover" src={design.imageUrl} alt={design.title} />
+                        <div className="relative w-16 h-16 bg-surface-container border border-surface-variant overflow-hidden flex-shrink-0">
+                          <Image className="object-cover" src={design.imageUrl} alt={design.title} fill unoptimized />
                         </div>
                         <div className="flex flex-col">
                           <span className="font-body-md text-body-md font-medium text-on-background">{design.title}</span>

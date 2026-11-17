@@ -1,9 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { X } from "lucide-react";
 
 const ONBOARDING_KEY = "thibut_onboarded_v1";
+
+const subscribeOnboarding = () => () => {};
+const readOnboardingCompleted = () => {
+  try {
+    return Boolean(window.localStorage.getItem(ONBOARDING_KEY));
+  } catch {
+    return false;
+  }
+};
+const getServerOnboardingCompleted = () => true;
 
 const STEPS = [
   { emoji: "✍️", title: "Type your words", desc: "Enter your name, a quote, or a phrase. In English or Vietnamese." },
@@ -12,15 +22,21 @@ const STEPS = [
 ];
 
 export function StudioOnboardingModal() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (!localStorage.getItem(ONBOARDING_KEY)) setVisible(true);
-  }, []);
+  const isOnboardedInStorage = useSyncExternalStore(
+    subscribeOnboarding,
+    readOnboardingCompleted,
+    getServerOnboardingCompleted
+  );
+  const [dismissed, setDismissed] = useState(false);
+  const visible = !isOnboardedInStorage && !dismissed;
 
   const dismiss = () => {
-    localStorage.setItem(ONBOARDING_KEY, "1");
-    setVisible(false);
+    try {
+      localStorage.setItem(ONBOARDING_KEY, "1");
+    } catch {
+      // Ignore storage errors in restricted browsing modes
+    }
+    setDismissed(true);
   };
 
   if (!visible) return null;
@@ -54,10 +70,10 @@ export function StudioOnboardingModal() {
         {/* CTA */}
         <div className="px-6 pb-6 flex flex-col gap-2">
           <button onClick={dismiss} className="w-full bg-[#B3261E] text-white py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider hover:bg-[#9b1e17] active:scale-[0.99] transition-all">
-            Let's Create →
+            Let&rsquo;s Create →
           </button>
           <button onClick={dismiss} className="text-center text-[11px] text-[#888580] hover:text-[#111111] transition-colors py-1">
-            Skip — I know what I'm doing
+            Skip — I know what I&rsquo;m doing
           </button>
         </div>
       </div>

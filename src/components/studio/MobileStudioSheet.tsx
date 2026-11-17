@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 interface MobileStudioSheetProps {
   children: ReactNode;
@@ -15,13 +15,12 @@ const SNAP_RATIOS = {
 type SnapKey = keyof typeof SNAP_RATIOS;
 
 export function MobileStudioSheet({ children }: MobileStudioSheetProps) {
-  const [winHeight, setWinHeight] = useState(0); // 0 = SSR/not mounted yet
+  const [winHeight, setWinHeight] = useState(0);
   const [snapKey, setSnapKey] = useState<SnapKey>("collapsed");
   const [isDragging, setIsDragging] = useState(false);
   const [liveOffset, setLiveOffset] = useState(0);
   const dragStartY = useRef(0);
 
-  // Measure window height only on the client
   useEffect(() => {
     const update = () => setWinHeight(window.innerHeight);
     update();
@@ -29,7 +28,6 @@ export function MobileStudioSheet({ children }: MobileStudioSheetProps) {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Don't render sheet until we have client height (avoids SSR mismatch)
   if (winHeight === 0) return null;
 
   const snapHeight = winHeight * SNAP_RATIOS[snapKey];
@@ -43,8 +41,9 @@ export function MobileStudioSheet({ children }: MobileStudioSheetProps) {
   const onTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
     const delta = e.touches[0].clientY - dragStartY.current;
-    // Clamp: can't drag further up than full, or more than 45% down
-    setLiveOffset(Math.max(-winHeight * 0.12, Math.min(winHeight * 0.45, delta)));
+    setLiveOffset(
+      Math.max(-winHeight * 0.12, Math.min(winHeight * 0.45, delta))
+    );
   };
 
   const onTouchEnd = () => {
@@ -59,11 +58,13 @@ export function MobileStudioSheet({ children }: MobileStudioSheetProps) {
 
   return (
     <div
-      className="fixed left-0 right-0 bottom-0 z-30 md:hidden bg-[#F6F1E8] rounded-t-2xl shadow-2xl border-t border-stone-200"
+      className="fixed left-0 right-0 bottom-0 z-30 lg:hidden bg-surface-container-low rounded-t-2xl border-t border-surface-variant"
       style={{
         height: `${winHeight}px`,
         transform: `translateY(${translateY}px)`,
-        transition: isDragging ? "none" : "transform 300ms cubic-bezier(0.32,0.72,0,1)",
+        transition: isDragging
+          ? "none"
+          : "transform 300ms cubic-bezier(0.32,0.72,0,1)",
       }}
     >
       {/* Drag handle */}
@@ -77,10 +78,7 @@ export function MobileStudioSheet({ children }: MobileStudioSheetProps) {
       </div>
 
       {/* Scrollable inspector content */}
-      <div
-        className="overflow-y-auto overscroll-contain h-full"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 80px)" }}
-      >
+      <div className="overflow-y-auto overscroll-contain h-full pb-[calc(env(safe-area-inset-bottom,0px)+84px)]">
         {children}
       </div>
     </div>

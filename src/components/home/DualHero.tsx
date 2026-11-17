@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
@@ -11,6 +11,21 @@ export default function DualHero() {
   const [activePreset, setActivePreset] = useState<PresetMode>("japanese");
   const [inputText, setInputText] = useState("David");
   const [isTranslating, setIsTranslating] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerTransition = () => {
+    setIsTranslating(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setIsTranslating(false);
+    }, 400);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   // Simulated translation dictionary
   const getTranslation = (text: string, mode: PresetMode) => {
@@ -29,14 +44,8 @@ export default function DualHero() {
   const handlePresetClick = (mode: PresetMode) => {
     setActivePreset(mode);
     setInputText(mode === "japanese" ? "David" : "Eternity");
+    triggerTransition();
   };
-
-  // Simulate typing delay
-  useEffect(() => {
-    setIsTranslating(true);
-    const timer = setTimeout(() => setIsTranslating(false), 400);
-    return () => clearTimeout(timer);
-  }, [inputText, activePreset]);
 
   const translation = getTranslation(inputText, activePreset);
 
@@ -70,7 +79,10 @@ export default function DualHero() {
           <input 
             type="text" 
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={(e) => {
+              setInputText(e.target.value);
+              triggerTransition();
+            }}
             className="bg-transparent border-none outline-none font-body-lg text-on-background placeholder:text-on-surface-variant w-full"
             placeholder="Type a word..."
           />

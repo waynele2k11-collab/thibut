@@ -1,61 +1,63 @@
-import { NextResponse } from 'next/server';
-import { generatePrintMaster } from '@/lib/print-generator';
-import { createClient } from '@/utils/supabase/server';
-import { cookies } from 'next/headers';
+import { NextResponse } from "next/server";
+import {
+  AssetResolutionError,
+  FontLicenseError,
+  FontNotFoundError,
+  GlyphCoverageError,
+  PrintMasterHttpError,
+  authorizeAndParsePrintMasterRequest,
+  generatePrintMasterPng,
+} from "@/lib/print-generator";
+import { AdminAuthError, assertAdminApi } from "@/utils/admin/auth";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
-    // 1. Check for Fulfillment Secret or Authenticated Admin Session (INV-001)
-    const authHeader = request.headers.get('authorization');
-    const expectedSecret = process.env.FULFILLMENT_SECRET_KEY || process.env.PRINTFUL_API_KEY;
+    const rawBody = await request.text();
+    const signatureHeader = request.headers.get("x-fulfillment-signature");
 
-    let isAuthorized = false;
-
-    if (authHeader && expectedSecret && authHeader === `Bearer ${expectedSecret}`) {
-      isAuthorized = true;
-    } else {
-      // Check for authenticated Admin cookie session
-      const cookieStore = await cookies();
-      if (cookieStore.get('admin_master_pwd_verified')?.value === 'true') {
-        isAuthorized = true;
-      } else {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email === 'waynele2k11@gmail.com') {
-          isAuthorized = true;
-        }
-      }
-    }
-
-    if (!isAuthorized) {
-      return NextResponse.json(
-        { error: 'Forbidden: High-resolution print assets require verified order or admin authentication (INV-001).' },
-        { status: 403 }
-      );
-    }
-
-    const { composition } = await request.json();
-    
-    if (!composition) {
-      return NextResponse.json({ error: 'Missing composition object for print generation' }, { status: 400 });
-    }
-
-    console.log(`[API Secure] Generating Print Master from Composition Object...`);
-
-    // Generate high-res 300 DPI print master PNG buffer
-    const pngBuffer = await generatePrintMaster(composition);
-
-    return new NextResponse(pngBuffer as unknown as BodyInit, {
-      status: 200,
-      headers: {
-        'Content-Type': 'image/png',
-        'Content-Disposition': 'attachment; filename="thi_but_print_master.png"',
-        'Cache-Control': 'no-store, max-age=0',
-      },
+    const composition = await authorizeAndParsePrintMasterRequest({
+      rawBody,
+      signatureHeader,
+      assertAdminFn: () => assertAdminApi(),
     });
 
-  } catch (error) {
-    console.error('[API Secure] Error generating print master:', error);
-    return NextResponse.json({ error: 'Failed to generate print master' }, { status: 500 });
+    const pngBuffer = await generatePrintMasterPng(composition);
+
+    return new NextResponse(new Uint8Array(pngBuffer), {
+      status: 200,
+      headers: {
+        "Content-Type": "image/png",
+        "Content-Disposition":
+          'attachment; filename="thi_but_print_master.png"',
+        "Cache-Control": "no-store, max-age=0",
+      },
+    });
+  } catch (error: unknown) {
+    if (error instanceof PrintMasterHttpError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      );
+    }
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      );
+    }
+    if (
+      error instanceof FontLicenseError ||
+      error instanceof FontNotFoundError ||
+      error instanceof GlyphCoverageError ||
+      error instanceof AssetResolutionError
+    ) {
+      return NextResponse.json({ error: error.message }, { status: 422 });
+    }
+    return NextResponse.json(
+      { error: "Failed to generate print master" },
+      { status: 500 }
+    );
   }
 }

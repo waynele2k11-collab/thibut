@@ -1,431 +1,803 @@
-import fs from "fs";
-import path from "path";
+import "server-only";
+import fs from "node:fs";
+import path from "node:path";
+import opentype, { type OpenTypeFont } from "@shuding/opentype.js";
+import type { Font as PrismaFont } from "@prisma/client";
+import prisma from "@/lib/prisma";
+import {
+  CATEGORY_LABELS,
+  DEFAULT_CALLIGRAPHY_FONT_FAMILY,
+  DEFAULT_CALLIGRAPHY_FONT_ID,
+  DEFAULT_SEAL_FONT_FAMILY,
+  DEFAULT_SEAL_FONT_ID,
+  INITIAL_FONT_CATALOG,
+  isFontLicensedForPrint,
+  isUnverifiedLegacyArchiveFile,
+  type FontCatalogItem,
+  type FontEntry,
+  type FontLicenseSubject,
+  type ScriptCategory,
+} from "./fontCatalog";
 
-export type ScriptCategory = 
-  | "VIETNAMESE_THU_PHAP" 
-  | "JAPANESE_SHODO" 
-  | "CHINESE_CALLIGRAPHY" 
-  | "KOREAN_BRUSH";
+export {
+  CATEGORY_LABELS,
+  DEFAULT_CALLIGRAPHY_FONT_FAMILY,
+  DEFAULT_CALLIGRAPHY_FONT_ID,
+  DEFAULT_SEAL_FONT_FAMILY,
+  DEFAULT_SEAL_FONT_ID,
+  INITIAL_FONT_CATALOG,
+  isFontLicensedForPrint,
+  isUnverifiedLegacyArchiveFile,
+};
+export type { FontCatalogItem, FontEntry, FontLicenseSubject, ScriptCategory };
 
-export interface FontEntry {
-  id: string;
-  name: string;
-  category: ScriptCategory;
-  categoryLabel: string;
-  fileName: string;
-  previewText: string;
-  sourceUrl: string;
-  sourceLabel: string;
-  downloadUrl: string;
-  isZipArchive?: boolean;
-  zipInternalPath?: string;
-  license: string;
-  commercialApproved: boolean;
-  description: string;
-  isWebFont?: boolean;
-  cssFontFamily?: string;
-  isDownloaded: boolean;
-  isActiveOnFrontend: boolean;
-  base64Data?: string;
+export class FontLicenseError extends Error {
+  public readonly fontIdentifier: string;
+
+  constructor(fontIdentifier: string, reason: string) {
+    super(`Font licensing gate rejected "${fontIdentifier}": ${reason}`);
+    this.name = "FontLicenseError";
+    this.fontIdentifier = fontIdentifier;
+  }
 }
 
-// Initial seed catalog of world-class calligraphy fonts
-const INITIAL_FONT_CATALOG: Omit<FontEntry, "isDownloaded" | "isActiveOnFrontend">[] = [
-  // 🇻🇳 Vietnamese Thư Pháp
-  {
-    id: "utm-thuphap-thien-an",
-    name: "UTM Thư Pháp Thiên Ân",
-    category: "VIETNAMESE_THU_PHAP",
-    categoryLabel: "Vietnamese Thư Pháp",
-    fileName: "UtmThuphapThienAn.ttf",
-    previewText: "Thi Bút",
-    sourceUrl: "https://www.fontspace.com/utm-thuphap-thien-an-font-f32777",
-    sourceLabel: "FontSpace / Michael Dinh Kien",
-    downloadUrl: "https://www.fontspace.com/get/family/nzldj",
-    isZipArchive: true,
-    zipInternalPath: "UtmThuphapThienAn-VnBz.ttf",
-    license: "Free for Personal & Commercial use",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "The gold-standard Vietnamese brush calligraphy typeface with sweeping dragon ascenders.",
-  },
-  {
-    id: "great-vibes",
-    name: "Long Vũ (Great Vibes)",
-    category: "VIETNAMESE_THU_PHAP",
-    categoryLabel: "Vietnamese Thư Pháp",
-    fileName: "GreatVibes-Regular.ttf",
-    previewText: "Trọng Nghĩa",
-    sourceUrl: "https://fonts.google.com/specimen/Great+Vibes",
-    sourceLabel: "Google Fonts / TypeSETIT",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/greatvibes/GreatVibes-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Grand dragon sweeping loop capitals with flowing flourishes.",
-  },
-  {
-    id: "kaushan-script",
-    name: "Phi Bạch (Kaushan Script)",
-    category: "VIETNAMESE_THU_PHAP",
-    categoryLabel: "Vietnamese Thư Pháp",
-    fileName: "KaushanScript-Regular.ttf",
-    previewText: "Chí Hướng",
-    sourceUrl: "https://fonts.google.com/specimen/Kaushan+Script",
-    sourceLabel: "Google Fonts / Impallari Type",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/kaushanscript/KaushanScript-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Raw, uninhibited horsehair brush strokes with visible dry bristle texture.",
-  },
-  {
-    id: "caveat-brush",
-    name: "Mực Nho (Caveat Brush)",
-    category: "VIETNAMESE_THU_PHAP",
-    categoryLabel: "Vietnamese Thư Pháp",
-    fileName: "CaveatBrush-Regular.ttf",
-    previewText: "Tâm Đức",
-    sourceUrl: "https://fonts.google.com/specimen/Caveat+Brush",
-    sourceLabel: "Google Fonts / Impallari Type",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/caveatbrush/CaveatBrush-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Heavy sumi ink mass with strong pressure and authoritative brush impact.",
-  },
-  {
-    id: "arizonia",
-    name: "Phượng Vũ (Arizonia)",
-    category: "VIETNAMESE_THU_PHAP",
-    categoryLabel: "Vietnamese Thư Pháp",
-    fileName: "Arizonia-Regular.ttf",
-    previewText: "Bình An",
-    sourceUrl: "https://fonts.google.com/specimen/Arizonia",
-    sourceLabel: "Google Fonts / TypeSETIT",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/arizonia/Arizonia-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Delicate dancing phoenix curves inspired by Asian camel-hair brush elegance.",
-  },
-  {
-    id: "alex-brush",
-    name: "Khí Phách (Alex Brush)",
-    category: "VIETNAMESE_THU_PHAP",
-    categoryLabel: "Vietnamese Thư Pháp",
-    fileName: "AlexBrush-Regular.ttf",
-    previewText: "Phúc Lộc",
-    sourceUrl: "https://fonts.google.com/specimen/Alex+Brush",
-    sourceLabel: "Google Fonts / TypeSETIT",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/alexbrush/AlexBrush-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Classic poetic Vietnamese Thư Pháp script with clean rhythm.",
-  },
+export class FontNotFoundError extends Error {
+  public readonly fontIdentifier: string;
 
-  // 🇯🇵 Japanese Shodō
-  {
-    id: "kokuryu",
-    name: "KokuryuSou (黒龍草)",
-    category: "JAPANESE_SHODO",
-    categoryLabel: "Japanese Shodō",
-    fileName: "",
-    previewText: "黒龍",
-    sourceUrl: "https://fonts.adobe.com/fonts/kokuryu",
-    sourceLabel: "Adobe Fonts / Showashotai",
-    downloadUrl: "",
-    license: "Adobe Fonts Commercial Web License",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-18",
-    description: "Premium Japanese calligraphy brush by Showa Shotai. Loaded dynamically via Typekit.",
-    isWebFont: true,
-    cssFontFamily: "kokuryu, sans-serif",
-  },
-  {
-    id: "yuji-boku",
-    name: "Yuji Boku (勇司 朴)",
-    category: "JAPANESE_SHODO",
-    categoryLabel: "Japanese Shodō",
-    fileName: "YujiBoku-Regular.ttf",
-    previewText: "諦めない",
-    sourceUrl: "https://fonts.google.com/specimen/Yuji+Boku",
-    sourceLabel: "Google Fonts / Kinuta Font Factory",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/yujiboku/YujiBoku-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Heavy ink-dipped dry brush Shodō with classical sumi weight and broken flying white.",
-  },
-  {
-    id: "yuji-syuku",
-    name: "Yuji Syuku (勇司 宿)",
-    category: "JAPANESE_SHODO",
-    categoryLabel: "Japanese Shodō",
-    fileName: "YujiSyuku-Regular.ttf",
-    previewText: "武士道",
-    sourceUrl: "https://fonts.google.com/specimen/Yuji+Syuku",
-    sourceLabel: "Google Fonts / Kinuta Font Factory",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/yujisyuku/YujiSyuku-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Classical restrained Kanji brushwork with sharp brush tip transitions.",
-  },
-  {
-    id: "yuji-mai",
-    name: "Yuji Mai (勇司 舞)",
-    category: "JAPANESE_SHODO",
-    categoryLabel: "Japanese Shodō",
-    fileName: "YujiMai-Regular.ttf",
-    previewText: "風林火山",
-    sourceUrl: "https://fonts.google.com/specimen/Yuji+Mai",
-    sourceLabel: "Google Fonts / Kinuta Font Factory",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/yujimai/YujiMai-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Flowing Kana and Kanji brush movement with dancing brush cadence.",
-  },
+  constructor(fontIdentifier: string) {
+    super(`Font "${fontIdentifier}" not found on server`);
+    this.name = "FontNotFoundError";
+    this.fontIdentifier = fontIdentifier;
+  }
+}
 
-  // 🇨🇳 Chinese Shūfǎ
-  {
-    id: "liu-jian-mao-cao",
-    name: "Liu Jian Mao Cao (刘建毛草)",
-    category: "CHINESE_CALLIGRAPHY",
-    categoryLabel: "Chinese Shūfǎ",
-    fileName: "LiuJianMaoCao-Regular.ttf",
-    previewText: "海納百川",
-    sourceUrl: "https://fonts.google.com/specimen/Liu+Jian+Mao+Cao",
-    sourceLabel: "Google Fonts / Liu Jian",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/liujianmaocao/LiuJianMaoCao-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Expressive cursive grass script (草書) with wild brush energy and dramatic ink pooling.",
-  },
-  {
-    id: "long-cang",
-    name: "Long Cang (龙苍)",
-    category: "CHINESE_CALLIGRAPHY",
-    categoryLabel: "Chinese Shūfǎ",
-    fileName: "LongCang-Regular.ttf",
-    previewText: "天道酬勤",
-    sourceUrl: "https://fonts.google.com/specimen/Long+Cang",
-    sourceLabel: "Google Fonts / Qiu Yin",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/longcang/LongCang-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Master semi-cursive grass script calligraphy with powerful stroke rhythm.",
-  },
-  {
-    id: "ma-shan-zheng",
-    name: "Ma Shan Zheng (马善政)",
-    category: "CHINESE_CALLIGRAPHY",
-    categoryLabel: "Chinese Shūfǎ",
-    fileName: "MaShanZheng-Regular.ttf",
-    previewText: "上善若水",
-    sourceUrl: "https://fonts.google.com/specimen/Ma+Shan+Zheng",
-    sourceLabel: "Google Fonts / Ma Shan Zheng",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/mashanzheng/MaShanZheng-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Standard regular brush calligraphy (楷書) with authoritative balance.",
-  },
-  {
-    id: "zhi-mang-xing",
-    name: "Zhi Mang Xing (志芒星)",
-    category: "CHINESE_CALLIGRAPHY",
-    categoryLabel: "Chinese Shūfǎ",
-    fileName: "ZhiMangXing-Regular.ttf",
-    previewText: "大衛",
-    sourceUrl: "https://fonts.google.com/specimen/Zhi+Mang+Xing",
-    sourceLabel: "Google Fonts / Wei Zhimang",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/zhimangxing/ZhiMangXing-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Running script calligraphy (行書) with swift, connected strokes.",
-  },
+const ALLOWED_FONT_DOWNLOAD_HOSTS = new Set<string>([
+  "raw.githubusercontent.com",
+  "github.com",
+  "fonts.gstatic.com",
+]);
 
-  // 🇰🇷 Korean Seoye
-  {
-    id: "nanum-brush-script",
-    name: "Nanum Brush Script (나눔손글씨 붓)",
-    category: "KOREAN_BRUSH",
-    categoryLabel: "Korean Seoye",
-    fileName: "NanumBrushScript-Regular.ttf",
-    previewText: "영원한 사랑",
-    sourceUrl: "https://fonts.google.com/specimen/Nanum+Brush+Script",
-    sourceLabel: "Google Fonts / Naver Corp",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/nanumbrushscript/NanumBrushScript-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Authentic Korean calligraphy brush script with lively Hangul stroke dynamics.",
-  },
-  {
-    id: "east-sea-dokdo",
-    name: "East Sea Dokdo (독도체)",
-    category: "KOREAN_BRUSH",
-    categoryLabel: "Korean Seoye",
-    fileName: "EastSeaDokdo-Regular.ttf",
-    previewText: "희망과 꿈",
-    sourceUrl: "https://fonts.google.com/specimen/East+Sea+Dokdo",
-    sourceLabel: "Google Fonts / Yoon Design",
-    downloadUrl: "https://raw.githubusercontent.com/google/fonts/main/ofl/eastseadokdo/EastSeaDokdo-Regular.ttf",
-    license: "OFL (Open Font License)",
-    commercialApproved: true,
-    licenseVerifiedAt: "2026-08-17",
-    description: "Heavy ancient stone-rubbing style Hangul brush script.",
-  },
-];
+function normalizeLookupKey(raw: string): string {
+  const firstFamily = raw.split(",")[0] ?? raw;
+  return firstFamily
+    .trim()
+    .replace(/^['"]+|['"]+$/g, "")
+    .trim()
+    .toLowerCase();
+}
 
-const CONFIG_FILE_PATH = path.join(process.cwd(), "src", "lib", "fonts", "font_registry_state.json");
+function isValidScriptCategory(val: string | null | undefined): val is ScriptCategory {
+  return (
+    val === "VIETNAMESE_THU_PHAP" ||
+    val === "JAPANESE_SHODO" ||
+    val === "CHINESE_CALLIGRAPHY" ||
+    val === "KOREAN_BRUSH"
+  );
+}
+
+function safePublicFontPath(fileName: string): string | null {
+  const cleanName = path.basename(fileName.trim());
+  if (!cleanName || cleanName !== fileName.trim() || cleanName.startsWith(".")) {
+    return null;
+  }
+  return path.join(process.cwd(), "public", "fonts", cleanName);
+}
+
+function parseOpenTypeBuffer(buf: Buffer): OpenTypeFont {
+  const arrayBuffer = buf.buffer.slice(
+    buf.byteOffset,
+    buf.byteOffset + buf.byteLength
+  ) as ArrayBuffer;
+  const parseFn = typeof opentype.parse === "function" ? opentype.parse : opentype.parse;
+  return parseFn(arrayBuffer);
+}
 
 export class FontRegistryService {
-  private static memoryState: Record<string, boolean> | null = null;
-  private static base64Cache: Record<string, string> = {};
+  private static memoryEnabledState = new Map<string, boolean>();
+  private static bufferCache = new Map<string, Buffer>();
+  private static openTypeCache = new Map<string, OpenTypeFont>();
+  private static base64Cache = new Map<string, string>();
+  private static dbBackoffUntilMs = 0;
 
-  private static loadState(): Record<string, boolean> {
-    try {
-      if (fs.existsSync(CONFIG_FILE_PATH)) {
-        const raw = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
-        this.memoryState = JSON.parse(raw);
-        return this.memoryState!;
-      }
-    } catch {
-      // ignore
-    }
-    // Default active state with all fonts enabled
-    this.memoryState = {
-      "utm-thuphap-thien-an": true,
-      "arizonia": true,
-      "great-vibes": true,
-      "kaushan-script": true,
-      "caveat-brush": true,
-      "alex-brush": true,
-      "yuji-boku": true,
-      "yuji-syuku": true,
-      "yuji-mai": true,
-      "long-cang": true,
-      "liu-jian-mao-cao": true,
-      "ma-shan-zheng": true,
-      "zhi-mang-xing": true,
-      "nanum-brush-script": true,
-      "east-sea-dokdo": true,
-    };
-    return this.memoryState;
+  public static resetMemoryStateForTests(): void {
+    this.memoryEnabledState.clear();
+    this.dbBackoffUntilMs = 0;
   }
 
-  private static saveState(state: Record<string, boolean>) {
-    this.memoryState = state;
-    try {
-      fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(state, null, 2), "utf-8");
-    } catch (e) {
-      console.warn("Could not persist font_registry_state.json:", e);
+  public static assertFontLicensedForPrint(subject: FontLicenseSubject): void {
+    const label = subject.name || subject.id || subject.fileName || "unknown-font";
+    if (!subject.commercialApproved) {
+      throw new FontLicenseError(
+        label,
+        "commercialApproved is false (unverified commercial license)"
+      );
     }
+    if (!subject.printExportAllowed) {
+      throw new FontLicenseError(
+        label,
+        "printExportAllowed is false (web-only or non-exportable license)"
+      );
+    }
+    if (!subject.licenseVerifiedAt) {
+      throw new FontLicenseError(
+        label,
+        "licenseVerifiedAt timestamp is missing"
+      );
+    }
+  }
+
+  public static canActivateFont(subject: FontLicenseSubject): boolean {
+    return isFontLicensedForPrint(subject);
   }
 
   public static isFontOnDisk(fileName: string): boolean {
     if (!fileName) return false;
-    const fontPath = path.join(process.cwd(), "public", "fonts", fileName);
-    return fs.existsSync(fontPath) && fs.statSync(fontPath).size > 1000;
+    if (this.bufferCache.has(fileName)) return true;
+    const fontPath = safePublicFontPath(fileName);
+    if (!fontPath) return false;
+    try {
+      return fs.existsSync(fontPath) && fs.statSync(fontPath).size > 1000;
+    } catch {
+      return false;
+    }
+  }
+
+  private static readDiskFontBuffer(fileName: string, aliases?: string[]): Buffer | null {
+    const candidates = [fileName, ...(aliases ?? []).filter((a) => /\.(ttf|otf)$/i.test(a))];
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      const cached = this.bufferCache.get(candidate);
+      if (cached) return cached;
+
+      const fontPath = safePublicFontPath(candidate);
+      if (!fontPath) continue;
+      try {
+        if (fs.existsSync(fontPath) && fs.statSync(fontPath).size > 1000) {
+          const buf = fs.readFileSync(fontPath);
+          this.bufferCache.set(candidate, buf);
+          if (fileName && candidate !== fileName) {
+            this.bufferCache.set(fileName, buf);
+          }
+          return buf;
+        }
+      } catch {
+        // Ignore read error and try next candidate
+      }
+    }
+    return null;
   }
 
   public static getBase64(fileName: string): string {
-    if (this.base64Cache[fileName]) return this.base64Cache[fileName];
-    try {
-      const fontPath = path.join(process.cwd(), "public", "fonts", fileName);
-      if (fs.existsSync(fontPath)) {
-        const b64 = fs.readFileSync(fontPath).toString("base64");
-        this.base64Cache[fileName] = b64;
-        return b64;
-      }
-    } catch (e) {
-      console.warn(`Error reading font ${fileName} for base64:`, e);
-    }
-    return "";
+    if (!fileName) return "";
+    const cached = this.base64Cache.get(fileName);
+    if (cached) return cached;
+    const buf = this.readDiskFontBuffer(fileName);
+    if (!buf) return "";
+    const b64 = buf.toString("base64");
+    this.base64Cache.set(fileName, b64);
+    return b64;
   }
 
-  public static getAllFonts(): FontEntry[] {
-    const activeState = this.loadState();
-    return INITIAL_FONT_CATALOG.map((font) => {
-      const onDisk = font.isWebFont ? true : this.isFontOnDisk(font.fileName);
-      const isActive = activeState[font.id] ?? onDisk;
-      return {
-        ...font,
-        isDownloaded: onDisk,
-        isActiveOnFrontend: isActive && onDisk,
-        base64Data: (onDisk && !font.isWebFont) ? this.getBase64(font.fileName) : undefined,
-      };
+  private static async fetchDbFontsSafe(): Promise<PrismaFont[] | null> {
+    if (!process.env.DATABASE_URL) {
+      return null;
+    }
+    if (Date.now() < this.dbBackoffUntilMs) {
+      return null;
+    }
+    try {
+      return await prisma.font.findMany({
+        orderBy: { name: "asc" },
+      });
+    } catch {
+      this.dbBackoffUntilMs = Date.now() + 5_000;
+      return null;
+    }
+  }
+
+  private static findCatalogItem(fontFamilyOrId: string): FontCatalogItem | undefined {
+    const key = normalizeLookupKey(fontFamilyOrId);
+    if (!key) return undefined;
+
+    return INITIAL_FONT_CATALOG.find((item) => {
+      if (item.id.toLowerCase() === key) return true;
+      if (item.name.toLowerCase() === key) return true;
+      if (item.familyName.toLowerCase() === key) return true;
+      if (item.fileName && item.fileName.toLowerCase() === key) return true;
+      if (item.aliases?.some((alias) => alias.toLowerCase() === key)) return true;
+      return false;
     });
   }
 
-  public static getActiveFrontendFonts(): FontEntry[] {
-    return this.getAllFonts().filter((f) => f.isActiveOnFrontend && f.isDownloaded);
+  private static mapDbFontToEntry(
+    dbFont: PrismaFont,
+    includeBase64: boolean
+  ): FontEntry {
+    const category: ScriptCategory = isValidScriptCategory(dbFont.tradition)
+      ? dbFont.tradition
+      : "VIETNAMESE_THU_PHAP";
+    const onDisk =
+      this.isFontOnDisk(dbFont.fileName) || Boolean(dbFont.storageKey);
+
+    // Enforce strict unverified defaults on legacy archive files unless explicitly verified
+    const isUnverifiedArchive =
+      isUnverifiedLegacyArchiveFile(dbFont.fileName) && !dbFont.licenseVerifiedAt;
+    const commercialApproved = isUnverifiedArchive
+      ? false
+      : dbFont.commercialApproved;
+    const printExportAllowed = isUnverifiedArchive
+      ? false
+      : dbFont.printExportAllowed;
+    const verifiedIso = dbFont.licenseVerifiedAt
+      ? dbFont.licenseVerifiedAt.toISOString()
+      : null;
+
+    const licensed = isFontLicensedForPrint({
+      id: dbFont.id,
+      name: dbFont.name,
+      fileName: dbFont.fileName,
+      commercialApproved,
+      printExportAllowed,
+      licenseVerifiedAt: verifiedIso,
+    });
+
+    const memoryOverride = this.memoryEnabledState.get(dbFont.id);
+    const desiredEnabled = memoryOverride ?? dbFont.enabled;
+
+    return {
+      id: dbFont.id,
+      name: dbFont.name,
+      familyName: dbFont.familyName || dbFont.name,
+      category,
+      categoryLabel: CATEGORY_LABELS[category],
+      fileName: dbFont.fileName,
+      format:
+        dbFont.format === "otf" || dbFont.format === "woff2"
+          ? dbFont.format
+          : "ttf",
+      supportedScripts: dbFont.supportedScripts,
+      previewText: "Thi Bút",
+      sourceUrl: dbFont.licenseUrl || "Local Import",
+      sourceLabel: dbFont.licenseType || "Unverified Local Import",
+      downloadUrl: "",
+      license: dbFont.licenseType || "Unverified Local Archive",
+      licenseUrl: dbFont.licenseUrl || undefined,
+      commercialApproved,
+      printExportAllowed,
+      licenseVerifiedAt: verifiedIso,
+      licenseVerifiedBy: dbFont.licenseVerifiedBy,
+      description: licensed
+        ? "Verified custom font registered in database."
+        : "Imported font awaiting commercial & print-export license verification.",
+      defaultEnabled: false,
+      isDownloaded: onDisk,
+      isActiveOnFrontend: Boolean(desiredEnabled && onDisk && licensed),
+      base64Data:
+        includeBase64 && onDisk ? this.getBase64(dbFont.fileName) : undefined,
+    };
   }
 
-  public static toggleActive(fontId: string, isActive: boolean): boolean {
-    const state = this.loadState();
-    state[fontId] = isActive;
-    this.saveState(state);
+  public static async getAllFonts(options?: {
+    includeBase64?: boolean;
+  }): Promise<FontEntry[]> {
+    const includeBase64 = options?.includeBase64 ?? true;
+    const dbFonts = await this.fetchDbFontsSafe();
+
+    const dbBySlug = new Map<string, PrismaFont>();
+    const dbByFileName = new Map<string, PrismaFont>();
+    const matchedDbIds = new Set<string>();
+
+    if (dbFonts) {
+      for (const row of dbFonts) {
+        if (row.slug) dbBySlug.set(row.slug.toLowerCase(), row);
+        if (row.fileName) dbByFileName.set(row.fileName.toLowerCase(), row);
+      }
+    }
+
+    const catalogEntries: FontEntry[] = INITIAL_FONT_CATALOG.map((font) => {
+      const dbMatch =
+        dbBySlug.get(font.id.toLowerCase()) ||
+        (font.fileName
+          ? dbByFileName.get(font.fileName.toLowerCase())
+          : undefined);
+
+      if (dbMatch) {
+        matchedDbIds.add(dbMatch.id);
+      }
+
+      const onDisk = font.isWebFont
+        ? true
+        : this.readDiskFontBuffer(font.fileName, font.aliases) !== null ||
+          Boolean(dbMatch?.storageKey);
+
+      const commercialApproved = dbMatch
+        ? dbMatch.commercialApproved
+        : font.commercialApproved;
+      const printExportAllowed = dbMatch
+        ? dbMatch.printExportAllowed
+        : font.printExportAllowed;
+      const licenseVerifiedAt = dbMatch?.licenseVerifiedAt
+        ? dbMatch.licenseVerifiedAt.toISOString()
+        : font.licenseVerifiedAt ?? null;
+
+      const licensed = isFontLicensedForPrint({
+        id: font.id,
+        name: font.name,
+        fileName: font.fileName,
+        commercialApproved,
+        printExportAllowed,
+        licenseVerifiedAt,
+      });
+
+      const memoryOverride = this.memoryEnabledState.get(font.id);
+      const desiredActive =
+        memoryOverride ?? (dbMatch ? dbMatch.enabled : font.defaultEnabled);
+
+      return {
+        ...font,
+        commercialApproved,
+        printExportAllowed,
+        licenseVerifiedAt,
+        isDownloaded: onDisk,
+        isActiveOnFrontend: Boolean(desiredActive && onDisk && licensed),
+        base64Data:
+          includeBase64 && onDisk && !font.isWebFont
+            ? this.getBase64(font.fileName)
+            : undefined,
+      };
+    });
+
+    const extraDbEntries: FontEntry[] = dbFonts
+      ? dbFonts
+          .filter((row) => !matchedDbIds.has(row.id))
+          .map((row) => this.mapDbFontToEntry(row, includeBase64))
+      : [];
+
+    return [...catalogEntries, ...extraDbEntries];
+  }
+
+  public static async getActiveFrontendFonts(): Promise<FontEntry[]> {
+    const all = await this.getAllFonts({ includeBase64: false });
+    return all.filter(
+      (f) => f.isActiveOnFrontend && f.isDownloaded && isFontLicensedForPrint(f)
+    );
+  }
+
+  public static async toggleActive(
+    fontIdOrSlug: string,
+    isActive: boolean
+  ): Promise<{ id: string; enabled: boolean }> {
+    const trimmed = fontIdOrSlug.trim();
+    if (!trimmed) {
+      throw new FontNotFoundError(fontIdOrSlug);
+    }
+
+    const catalogItem = this.findCatalogItem(trimmed);
+    const dbFonts = await this.fetchDbFontsSafe();
+    const dbFont = dbFonts?.find(
+      (f) =>
+        f.id === trimmed ||
+        (f.slug && f.slug.toLowerCase() === trimmed.toLowerCase()) ||
+        (catalogItem &&
+          (f.slug === catalogItem.id || f.fileName === catalogItem.fileName))
+    );
+
+    if (!catalogItem && !dbFont) {
+      if (isUnverifiedLegacyArchiveFile(trimmed)) {
+        throw new FontLicenseError(
+          trimmed,
+          "Legacy archive font is unverified for commercial/print use"
+        );
+      }
+      throw new FontNotFoundError(trimmed);
+    }
+
+    const effectiveSubject: FontLicenseSubject = dbFont
+      ? {
+          id: dbFont.id,
+          name: dbFont.name,
+          fileName: dbFont.fileName,
+          commercialApproved:
+            isUnverifiedLegacyArchiveFile(dbFont.fileName) &&
+            !dbFont.licenseVerifiedAt
+              ? false
+              : dbFont.commercialApproved,
+          printExportAllowed:
+            isUnverifiedLegacyArchiveFile(dbFont.fileName) &&
+            !dbFont.licenseVerifiedAt
+              ? false
+              : dbFont.printExportAllowed,
+          licenseVerifiedAt:
+            dbFont.licenseVerifiedAt ?? catalogItem?.licenseVerifiedAt ?? null,
+        }
+      : {
+          id: catalogItem!.id,
+          name: catalogItem!.name,
+          fileName: catalogItem!.fileName,
+          commercialApproved: catalogItem!.commercialApproved,
+          printExportAllowed: catalogItem!.printExportAllowed,
+          licenseVerifiedAt: catalogItem!.licenseVerifiedAt ?? null,
+        };
+
+    // TB-CALLI-008 & T-407: Enforce licensing gate BEFORE enabling any font!
+    if (isActive) {
+      this.assertFontLicensedForPrint(effectiveSubject);
+    }
+
+    const canonicalKey = catalogItem ? catalogItem.id : dbFont!.id;
+    this.memoryEnabledState.set(canonicalKey, isActive);
+    if (dbFont) {
+      this.memoryEnabledState.set(dbFont.id, isActive);
+    }
+
+    // Persist in Prisma Font table when DB is reachable (serverless-safe, zero disk writes)
+    if (process.env.DATABASE_URL && Date.now() >= this.dbBackoffUntilMs) {
+      try {
+        if (dbFont) {
+          await prisma.font.update({
+            where: { id: dbFont.id },
+            data: { enabled: isActive },
+          });
+        } else if (catalogItem && catalogItem.fileName) {
+          await prisma.font.upsert({
+            where: { fileName: catalogItem.fileName },
+            update: {
+              enabled: isActive,
+              slug: catalogItem.id,
+            },
+            create: {
+              slug: catalogItem.id,
+              name: catalogItem.name,
+              familyName: catalogItem.familyName,
+              fileName: catalogItem.fileName,
+              format: catalogItem.format,
+              tradition: catalogItem.category,
+              supportedScripts: catalogItem.supportedScripts,
+              licenseType: catalogItem.license,
+              licenseUrl: catalogItem.licenseUrl ?? null,
+              commercialApproved: catalogItem.commercialApproved,
+              printExportAllowed: catalogItem.printExportAllowed,
+              licenseVerifiedAt: catalogItem.licenseVerifiedAt
+                ? new Date(catalogItem.licenseVerifiedAt)
+                : null,
+              licenseVerifiedBy: catalogItem.licenseVerifiedBy ?? null,
+              enabled: isActive,
+            },
+          });
+        }
+      } catch {
+        this.dbBackoffUntilMs = Date.now() + 5_000;
+      }
+    }
+
+    return { id: canonicalKey, enabled: isActive };
+  }
+
+  /**
+   * Deactivates a font in the database/memory without calling fs.unlinkSync on public/fonts (T-406).
+   */
+  public static async deactivateFont(
+    fontIdOrSlug: string
+  ): Promise<{ id: string; name: string }> {
+    const trimmed = fontIdOrSlug.trim();
+    const catalogItem = this.findCatalogItem(trimmed);
+    const dbFonts = await this.fetchDbFontsSafe();
+    const dbFont = dbFonts?.find(
+      (f) => f.id === trimmed || f.slug === trimmed
+    );
+
+    if (!catalogItem && !dbFont) {
+      throw new FontNotFoundError(trimmed);
+    }
+
+    const id = catalogItem ? catalogItem.id : dbFont!.id;
+    const name = catalogItem ? catalogItem.name : dbFont!.name;
+    this.memoryEnabledState.set(id, false);
+    if (dbFont) {
+      this.memoryEnabledState.set(dbFont.id, false);
+    }
+
+    if (process.env.DATABASE_URL && Date.now() >= this.dbBackoffUntilMs) {
+      try {
+        if (dbFont) {
+          await prisma.font.update({
+            where: { id: dbFont.id },
+            data: { enabled: false },
+          });
+        } else if (catalogItem && catalogItem.fileName) {
+          await prisma.font.upsert({
+            where: { fileName: catalogItem.fileName },
+            update: { enabled: false },
+            create: {
+              slug: catalogItem.id,
+              name: catalogItem.name,
+              familyName: catalogItem.familyName,
+              fileName: catalogItem.fileName,
+              format: catalogItem.format,
+              tradition: catalogItem.category,
+              supportedScripts: catalogItem.supportedScripts,
+              licenseType: catalogItem.license,
+              licenseUrl: catalogItem.licenseUrl ?? null,
+              commercialApproved: catalogItem.commercialApproved,
+              printExportAllowed: catalogItem.printExportAllowed,
+              licenseVerifiedAt: catalogItem.licenseVerifiedAt
+                ? new Date(catalogItem.licenseVerifiedAt)
+                : null,
+              licenseVerifiedBy: catalogItem.licenseVerifiedBy ?? null,
+              enabled: false,
+            },
+          });
+        }
+      } catch {
+        this.dbBackoffUntilMs = Date.now() + 5_000;
+      }
+    }
+
+    return { id, name };
+  }
+
+  /**
+   * Resolves a print-licensed font's raw TTF/OTF Buffer from local server assets or cached storage.
+   * Enforces TB-CALLI-008 licensing gate before returning any bytes for rendering.
+   */
+  public static async resolveFontBuffer(
+    fontFamilyOrId: string,
+    options?: { allowUnlicensedInspection?: boolean }
+  ): Promise<Buffer> {
+    const catalogItem = this.findCatalogItem(fontFamilyOrId);
+
+    if (catalogItem) {
+      if (!options?.allowUnlicensedInspection) {
+        this.assertFontLicensedForPrint(catalogItem);
+      }
+      if (catalogItem.isWebFont || !catalogItem.fileName) {
+        throw new FontLicenseError(
+          catalogItem.name,
+          "Web-only font has no server-exportable font file"
+        );
+      }
+      const diskBuf = this.readDiskFontBuffer(
+        catalogItem.fileName,
+        catalogItem.aliases
+      );
+      if (diskBuf) {
+        return diskBuf;
+      }
+      throw new FontNotFoundError(catalogItem.name);
+    }
+
+    // Check DB Font table if not in static catalog
+    const normalized = normalizeLookupKey(fontFamilyOrId);
+    const dbFonts = await this.fetchDbFontsSafe();
+    const dbMatch = dbFonts?.find(
+      (f) =>
+        f.id.toLowerCase() === normalized ||
+        (f.slug && f.slug.toLowerCase() === normalized) ||
+        f.name.toLowerCase() === normalized ||
+        (f.familyName && f.familyName.toLowerCase() === normalized) ||
+        f.fileName.toLowerCase() === normalized
+    );
+
+    if (dbMatch) {
+      const entry = this.mapDbFontToEntry(dbMatch, false);
+      if (!options?.allowUnlicensedInspection) {
+        this.assertFontLicensedForPrint(entry);
+      }
+      const diskBuf = this.readDiskFontBuffer(dbMatch.fileName);
+      if (diskBuf) {
+        return diskBuf;
+      }
+      throw new FontNotFoundError(dbMatch.name);
+    }
+
+    if (isUnverifiedLegacyArchiveFile(fontFamilyOrId)) {
+      if (!options?.allowUnlicensedInspection) {
+        throw new FontLicenseError(
+          fontFamilyOrId,
+          "Unverified legacy archive font is prohibited in print rendering"
+        );
+      }
+      const rawBuf = this.readDiskFontBuffer(fontFamilyOrId);
+      if (rawBuf) return rawBuf;
+    }
+
+    throw new FontNotFoundError(fontFamilyOrId);
+  }
+
+  public static async parseOpenTypeFont(
+    fontFamilyOrId: string,
+    options?: { allowUnlicensedInspection?: boolean }
+  ): Promise<OpenTypeFont> {
+    const cacheKey = `${normalizeLookupKey(fontFamilyOrId)}:${Boolean(
+      options?.allowUnlicensedInspection
+    )}`;
+    const cached = this.openTypeCache.get(cacheKey);
+    if (cached) return cached;
+
+    const buf = await this.resolveFontBuffer(fontFamilyOrId, options);
+    const parsed = parseOpenTypeBuffer(buf);
+    this.openTypeCache.set(cacheKey, parsed);
+    return parsed;
+  }
+
+  /**
+   * Verifies every non-control character in `text` maps to a real glyph (glyphIndex > 0)
+   * using `@shuding/opentype.js` (TB-CALLI-003 / TB-CALLI-006 / T-407).
+   */
+  public static async hasGlyphCoverage(
+    fontFamilyOrId: string,
+    text: string,
+    options?: { allowUnlicensedInspection?: boolean }
+  ): Promise<boolean> {
+    const trimmed = text.trim();
+    if (!trimmed) return false;
+
+    const font = await this.parseOpenTypeFont(fontFamilyOrId, options);
+    for (const ch of Array.from(trimmed)) {
+      if (/\s/.test(ch)) continue;
+      if (font.charToGlyphIndex(ch) <= 0) {
+        return false;
+      }
+    }
     return true;
   }
 
-  public static async downloadFont(fontId: string): Promise<{ success: boolean; message: string }> {
+  /**
+   * Preloads all active, print-licensed fonts on disk into the in-memory Buffer & OpenType caches.
+   */
+  public static async preloadActiveFonts(): Promise<{
+    loaded: string[];
+    skipped: string[];
+  }> {
+    const activeFonts = await this.getActiveFrontendFonts();
+    const loaded: string[] = [];
+    const skipped: string[] = [];
+
+    for (const font of activeFonts) {
+      if (font.isWebFont || !font.fileName) {
+        skipped.push(font.id);
+        continue;
+      }
+      try {
+        await this.parseOpenTypeFont(font.id);
+        loaded.push(font.id);
+      } catch {
+        skipped.push(font.id);
+      }
+    }
+
+    return { loaded, skipped };
+  }
+
+  /**
+   * Serverless-safe font ingestion (T-406):
+   * - Never invokes `execSync` / `unzip` or writes to `src/` or `public/fonts`.
+   * - Verifies bundled font presence or fetches direct allowlisted TTF into memory / Vercel Blob + Prisma `Font`.
+   */
+  public static async downloadFont(
+    fontId: string
+  ): Promise<{ success: boolean; message: string }> {
     const font = INITIAL_FONT_CATALOG.find((f) => f.id === fontId);
     if (!font) {
-      return { success: false, message: `Font ${fontId} not found in catalog` };
+      return {
+        success: false,
+        message: `Font "${fontId}" not found in catalog`,
+      };
+    }
+
+    if (!isFontLicensedForPrint(font)) {
+      return {
+        success: false,
+        message: `Font "${font.name}" cannot be activated for commercial print (${font.license})`,
+      };
+    }
+
+    // If already bundled in public/fonts, preload into memory and mark active in DB
+    const existingBuf = this.readDiskFontBuffer(font.fileName, font.aliases);
+    if (existingBuf) {
+      await this.toggleActive(font.id, true);
+      return {
+        success: true,
+        message: `Verified bundled font "${font.name}" and enabled in registry`,
+      };
+    }
+
+    if (!font.downloadUrl) {
+      return {
+        success: false,
+        message: `Font "${font.name}" has no direct server download URL`,
+      };
     }
 
     try {
-      const fontsDir = path.join(process.cwd(), "public", "fonts");
-      if (!fs.existsSync(fontsDir)) {
-        fs.mkdirSync(fontsDir, { recursive: true });
+      const parsedUrl = new URL(font.downloadUrl);
+      if (
+        parsedUrl.protocol !== "https:" ||
+        !ALLOWED_FONT_DOWNLOAD_HOSTS.has(parsedUrl.hostname)
+      ) {
+        return {
+          success: false,
+          message: `Download host "${parsedUrl.hostname}" is not in the font allowlist`,
+        };
       }
 
-      const targetPath = path.join(fontsDir, font.fileName);
+      const res = await fetch(parsedUrl.toString());
+      if (!res.ok) {
+        return {
+          success: false,
+          message: `Failed to fetch font (HTTP ${res.status})`,
+        };
+      }
 
-      if (font.isZipArchive) {
-        // Download zip and extract internal file
-        const tempZipPath = path.join("/tmp", `${font.id}_temp.zip`);
-        const res = await fetch(font.downloadUrl);
-        if (!res.ok) throw new Error(`HTTP ${res.status} fetching zip`);
-        const arrayBuf = await res.arrayBuffer();
-        fs.writeFileSync(tempZipPath, Buffer.from(arrayBuf));
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length <= 1000) {
+        return {
+          success: false,
+          message: "Downloaded font file was empty or invalid",
+        };
+      }
 
-        // Use unzip command
-        const { execSync } = await import("child_process");
-        if (font.zipInternalPath) {
-          execSync(`unzip -p "${tempZipPath}" "${font.zipInternalPath}" > "${targetPath}"`);
-        } else {
-          execSync(`unzip -o "${tempZipPath}" -d "${fontsDir}"`);
+      // Verify valid OpenType/TrueType table before accepting
+      parseOpenTypeBuffer(buf);
+      this.bufferCache.set(font.fileName, buf);
+
+      let storageKey: string | null = null;
+      if (
+        process.env.BLOB_READ_WRITE_TOKEN ||
+        process.env.VERCEL_BLOB_READ_WRITE_TOKEN
+      ) {
+        const { put } = await import("@vercel/blob");
+        const uploaded = await put(`fonts/${font.fileName}`, buf, {
+          access: "public",
+          addRandomSuffix: false,
+          contentType: "font/ttf",
+        });
+        storageKey = uploaded.url;
+      }
+
+      if (process.env.DATABASE_URL && Date.now() >= this.dbBackoffUntilMs) {
+        try {
+          await prisma.font.upsert({
+            where: { fileName: font.fileName },
+            update: {
+              enabled: true,
+              storageKey: storageKey ?? undefined,
+            },
+            create: {
+              slug: font.id,
+              name: font.name,
+              familyName: font.familyName,
+              fileName: font.fileName,
+              format: font.format,
+              tradition: font.category,
+              supportedScripts: font.supportedScripts,
+              licenseType: font.license,
+              licenseUrl: font.licenseUrl ?? null,
+              commercialApproved: font.commercialApproved,
+              printExportAllowed: font.printExportAllowed,
+              licenseVerifiedAt: font.licenseVerifiedAt
+                ? new Date(font.licenseVerifiedAt)
+                : null,
+              licenseVerifiedBy: font.licenseVerifiedBy ?? null,
+              storageKey,
+              enabled: true,
+            },
+          });
+        } catch {
+          this.dbBackoffUntilMs = Date.now() + 5_000;
         }
-      } else {
-        // Direct TTF download
-        const res = await fetch(font.downloadUrl);
-        if (!res.ok) throw new Error(`HTTP ${res.status} fetching font file`);
-        const arrayBuf = await res.arrayBuffer();
-        fs.writeFileSync(targetPath, Buffer.from(arrayBuf));
       }
 
-      // Verify file written and size > 1KB
-      if (fs.existsSync(targetPath) && fs.statSync(targetPath).size > 1000) {
-        // Clear in-memory base64 cache
-        delete this.base64Cache[font.fileName];
-        // Mark active
-        this.toggleActive(fontId, true);
-        return { success: true, message: `Successfully downloaded ${font.name}` };
-      } else {
-        throw new Error("Downloaded file was empty or corrupted");
-      }
-    } catch (e: any) {
-      console.error(`Failed to download font ${font.name}:`, e);
-      return { success: false, message: e?.message || "Download failed" };
+      this.memoryEnabledState.set(font.id, true);
+      return {
+        success: true,
+        message: `Successfully ingested "${font.name}"`,
+      };
+    } catch {
+      return {
+        success: false,
+        message: `Failed to ingest font "${font.name}"`,
+      };
     }
   }
 
@@ -434,7 +806,7 @@ export class FontRegistryService {
     successCount: number;
     failureCount: number;
   }> {
-    const results = [];
+    const results: { id: string; success: boolean; message: string }[] = [];
     let successCount = 0;
     let failureCount = 0;
 

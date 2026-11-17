@@ -23,17 +23,12 @@ export function Tabs({
   children: React.ReactNode
   className?: string
 }) {
-  const [activeTab, setActiveTab] = React.useState(value || defaultValue || "")
-  
-  React.useEffect(() => {
-    if (value !== undefined) {
-      setActiveTab(value)
-    }
-  }, [value])
+  const [uncontrolledTab, setUncontrolledTab] = React.useState(defaultValue ?? "")
+  const activeTab = value !== undefined ? value : uncontrolledTab
 
   const handleValueChange = (newValue: string) => {
     if (value === undefined) {
-      setActiveTab(newValue)
+      setUncontrolledTab(newValue)
     }
     onValueChange?.(newValue)
   }

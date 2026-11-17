@@ -1,52 +1,183 @@
 "use client";
 
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import * as fabric from "fabric";
+import { DEFAULT_SEAL_FONT_FAMILY } from "@/lib/fonts/fontCatalog";
+import {
+  NormalizedTransformSchema,
+  type NormalizedTransform,
+} from "@/lib/print/types";
+import { escapeXml } from "@/lib/security/xml";
+
+const STAGE_SIZE = 800;
+const SAFE_PADDING = 48;
+const SAFE_SPAN = STAGE_SIZE - SAFE_PADDING * 2; // 704px
+
+type StageLayerRole = "artwork" | "seal";
+
+const objectRoleMap = new WeakMap<fabric.FabricObject, StageLayerRole>();
+const baseFitScaleMap = new WeakMap<fabric.FabricObject, number>();
+
+export interface StageNormalizedTransforms {
+  artwork: NormalizedTransform;
+  seal: NormalizedTransform | null;
+}
 
 export interface MainStageCanvasRef {
-  downloadHighRes: () => void;
-  getCanvasDataUrl: () => string | null;
+  getNormalizedTransform: () => StageNormalizedTransforms;
 }
 
-interface MainStageCanvasProps {
+export interface MainStageCanvasProps {
   viewMode: "RAW_ART" | "MOCKUP";
-  layoutMode: "HORIZONTAL" | "VERTICAL";
-  artworkSvgUrl: string; // the base64 SVG or generated SVG string
-  fontFamily: string; // Used for preloading
-  productImageUrl?: string; // background for mockup mode
+  artworkSvgUrl: string;
+  fontFamily: string;
+  inkColor: string;
+  productImageUrl?: string;
   hasSeal: boolean;
   sealStyle: string;
-  sealColor: string; // Vermilion Red (#B3261E)
+  sealColor: string;
   sealText?: string;
   sealFontFamily?: string;
+  initialArtworkTransform?: NormalizedTransform;
+  initialSealTransform?: NormalizedTransform;
+  locked?: boolean;
 }
 
-export const MainStageCanvas = forwardRef<MainStageCanvasRef, MainStageCanvasProps>(({
-  viewMode,
-  layoutMode,
-  artworkSvgUrl,
-  fontFamily,
-  productImageUrl,
-  hasSeal,
-  sealStyle,
-  sealColor,
-  sealText,
-  sealFontFamily,
-}, ref) => {
+function clamp(val: number, min: number, max: number): number {
+  if (!Number.isFinite(val)) return (min + max) / 2;
+  return Math.min(max, Math.max(min, val));
+}
+
+function normalizeAngle(rawAngle: number): number {
+  if (!Number.isFinite(rawAngle)) return 0;
+  const wrapped = ((((rawAngle % 360) + 540) % 360) - 180);
+  return clamp(Number(wrapped.toFixed(2)), -360, 360);
+}
+
+function extractNormalizedTransform(
+  obj: fabric.FabricObject,
+  fallbackScale = 1
+): NormalizedTransform {
+  const left = obj.left ?? STAGE_SIZE / 2;
+  const top = obj.top ?? STAGE_SIZE / 2;
+  const baseScale = baseFitScaleMap.get(obj) ?? 1;
+  const rawScale = (obj.scaleX ?? baseScale) / (baseScale > 0 ? baseScale : 1);
+
+  return NormalizedTransformSchema.parse({
+    x: Number(clamp((left - SAFE_PADDING) / SAFE_SPAN, 0, 1).toFixed(4)),
+    y: Number(clamp((top - SAFE_PADDING) / SAFE_SPAN, 0, 1).toFixed(4)),
+    scale: Number(
+      clamp(
+        Number.isFinite(rawScale) ? rawScale : fallbackScale,
+        0.05,
+        4
+      ).toFixed(4)
+    ),
+    rotation: normalizeAngle(obj.angle ?? 0),
+  });
+}
+
+function findObjectByRole(
+  canvas: fabric.Canvas,
+  role: StageLayerRole
+): fabric.FabricObject | undefined {
+  return canvas.getObjects().find((obj) => objectRoleMap.get(obj) === role);
+}
+
+function applyInkColorToFabricObject(
+  target: fabric.FabricObject,
+  colorHex: string
+): void {
+  if (target instanceof fabric.Group) {
+    for (const child of target.getObjects()) {
+      applyInkColorToFabricObject(child, colorHex);
+    }
+    target.dirty = true;
+    return;
+  }
+
+  const updates: Partial<fabric.FabricObjectProps> = {};
+  if (
+    typeof target.fill === "string" &&
+    target.fill.length > 0 &&
+    target.fill !== "none" &&
+    target.fill !== "transparent"
+  ) {
+    updates.fill = colorHex;
+  }
+  if (
+    typeof target.stroke === "string" &&
+    target.stroke.length > 0 &&
+    target.stroke !== "none" &&
+    target.stroke !== "transparent"
+  ) {
+    updates.stroke = colorHex;
+  }
+  target.set(updates);
+  target.dirty = true;
+}
+
+export const MainStageCanvas = forwardRef<
+  MainStageCanvasRef,
+  MainStageCanvasProps
+>(function MainStageCanvas(
+  {
+    viewMode,
+    artworkSvgUrl,
+    fontFamily,
+    inkColor,
+    productImageUrl,
+    hasSeal,
+    sealStyle,
+    sealColor,
+    sealText,
+    sealFontFamily = DEFAULT_SEAL_FONT_FAMILY,
+    initialArtworkTransform,
+    initialSealTransform,
+    locked = false,
+  },
+  ref
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
+  const inkColorRef = useRef(inkColor);
+  const lockedRef = useRef(locked);
+  const initialArtAppliedRef = useRef(false);
+  const initialSealAppliedRef = useRef(false);
+
+  useEffect(() => {
+    inkColorRef.current = inkColor;
+  }, [inkColor]);
+
+  useEffect(() => {
+    lockedRef.current = locked;
+    if (!canvas) return;
+    canvas.selection = !locked;
+    for (const obj of canvas.getObjects()) {
+      obj.set({
+        selectable: !locked,
+        evented: !locked,
+      });
+    }
+    canvas.requestRenderAll();
+  }, [canvas, locked]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    
-    // Initialize Fabric Canvas
+
     const fCanvas = new fabric.Canvas(canvasRef.current, {
-      width: 800,
-      height: 800,
+      width: STAGE_SIZE,
+      height: STAGE_SIZE,
       preserveObjectStacking: true,
-      selection: true,
+      selection: !lockedRef.current,
     });
-    
+
     setCanvas(fCanvas);
 
     return () => {
@@ -54,235 +185,349 @@ export const MainStageCanvas = forwardRef<MainStageCanvasRef, MainStageCanvasPro
     };
   }, []);
 
-  useImperativeHandle(ref, () => ({
-    downloadHighRes: () => {
-      if (!canvas) return;
-      const dataUrl = canvas.toDataURL({
-        format: "png",
-        multiplier: 3, // 300 DPI equivalent for 800px base
-      });
-      const link = document.createElement("a");
-      link.download = `thibut-mockup-${Date.now()}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    },
-    getCanvasDataUrl: () => {
-      if (!canvas) return null;
-      return canvas.toDataURL({
-        format: "png",
-        multiplier: 1,
-      });
-    }
-  }));
+  useImperativeHandle(
+    ref,
+    () => ({
+      getNormalizedTransform: (): StageNormalizedTransforms => {
+        if (!canvas) {
+          return {
+            artwork: NormalizedTransformSchema.parse(
+              initialArtworkTransform ?? {
+                x: 0.5,
+                y: 0.5,
+                scale: 1,
+                rotation: 0,
+              }
+            ),
+            seal: hasSeal
+              ? NormalizedTransformSchema.parse(
+                  initialSealTransform ?? {
+                    x: 0.72,
+                    y: 0.68,
+                    scale: 0.25,
+                    rotation: 0,
+                  }
+                )
+              : null,
+          };
+        }
 
-  // Handle Background updates
+        const artObj = findObjectByRole(canvas, "artwork");
+        const sealObj = findObjectByRole(canvas, "seal");
+
+        const artwork = artObj
+          ? extractNormalizedTransform(artObj, 1)
+          : NormalizedTransformSchema.parse(
+              initialArtworkTransform ?? {
+                x: 0.5,
+                y: 0.5,
+                scale: 1,
+                rotation: 0,
+              }
+            );
+
+        const seal = hasSeal
+          ? sealObj
+            ? extractNormalizedTransform(sealObj, 0.25)
+            : NormalizedTransformSchema.parse(
+                initialSealTransform ?? {
+                  x: 0.72,
+                  y: 0.68,
+                  scale: 0.25,
+                  rotation: 0,
+                }
+              )
+          : null;
+
+        return { artwork, seal };
+      },
+    }),
+    [canvas, hasSeal, initialArtworkTransform, initialSealTransform]
+  );
+
+  // 1. Background layer ONLY (changing product/viewMode never reloads calligraphy — TB-CALLI-005)
   useEffect(() => {
     if (!canvas) return;
+    let isCancelled = false;
 
-    if (viewMode === "RAW_ART") {
-      // Warm Ivory Texture Background
+    if (viewMode === "RAW_ART" || !productImageUrl) {
       canvas.backgroundColor = "#FAF7F2";
       canvas.backgroundImage = undefined;
-      canvas.renderAll();
-    } else if (viewMode === "MOCKUP" && productImageUrl) {
-      fabric.Image.fromURL(productImageUrl).then((img) => {
-        const scaleX = canvas.width! / (img.width || 1);
-        const scaleY = canvas.height! / (img.height || 1);
-        const scale = Math.max(scaleX, scaleY); // Use Math.max for cover, Math.min for contain
+      canvas.requestRenderAll();
+    } else {
+      fabric.FabricImage.fromURL(productImageUrl, { crossOrigin: "anonymous" })
+        .then((img) => {
+          if (isCancelled) return;
+          const width = canvas.width ?? STAGE_SIZE;
+          const height = canvas.height ?? STAGE_SIZE;
+          const scaleX = width / (img.width || 1);
+          const scaleY = height / (img.height || 1);
+          const scale = Math.max(scaleX, scaleY);
 
-        img.set({
-          scaleX: scale,
-          scaleY: scale,
-          originX: 'center',
-          originY: 'center',
-          left: canvas.width! / 2,
-          top: canvas.height! / 2
+          img.set({
+            scaleX: scale,
+            scaleY: scale,
+            originX: "center",
+            originY: "center",
+            left: width / 2,
+            top: height / 2,
+          });
+
+          canvas.backgroundImage = img;
+          canvas.requestRenderAll();
+        })
+        .catch(() => {
+          if (isCancelled) return;
+          canvas.backgroundColor = "#FAF7F2";
+          canvas.backgroundImage = undefined;
+          canvas.requestRenderAll();
         });
-
-        canvas.backgroundImage = img;
-        canvas.renderAll();
-      });
     }
+
+    return () => {
+      isCancelled = true;
+    };
   }, [canvas, viewMode, productImageUrl]);
 
-  // Handle Artwork updates
+  // 2. Calligraphy vector load — runs ONLY when artworkSvgUrl or fontFamily changes (TB-CALLI-005)
   useEffect(() => {
     if (!canvas || !artworkSvgUrl) return;
 
     let isCancelled = false;
-    let cachedState = {
-      left: canvas.width! / 2,
-      top: canvas.height! / 2,
-      scaleX: 1,
-      scaleY: 1,
-      angle: 0
-    };
+    const width = canvas.width ?? STAGE_SIZE;
+    const height = canvas.height ?? STAGE_SIZE;
 
-    const existingArtwork = canvas.getObjects().find(obj => obj.name === "artwork");
+    let preservedNormalized: NormalizedTransform | null = null;
+    const existingArtwork = findObjectByRole(canvas, "artwork");
     if (existingArtwork) {
-      cachedState = {
-        left: existingArtwork.left ?? cachedState.left,
-        top: existingArtwork.top ?? cachedState.top,
-        scaleX: existingArtwork.scaleX ?? cachedState.scaleX,
-        scaleY: existingArtwork.scaleY ?? cachedState.scaleY,
-        angle: existingArtwork.angle ?? cachedState.angle
-      };
+      preservedNormalized = extractNormalizedTransform(existingArtwork, 1);
       canvas.remove(existingArtwork);
+    } else if (!initialArtAppliedRef.current && initialArtworkTransform) {
+      preservedNormalized = initialArtworkTransform;
+      initialArtAppliedRef.current = true;
     }
 
     const loadArtwork = () => {
-      fabric.loadSVGFromURL(artworkSvgUrl).then(({ objects, options }) => {
-        if (isCancelled) return;
-        
-        // Remove any artwork that might have been added by a concurrent load
-        const currentArtwork = canvas.getObjects().find(obj => obj.name === "artwork");
-        if (currentArtwork) {
-          canvas.remove(currentArtwork);
-        }
+      fabric
+        .loadSVGFromURL(artworkSvgUrl)
+        .then(({ objects, options }) => {
+          if (isCancelled) return;
 
-        const artworkGroup = fabric.util.groupSVGElements(objects, options);
-        
-        // Auto-scale to fit canvas bounds
-        let finalScaleX = cachedState.scaleX;
-        let finalScaleY = cachedState.scaleY;
-        
-        if (!existingArtwork) {
-          const padding = 80; // 40px padding on each side
-          const scaleToFitWidth = (canvas.width! - padding) / (artworkGroup.width || canvas.width!);
-          const scaleToFitHeight = (canvas.height! - padding) / (artworkGroup.height || canvas.height!);
-          const minScale = Math.min(scaleToFitWidth, scaleToFitHeight, 1);
-          finalScaleX = minScale;
-          finalScaleY = minScale;
-        }
+          const validObjects = objects.filter(
+            (obj): obj is fabric.FabricObject => obj !== null
+          );
+          if (validObjects.length === 0) return;
 
-        artworkGroup.set({
-          name: "artwork",
-          left: cachedState.left,
-          top: cachedState.top,
-          originX: "center",
-          originY: "center",
-          scaleX: finalScaleX,
-          scaleY: finalScaleY,
-          angle: cachedState.angle,
-          cornerColor: "#B3261E",
-          cornerStyle: "circle",
-          transparentCorners: false,
-          borderColor: "#B3261E",
-          globalCompositeOperation: "source-over",
+          const concurrentArtwork = findObjectByRole(canvas, "artwork");
+          if (concurrentArtwork) {
+            canvas.remove(concurrentArtwork);
+          }
+
+          const artworkGroup = fabric.util.groupSVGElements(
+            validObjects,
+            options
+          );
+
+          const scaleToFitWidth = SAFE_SPAN / (artworkGroup.width || width);
+          const scaleToFitHeight = SAFE_SPAN / (artworkGroup.height || height);
+          const baseFitScale = Math.min(scaleToFitWidth, scaleToFitHeight, 1);
+
+          const targetX = preservedNormalized
+            ? SAFE_PADDING + preservedNormalized.x * SAFE_SPAN
+            : width / 2;
+          const targetY = preservedNormalized
+            ? SAFE_PADDING + preservedNormalized.y * SAFE_SPAN
+            : height / 2;
+          const appliedScale =
+            baseFitScale * (preservedNormalized?.scale ?? 1);
+          const appliedAngle = preservedNormalized?.rotation ?? 0;
+
+          artworkGroup.set({
+            left: targetX,
+            top: targetY,
+            originX: "center",
+            originY: "center",
+            scaleX: appliedScale,
+            scaleY: appliedScale,
+            angle: appliedAngle,
+            selectable: !lockedRef.current,
+            evented: !lockedRef.current,
+            cornerColor: "#B71032",
+            cornerStyle: "circle",
+            transparentCorners: false,
+            borderColor: "#B71032",
+            globalCompositeOperation: "source-over",
+          });
+
+          objectRoleMap.set(artworkGroup, "artwork");
+          baseFitScaleMap.set(artworkGroup, baseFitScale);
+
+          applyInkColorToFabricObject(artworkGroup, inkColorRef.current);
+
+          canvas.add(artworkGroup);
+          if (!lockedRef.current) {
+            canvas.setActiveObject(artworkGroup);
+          }
+          canvas.requestRenderAll();
+        })
+        .catch((err) => {
+          console.warn("[MainStageCanvas] Failed to parse artwork SVG:", err);
         });
-        
-        canvas.add(artworkGroup);
-        canvas.setActiveObject(artworkGroup);
-        canvas.renderAll();
-      });
     };
 
-    // Ensure the specific font is loaded before loading SVG onto canvas
-    const fontToLoad = fontFamily ? `12px "${fontFamily}"` : '12px serif';
-    document.fonts.load(fontToLoad).then(() => {
-      if (isCancelled) return;
+    const fontSpec = fontFamily ? `16px "${fontFamily}"` : "16px serif";
+    if (typeof document !== "undefined" && document.fonts?.load) {
+      document.fonts
+        .load(fontSpec)
+        .then(() => {
+          if (!isCancelled) loadArtwork();
+        })
+        .catch(() => {
+          if (!isCancelled) loadArtwork();
+        });
+    } else {
       loadArtwork();
-    }).catch(err => {
-      console.warn("Font loading failed, rendering with fallback", err);
-      if (isCancelled) return;
-      loadArtwork();
-    });
+    }
 
     return () => {
       isCancelled = true;
     };
-  }, [canvas, artworkSvgUrl, layoutMode, viewMode, fontFamily]);
+  }, [canvas, artworkSvgUrl, fontFamily, initialArtworkTransform]);
 
-  // Handle Seal updates
+  // 3. Ink color property update ONLY — mutates existing Fabric vector paths in place (TB-CALLI-005)
+  useEffect(() => {
+    if (!canvas) return;
+    const artworkObj = findObjectByRole(canvas, "artwork");
+    if (!artworkObj) return;
+
+    applyInkColorToFabricObject(artworkObj, inkColor);
+    canvas.requestRenderAll();
+  }, [canvas, inkColor]);
+
+  // 4. Chop seal layer — independent of viewMode, product, and calligraphy SVG (TB-CALLI-005, T-411)
   useEffect(() => {
     if (!canvas) return;
 
     let isCancelled = false;
-    let cachedState = {
-      left: canvas.width! / 2 + 150,
-      top: canvas.height! / 2 + 100,
-      scaleX: 1,
-      scaleY: 1,
-      angle: 0
-    };
+    const width = canvas.width ?? STAGE_SIZE;
+    const height = canvas.height ?? STAGE_SIZE;
 
-    const existingSeal = canvas.getObjects().find(obj => obj.name === "seal");
+    let preservedSealTransform: NormalizedTransform | null = null;
+    const existingSeal = findObjectByRole(canvas, "seal");
     if (existingSeal) {
-      cachedState = {
-        left: existingSeal.left ?? cachedState.left,
-        top: existingSeal.top ?? cachedState.top,
-        scaleX: existingSeal.scaleX ?? cachedState.scaleX,
-        scaleY: existingSeal.scaleY ?? cachedState.scaleY,
-        angle: existingSeal.angle ?? cachedState.angle
-      };
+      preservedSealTransform = extractNormalizedTransform(existingSeal, 1);
       canvas.remove(existingSeal);
+    } else if (!initialSealAppliedRef.current && initialSealTransform) {
+      preservedSealTransform = initialSealTransform;
+      initialSealAppliedRef.current = true;
     }
 
-    if (hasSeal) {
-      const displaySealText = sealText || "印";
-      const fontSize = displaySealText.length > 2 ? 34 : 50;
-      const displayFont = sealFontFamily ? `'${sealFontFamily}', serif` : "serif";
+    if (!hasSeal) {
+      canvas.requestRenderAll();
+      return;
+    }
 
-      const renderSeal = () => {
-        if (isCancelled) return;
-        const sealSvg = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-            <rect x="5" y="5" width="90" height="90" fill="${sealColor}" stroke="none"/>
-            <rect x="9" y="9" width="82" height="82" fill="none" stroke="#FFFFFF" stroke-width="2"/>
-            <text x="50" y="55" font-family="${displayFont}" font-size="${fontSize}" font-weight="bold" fill="#FFFFFF" text-anchor="middle" dominant-baseline="middle">${displaySealText}</text>
-          </svg>
-        `;
-        const blob = new Blob([sealSvg], { type: "image/svg+xml" });
-        const url = URL.createObjectURL(blob);
+    const rawSealText = (sealText || "印").trim() || "印";
+    const safeSealText = escapeXml(rawSealText);
+    const safeSealColor = escapeXml(sealColor || "#B71032");
+    const cleanSealFont =
+      (sealFontFamily || DEFAULT_SEAL_FONT_FAMILY).replace(
+        /[^A-Za-z0-9\u00C0-\u024F\u1E00-\u1EFF _-]/g,
+        ""
+      ) || DEFAULT_SEAL_FONT_FAMILY;
+    const safeSealFont = escapeXml(`'${cleanSealFont}', serif`);
+    const glyphCount = Array.from(rawSealText).length;
+    const fontSize = glyphCount > 2 ? 32 : 48;
 
-        fabric.loadSVGFromURL(url).then(({ objects, options }) => {
+    const renderSeal = () => {
+      if (isCancelled) return;
+
+      const sealSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="5" y="5" width="90" height="90" fill="${safeSealColor}" stroke="none"/><rect x="9" y="9" width="82" height="82" fill="none" stroke="#FFFFFF" stroke-width="2"/><text x="50" y="54" font-family="${safeSealFont}" font-size="${fontSize}" font-weight="bold" fill="#FFFFFF" text-anchor="middle" dominant-baseline="middle">${safeSealText}</text></svg>`;
+
+      const blob = new Blob([sealSvg], { type: "image/svg+xml" });
+      const blobUrl = URL.createObjectURL(blob);
+
+      fabric
+        .loadSVGFromURL(blobUrl)
+        .then(({ objects, options }) => {
+          URL.revokeObjectURL(blobUrl);
           if (isCancelled) return;
-          
-          // Ensure no concurrent seal was added
-          const currentSeal = canvas.getObjects().find(obj => obj.name === "seal");
-          if (currentSeal) {
-            canvas.remove(currentSeal);
+
+          const validObjects = objects.filter(
+            (obj): obj is fabric.FabricObject => obj !== null
+          );
+          if (validObjects.length === 0) return;
+
+          const concurrentSeal = findObjectByRole(canvas, "seal");
+          if (concurrentSeal) {
+            canvas.remove(concurrentSeal);
           }
 
-          const sealGroup = fabric.util.groupSVGElements(objects, options);
+          const sealGroup = fabric.util.groupSVGElements(validObjects, options);
+          const baseSealFit = 1;
+          const targetX = preservedSealTransform
+            ? SAFE_PADDING + preservedSealTransform.x * SAFE_SPAN
+            : width / 2 + 150;
+          const targetY = preservedSealTransform
+            ? SAFE_PADDING + preservedSealTransform.y * SAFE_SPAN
+            : height / 2 + 110;
+          const appliedScale =
+            baseSealFit * (preservedSealTransform?.scale ?? 1);
+          const appliedAngle = preservedSealTransform?.rotation ?? 0;
+
           sealGroup.set({
-            name: "seal",
-            left: cachedState.left,
-            top: cachedState.top,
-            scaleX: cachedState.scaleX,
-            scaleY: cachedState.scaleY,
-            angle: cachedState.angle,
+            left: targetX,
+            top: targetY,
+            scaleX: appliedScale,
+            scaleY: appliedScale,
+            angle: appliedAngle,
             originX: "center",
             originY: "center",
-            cornerColor: "#B3261E",
+            selectable: !lockedRef.current,
+            evented: !lockedRef.current,
+            cornerColor: "#B71032",
             cornerStyle: "circle",
             transparentCorners: false,
-            borderColor: "#B3261E",
+            borderColor: "#B71032",
             globalCompositeOperation: "source-over",
           });
-          canvas.add(sealGroup);
-          canvas.renderAll();
-          URL.revokeObjectURL(url);
-        });
-      };
 
-      if (sealFontFamily) {
-        document.fonts.load(`${fontSize}px '${sealFontFamily}'`).then(renderSeal).catch(renderSeal);
-      } else {
-        renderSeal();
-      }
+          objectRoleMap.set(sealGroup, "seal");
+          baseFitScaleMap.set(sealGroup, baseSealFit);
+
+          canvas.add(sealGroup);
+          canvas.requestRenderAll();
+        })
+        .catch(() => {
+          URL.revokeObjectURL(blobUrl);
+        });
+    };
+
+    if (typeof document !== "undefined" && document.fonts?.load) {
+      document.fonts
+        .load(`${fontSize}px "${cleanSealFont}"`)
+        .then(renderSeal)
+        .catch(renderSeal);
+    } else {
+      renderSeal();
     }
 
     return () => {
       isCancelled = true;
     };
-  }, [canvas, hasSeal, sealStyle, sealColor, sealText, sealFontFamily, viewMode]);
+  }, [
+    canvas,
+    hasSeal,
+    sealStyle,
+    sealColor,
+    sealText,
+    sealFontFamily,
+    initialSealTransform,
+  ]);
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-8 overflow-auto">
-      <div className="relative bg-white shadow-xl shadow-stone-900/10 rounded-sm overflow-hidden shrink-0" style={{ width: 800, height: 800 }}>
+    <div className="w-full h-full flex items-center justify-center p-4 md:p-8 overflow-auto">
+      <div className="relative bg-surface-container-lowest border border-surface-variant overflow-hidden shrink-0 w-[800px] h-[800px]">
         <canvas ref={canvasRef} />
       </div>
     </div>

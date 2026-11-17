@@ -7,7 +7,6 @@ import {
   Caveat_Brush,
   Arizonia,
   Allura,
-  Sedgwick_Ave_Display,
   Yuji_Boku,
   Yuji_Syuku, 
   Yuji_Mai, 

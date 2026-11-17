@@ -1,22 +1,45 @@
 "use server";
 
-import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { requireAdmin } from "@/utils/admin/auth";
+import {
+  FontLicenseError,
+  FontNotFoundError,
+  FontRegistryService,
+} from "@/lib/fonts/FontRegistryService";
 
-export async function toggleFontStatus(fontId: string, enabled: boolean) {
+const ToggleFontStatusSchema = z.object({
+  fontId: z.string().trim().min(1).max(128),
+  enabled: z.boolean(),
+});
+
+export async function toggleFontStatus(
+  fontId: string,
+  enabled: boolean
+): Promise<{ success: true } | { success: false; error: string }> {
+  // Enforce authenticated ADMIN role (redirecting unauthenticated callers)
+  await requireAdmin();
+
+  const parsed = ToggleFontStatusSchema.safeParse({ fontId, enabled });
+  if (!parsed.success) {
+    return { success: false, error: "Invalid font toggle parameters" };
+  }
+
   try {
-    await prisma.font.update({
-      where: { id: fontId },
-      data: { enabled }
-    });
-    
-    // Invalidate the cache for the admin page and the studio
+    await FontRegistryService.toggleActive(
+      parsed.data.fontId,
+      parsed.data.enabled
+    );
+
     revalidatePath("/admin/fonts");
     revalidatePath("/create");
-    
+
     return { success: true };
-  } catch (error) {
-    console.error("Failed to toggle font status:", error);
-    return { error: "Failed to update font status" };
+  } catch (error: unknown) {
+    if (error instanceof FontLicenseError || error instanceof FontNotFoundError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Failed to update font status" };
   }
 }

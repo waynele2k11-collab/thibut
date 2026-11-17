@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, type PanInfo } from "motion/react";
 import { heroSlides, HeroSlideId } from "./hero-data";
 import { HeroTabs } from "./HeroTabs";
 import { HeroArtwork } from "./HeroArtwork";
@@ -27,7 +27,7 @@ export function HeroInteractive() {
     });
   }, []);
 
-  const handleDragEnd = (e: any, { offset }: any) => {
+  const handleDragEnd = (...[, { offset }]: [MouseEvent | TouchEvent | PointerEvent, PanInfo]) => {
     const swipe = offset.x;
     if (swipe < -50) goToNext();
     else if (swipe > 50) goToPrev();

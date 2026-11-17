@@ -1,44 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { FontRegistryService } from "@/lib/fonts/FontRegistryService";
-import { requireAdmin } from "@/utils/admin/auth";
-import fs from "fs";
-import path from "path";
+import { z } from "zod";
+import {
+  FontNotFoundError,
+  FontRegistryService,
+} from "@/lib/fonts/FontRegistryService";
+import { AdminAuthError, assertAdminApi } from "@/utils/admin/auth";
 
 export const dynamic = "force-dynamic";
 
-import prisma from "@/lib/prisma";
+const DeleteFontBodySchema = z.object({
+  fontId: z.string().trim().min(1).max(128),
+});
 
 export async function GET() {
   try {
-    await requireAdmin();
-    const staticFonts = FontRegistryService.getAllFonts();
-    
-    // Fetch newly imported local fonts from database
-    const dbFonts = await prisma.font.findMany({
-      orderBy: { name: "asc" }
+    await assertAdminApi();
+    const allFonts = await FontRegistryService.getAllFonts({
+      includeBase64: true,
     });
-
-    const localFonts = dbFonts.map(dbFont => ({
-      id: dbFont.id,
-      name: dbFont.name,
-      category: dbFont.tradition || "VIETNAMESE_THU_PHAP",
-      categoryLabel: "Vietnamese Thư Pháp",
-      fileName: dbFont.fileName,
-      previewText: "Thi Bút",
-      sourceUrl: "Local Import",
-      sourceLabel: "Local Extraction",
-      downloadUrl: "",
-      isZipArchive: false,
-      license: "Local Archive",
-      commercialApproved: true,
-      licenseVerifiedAt: new Date().toISOString().split("T")[0],
-      description: "Custom local font imported via archive extraction.",
-      isDownloaded: true,
-      isActiveOnFrontend: dbFont.enabled,
-      base64Data: FontRegistryService.getBase64(dbFont.fileName)
-    }));
-
-    const allFonts = [...staticFonts, ...localFonts];
 
     return NextResponse.json({
       success: true,
@@ -47,60 +26,66 @@ export async function GET() {
       downloadedCount: allFonts.filter((f) => f.isDownloaded).length,
       activeCount: allFonts.filter((f) => f.isActiveOnFrontend).length,
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || "Unauthorized" }, { status: 401 });
+  } catch (error: unknown) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
+    return NextResponse.json(
+      { success: false, error: "Failed to load font registry" },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    await requireAdmin();
-    const { fontId } = await request.json();
-    if (!fontId) {
-      return NextResponse.json({ success: false, error: "fontId required" }, { status: 400 });
+    await assertAdminApi();
+
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON request body" },
+        { status: 400 }
+      );
     }
 
-    if (fontId.includes("-") && fontId.length > 20) {
-      // Prisma Font
-      const dbFont = await prisma.font.findUnique({ where: { id: fontId } });
-      if (!dbFont) {
-        return NextResponse.json({ success: false, error: "Font not found in DB" }, { status: 404 });
-      }
-      
-      const fontPath = path.join(process.cwd(), "public", "fonts", dbFont.fileName);
-      if (fs.existsSync(fontPath)) {
-        fs.unlinkSync(fontPath);
-      }
-      
-      await prisma.font.delete({ where: { id: fontId } });
-      
-      return NextResponse.json({
-        success: true,
-        message: `Font ${dbFont.name} removed from disk and database`,
-      });
-    } else {
-      // Static Font
-      const fonts = FontRegistryService.getAllFonts();
-      const font = fonts.find((f) => f.id === fontId);
-      if (!font) {
-        return NextResponse.json({ success: false, error: "Font not found" }, { status: 404 });
-      }
-
-      // Delete font file if exists
-      const fontPath = path.join(process.cwd(), "public", "fonts", font.fileName);
-      if (fs.existsSync(fontPath)) {
-        fs.unlinkSync(fontPath);
-      }
-
-      // Deactivate in registry
-      FontRegistryService.toggleActive(fontId, false);
-
-      return NextResponse.json({
-        success: true,
-        message: `Font ${font.name} removed from disk and deactivated`,
-      });
+    const parsed = DeleteFontBodySchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: "Valid fontId is required" },
+        { status: 400 }
+      );
     }
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || "Internal server error" }, { status: 500 });
+
+    const deactivated = await FontRegistryService.deactivateFont(
+      parsed.data.fontId
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: `Font "${deactivated.name}" deactivated in registry`,
+    });
+  } catch (error: unknown) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
+    if (error instanceof FontNotFoundError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json(
+      { success: false, error: "Failed to deactivate font" },
+      { status: 500 }
+    );
   }
 }
