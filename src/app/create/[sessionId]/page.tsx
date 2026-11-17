@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import type { WordTreatment } from "@/components/studio/StudioInspector";
-import { StudioOnboardingModal } from "@/components/studio/StudioOnboardingModal";
 import { StudioWorkspace } from "@/components/studio/StudioWorkspace";
 import type { ScriptCategory } from "@/lib/fonts/fontCatalog";
-import { getActiveProductsForStudio } from "@/lib/fulfillment/getActiveProducts";
 import { CompositionSchema, type DesignComposition } from "@/lib/print/types";
 import {
-  ANON_SESSION_COOKIE,
-  verifyAnonSessionToken,
-} from "@/lib/security/tokens";
-import { createClient } from "@/utils/supabase/server";
+  loadStudioSharedCatalog,
+  resolveStudioCallerIdentity,
+} from "@/lib/studio/loadStudioEntryContext";
+import type { WordTreatment } from "@/lib/studio/studioStore";
+import {
+  formatInterpretationBadgeLabel,
+  type CulturalCandidate,
+} from "@/lib/studio/useStudioAnalysis";
 
 export const metadata: Metadata = {
   title: "Personalization Session — Calligraphy Studio",
@@ -48,39 +48,31 @@ export default async function CreateSessionPage({
     text?: string;
     tradition?: string;
     treatment?: string;
+    galleryId?: string;
   }>;
 }) {
   const [{ sessionId }, query] = await Promise.all([params, searchParams]);
-  const products = await getActiveProductsForStudio();
+
+  const [{ products, availableFonts, galleryRemix }, { userId, anonId }] =
+    await Promise.all([
+      loadStudioSharedCatalog(query.galleryId),
+      resolveStudioCallerIdentity(),
+    ]);
 
   let verifiedSessionId: string | undefined;
   let initialComposition: DesignComposition | null = null;
   let initialLocked = false;
   let dbInputText: string | undefined;
   let dbTradition: ScriptCategory | undefined;
+  let initialCandidates: CulturalCandidate[] | undefined;
 
   const parsedSessionId = SessionUuidSchema.safeParse(sessionId);
   if (parsedSessionId.success) {
     verifiedSessionId = parsedSessionId.data;
 
-    const cookieStore = await cookies();
-    const anonId = await verifyAnonSessionToken(
-      cookieStore.get(ANON_SESSION_COOKIE)?.value
-    );
-
-    let userId: string | null = null;
-    try {
-      const supabase = await createClient();
-      const { data, error } = await supabase.auth.getUser();
-      if (!error && data?.user?.id) {
-        userId = data.user.id;
-      }
-    } catch {
-      userId = null;
-    }
-
     const existing = await prisma.personalizationSession.findUnique({
       where: { id: parsedSessionId.data },
+      include: { interpretations: true },
     });
 
     if (existing) {
@@ -100,17 +92,35 @@ export default async function CreateSessionPage({
         if (parsedComp.success) {
           initialComposition = parsedComp.data;
         }
+        if (existing.interpretations && existing.interpretations.length > 0) {
+          initialCandidates = existing.interpretations.map((item) => ({
+            id: item.id,
+            type: item.type,
+            typeLabel: formatInterpretationBadgeLabel(item.type),
+            language: item.language,
+            text: item.text,
+            romanization: item.romanization ?? null,
+            meaning: item.meaning ?? null,
+            warning: item.warning ?? null,
+            recommended: item.recommended,
+          }));
+        }
       } else {
         verifiedSessionId = undefined;
       }
     }
   }
 
-  const initialText = query.text?.trim() || dbInputText;
+  const initialText =
+    query.text?.trim() ||
+    galleryRemix?.sourceText ||
+    dbInputText;
+
   const initialTradition =
     query.tradition && VALID_TRADITIONS.has(query.tradition as ScriptCategory)
       ? (query.tradition as ScriptCategory)
-      : (dbTradition ?? "VIETNAMESE_THU_PHAP");
+      : (galleryRemix?.tradition ?? dbTradition ?? "VIETNAMESE_THU_PHAP");
+
   const initialTreatment =
     query.treatment && VALID_TREATMENTS.has(query.treatment as WordTreatment)
       ? (query.treatment as WordTreatment)
@@ -118,10 +128,12 @@ export default async function CreateSessionPage({
 
   return (
     <div className="w-full h-full bg-background relative">
-      <StudioOnboardingModal />
       <StudioWorkspace
         isAdmin={false}
         products={products}
+        availableFonts={availableFonts}
+        galleryRemix={galleryRemix}
+        initialCandidates={initialCandidates}
         sessionId={verifiedSessionId}
         initialText={initialText}
         initialTradition={initialTradition}

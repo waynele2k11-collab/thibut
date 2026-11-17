@@ -6,6 +6,9 @@ import ts from "typescript";
 
 const projectRoot = process.cwd();
 const srcRoot = path.join(projectRoot, "src");
+const reactModuleHref = pathToFileURL(
+  path.join(projectRoot, "node_modules", "react", "index.js")
+).href;
 
 function tryResolveFile(candidateBase) {
   const candidates = [
@@ -35,6 +38,20 @@ registerHooks({
       };
     }
 
+    if (specifier === "next/image") {
+      return {
+        url: `data:text/javascript,import React from ${JSON.stringify(reactModuleHref)}; export default function NextImageShim(props) { const { fill, unoptimized, priority, ...rest } = props || {}; return React.createElement('img', rest); }`,
+        shortCircuit: true,
+      };
+    }
+
+    if (specifier === "next/link") {
+      return {
+        url: `data:text/javascript,import React from ${JSON.stringify(reactModuleHref)}; export default function NextLinkShim(props) { const { prefetch, scroll, replace, ...rest } = props || {}; return React.createElement('a', rest, props?.children); }`,
+        shortCircuit: true,
+      };
+    }
+
     if (specifier.startsWith("@/")) {
       const target = path.join(srcRoot, specifier.slice(2));
       const resolved = tryResolveFile(target);
@@ -56,7 +73,28 @@ registerHooks({
       }
     }
 
-    return nextResolve(specifier, context);
+    try {
+      return nextResolve(specifier, context);
+    } catch (err) {
+      if (
+        specifier.startsWith("next/") &&
+        !specifier.endsWith(".js") &&
+        !specifier.endsWith(".mjs")
+      ) {
+        const nextCandidate = path.join(
+          projectRoot,
+          "node_modules",
+          `${specifier}.js`
+        );
+        if (fs.existsSync(nextCandidate)) {
+          return {
+            url: pathToFileURL(nextCandidate).href,
+            shortCircuit: true,
+          };
+        }
+      }
+      throw err;
+    }
   },
 
   load(url, context, nextLoad) {

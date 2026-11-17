@@ -27,12 +27,14 @@ export function useStudioActions({
   canvasRef,
   renderedText,
   effectiveVariantId,
+  selectedProductName,
 }: {
   state: StudioState;
   setState: StudioStore["setState"];
   canvasRef: RefObject<MainStageCanvasRef | null>;
   renderedText: string;
   effectiveVariantId: string | undefined;
+  selectedProductName?: string;
 }) {
   const router = useRouter();
 
@@ -89,7 +91,9 @@ export function useStudioActions({
 
     return CompositionSchema.parse({
       version: 1,
-      ...(effectiveVariantId ? { productVariantId: effectiveVariantId } : {}),
+      ...(effectiveVariantId && state.fulfillmentFormat === "PHYSICAL"
+        ? { productVariantId: effectiveVariantId }
+        : {}),
       placement: state.placement,
       color: safeHex,
       transform: artworkTransform,
@@ -100,6 +104,7 @@ export function useStudioActions({
     effectiveVariantId,
     renderedText,
     state.fontFamily,
+    state.fulfillmentFormat,
     state.hasSeal,
     state.inkColor,
     state.inputText,
@@ -109,41 +114,58 @@ export function useStudioActions({
     state.sealText,
   ]);
 
+  const ensurePersistedSessionId = useCallback(async (): Promise<
+    string | null
+  > => {
+    if (state.activeSessionId) {
+      return state.activeSessionId;
+    }
+
+    const ensured = await ensureStudioSessionAction({
+      inputText: (renderedText || state.inputText || "Thi Bút").slice(0, 200),
+      culturalStyle: state.tradition,
+    });
+
+    if (!ensured.ok || !ensured.sessionId) {
+      setState({
+        statusBanner: {
+          tone: "error",
+          message: ensured.error || "Unable to initialize Studio session.",
+        },
+      });
+      return null;
+    }
+
+    if (ensured.locked) {
+      setState({
+        activeSessionId: ensured.sessionId,
+        isLocked: true,
+        statusBanner: {
+          tone: "error",
+          message: "This session is locked after checkout.",
+        },
+      });
+      return null;
+    }
+
+    setState({ activeSessionId: ensured.sessionId });
+    return ensured.sessionId;
+  }, [
+    renderedText,
+    setState,
+    state.activeSessionId,
+    state.inputText,
+    state.tradition,
+  ]);
+
   const handleSaveComposition = useCallback(async () => {
     if (state.isSaving || state.isLocked) return;
     setState({ isSaving: true, statusBanner: null });
 
     try {
-      let targetSessionId = state.activeSessionId;
+      const targetSessionId = await ensurePersistedSessionId();
       if (!targetSessionId) {
-        const ensured = await ensureStudioSessionAction({
-          inputText: renderedText || state.inputText || "Thi Bút",
-          culturalStyle: state.tradition,
-        });
-        if (!ensured.ok || !ensured.sessionId) {
-          setState({
-            isSaving: false,
-            statusBanner: {
-              tone: "error",
-              message: ensured.error || "Unable to initialize Studio session.",
-            },
-          });
-          return;
-        }
-        targetSessionId = ensured.sessionId;
-        if (ensured.locked) {
-          setState({
-            activeSessionId: ensured.sessionId,
-            isLocked: true,
-            isSaving: false,
-            statusBanner: {
-              tone: "error",
-              message: "This session is locked after checkout.",
-            },
-          });
-          return;
-        }
-        setState({ activeSessionId: ensured.sessionId });
+        return;
       }
 
       const composition = buildCurrentComposition();
@@ -151,7 +173,7 @@ export function useStudioActions({
       setState({
         statusBanner: {
           tone: "success",
-          message: "Composition saved to your Studio session.",
+          message: "Draft saved to your Personalization Studio session.",
         },
       });
     } catch (err: unknown) {
@@ -169,25 +191,64 @@ export function useStudioActions({
     }
   }, [
     buildCurrentComposition,
-    renderedText,
+    ensurePersistedSessionId,
     setState,
-    state.activeSessionId,
-    state.inputText,
     state.isLocked,
     state.isSaving,
-    state.tradition,
+  ]);
+
+  const handleCheckoutDigitalMaster = useCallback(async () => {
+    if (state.isAddingToCart || state.isLocked) return;
+    setState({ isAddingToCart: true, statusBanner: null });
+
+    try {
+      const targetSessionId = await ensurePersistedSessionId();
+      if (!targetSessionId) {
+        return;
+      }
+
+      const composition = buildCurrentComposition();
+      await saveCompositionToSession(targetSessionId, composition);
+      router.push(
+        `/checkout?sessionId=${encodeURIComponent(targetSessionId)}&digital=true`
+      );
+    } catch (err: unknown) {
+      setState({
+        statusBanner: {
+          tone: "error",
+          message:
+            err instanceof Error
+              ? err.message
+              : "Unable to prepare 300 DPI Digital Master checkout.",
+        },
+      });
+    } finally {
+      setState({ isAddingToCart: false });
+    }
+  }, [
+    buildCurrentComposition,
+    ensurePersistedSessionId,
+    router,
+    setState,
+    state.isAddingToCart,
+    state.isLocked,
   ]);
 
   const handleAddToCart = useCallback(async () => {
     if (state.isAddingToCart || state.isLocked) return;
-    setState({ statusBanner: null });
+    setState({ statusBanner: null, cartConfirmation: null });
+
+    if (state.fulfillmentFormat === "DIGITAL") {
+      await handleCheckoutDigitalMaster();
+      return;
+    }
 
     if (!effectiveVariantId) {
       setState({
         statusBanner: {
           tone: "error",
           message:
-            "Catalog temporarily unavailable — select an active merchandise variant when blanks are in stock, or purchase a Digital Master.",
+            "Catalog temporarily unavailable — switch to 300 DPI Digital Master or select an active variant.",
         },
       });
       return;
@@ -218,7 +279,13 @@ export function useStudioActions({
             })
           );
         }
-        router.push("/cart");
+        setState({
+          cartConfirmation: {
+            cartId: res.cartId,
+            count: res.count ?? 1,
+            productLabel: selectedProductName || "Custom Calligraphy Piece",
+          },
+        });
         return;
       }
 
@@ -241,11 +308,13 @@ export function useStudioActions({
   }, [
     buildCurrentComposition,
     effectiveVariantId,
+    handleCheckoutDigitalMaster,
     renderedText,
-    router,
+    selectedProductName,
     setState,
     state.activeSessionId,
     state.fontFamily,
+    state.fulfillmentFormat,
     state.inputText,
     state.isAddingToCart,
     state.isLocked,
@@ -253,5 +322,9 @@ export function useStudioActions({
     state.tradition,
   ]);
 
-  return { handleSaveComposition, handleAddToCart };
+  return {
+    handleSaveComposition,
+    handleAddToCart,
+    handleCheckoutDigitalMaster,
+  };
 }

@@ -628,8 +628,8 @@ function createQaE2EDatabase() {
         const found = args.where.id
           ? state.orders.get(args.where.id)
           : Array.from(state.orders.values()).find(
-              (o) => o.orderNumber === args.where.orderNumber
-            );
+            (o) => o.orderNumber === args.where.orderNumber
+          );
         if (!found) return null;
         const items = Array.from(state.orderItems.values())
           .filter((i) => i.orderId === found.id)
@@ -1043,7 +1043,7 @@ test("QA Static Sweep: zero backdoors, banned literals, client secrets, or legac
   const allSrcFiles = collectSourceFiles(SRC_ROOT);
   assert.ok(allSrcFiles.length > 50, "Expected to scan full src/ directory tree");
 
-    const bannedGlobalLiterals = [
+  const bannedGlobalLiterals = [
     "waynele2k11",
     "fallback_secret_for_dev",
     "mock-design-123",

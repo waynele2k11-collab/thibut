@@ -8,6 +8,110 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Great Vibes';
+  src: url('/api/fonts/great-vibes') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Allura';
+  src: url('/api/fonts/allura') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Caveat Brush';
+  src: url('/api/fonts/caveat-brush') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Arizonia';
+  src: url('/api/fonts/arizonia') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alex Brush';
+  src: url('/api/fonts/alex-brush') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Yuji Boku';
+  src: url('/api/fonts/yuji-boku') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Yuji Mai';
+  src: url('/api/fonts/yuji-mai') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Liu Jian Mao Cao';
+  src: url('/api/fonts/liu-jian-mao-cao') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Long Cang';
+  src: url('/api/fonts/long-cang') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Ma Shan Zheng';
+  src: url('/api/fonts/ma-shan-zheng') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Zhi Mang Xing';
+  src: url('/api/fonts/zhi-mang-xing') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nanum Brush Script';
+  src: url('/api/fonts/nanum-brush-script') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'East Sea Dokdo';
+  src: url('/api/fonts/east-sea-dokdo') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    STITCH DESIGN TOKENS — Source of truth from /stitch_thi_b_t_system_architecture
    All hex values are extracted directly from tailwind.config inside Stitch HTML exports.
@@ -126,6 +230,23 @@
 
 @utility font-cn-mashan { font-family: var(--font-cn-mashan), serif; }
 @utility font-cn-zhimang { font-family: var(--font-cn-zhimang), cursive; }
+
+/* ── Self-Hosted Licensed Studio Brush Preview Utilities (Zero Inline Styles) ── */
+@utility font-brush-utm-thien-an { font-family: 'UTM ThuPhap Thien An', 'Caveat Brush', cursive; }
+@utility font-brush-great-vibes { font-family: 'Great Vibes', var(--font-vn-greatvibes), cursive; }
+@utility font-brush-allura { font-family: 'Allura', var(--font-vn-allura), cursive; }
+@utility font-brush-kaushan-script { font-family: var(--font-vn-kaushan), 'Caveat Brush', cursive; }
+@utility font-brush-caveat-brush { font-family: 'Caveat Brush', var(--font-vn-caveatbrush), cursive; }
+@utility font-brush-arizonia { font-family: 'Arizonia', var(--font-vn-arizonia), cursive; }
+@utility font-brush-alex-brush { font-family: 'Alex Brush', var(--font-vn-alex), cursive; }
+@utility font-brush-yuji-boku { font-family: 'Yuji Boku', var(--font-jp-yuji-boku), serif; }
+@utility font-brush-yuji-mai { font-family: 'Yuji Mai', var(--font-jp-yuji-mai), serif; }
+@utility font-brush-liu-jian-mao-cao { font-family: 'Liu Jian Mao Cao', 'Long Cang', cursive; }
+@utility font-brush-long-cang { font-family: 'Long Cang', var(--font-cn-longcang), cursive; }
+@utility font-brush-ma-shan-zheng { font-family: 'Ma Shan Zheng', var(--font-cn-mashan), serif; }
+@utility font-brush-zhi-mang-xing { font-family: 'Zhi Mang Xing', var(--font-cn-zhimang), cursive; }
+@utility font-brush-nanum-brush-script { font-family: 'Nanum Brush Script', var(--font-kr-nanum), cursive; }
+@utility font-brush-east-sea-dokdo { font-family: 'East Sea Dokdo', var(--font-kr-dokdo), cursive; }
 
 /* ── Paper texture overlay (from Stitch <style> block) ── */
 .texture-overlay {

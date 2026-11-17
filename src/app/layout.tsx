@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { ConditionalFooter } from "@/components/layout/ConditionalFooter";
 import { AntiScrapeProtection } from "@/components/security/AntiScrapeProtection";
 import {
   fontInter,
@@ -82,7 +83,9 @@ export default async function RootLayout({
         <AntiScrapeProtection />
         <Header />
         <div className="flex-1 flex flex-col">{children}</div>
-        <Footer />
+        <ConditionalFooter>
+          <Footer />
+        </ConditionalFooter>
       </body>
     </html>
   );

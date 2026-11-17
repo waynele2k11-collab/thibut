@@ -145,7 +145,7 @@ export function generateInstantSvgString(options: ClientRenderOptions): string {
 
   if (!fontFamily) {
     if (tradition === "JAPANESE_SHODO") {
-      fontFamily = "'Yuji Syuku', serif";
+      fontFamily = "'Yuji Boku', serif";
     } else if (tradition === "CHINESE_CALLIGRAPHY") {
       fontFamily = "'Ma Shan Zheng', cursive";
     } else if (tradition === "KOREAN_BRUSH") {

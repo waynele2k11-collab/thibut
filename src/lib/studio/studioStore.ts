@@ -7,18 +7,42 @@ import type {
 } from "@/lib/calligraphy/ClientCalligraphyRenderer";
 import type { ScriptCategory } from "@/lib/fonts/fontCatalog";
 import type { PlacementValue } from "@/lib/print/types";
-import type { InkPigment, WordTreatment } from "@/components/studio/StudioInspector";
+
+export type WordTreatment =
+  | "KEEP_ORIGINAL"
+  | "MATCH_SOUND"
+  | "TRANSLATE_MEANING";
+
+export type InkPigment = string;
+
+export type StudioStep = "MEANING" | "BRUSH" | "PRODUCT";
+
+export type CreationMode = "QUOTE" | "NAME" | "STORY" | "CREATOR_ART";
+
+export type FulfillmentFormat = "PHYSICAL" | "DIGITAL";
+
+export type StudioLayoutMode = "HORIZONTAL" | "VERTICAL" | "EMBLEM";
 
 export interface StudioStatusBanner {
   tone: "success" | "error";
   message: string;
 }
 
+export interface CartConfirmationBanner {
+  cartId?: string;
+  count: number;
+  productLabel: string;
+}
+
 export interface StudioState {
   activeSessionId: string | undefined;
   isLocked: boolean;
+  activeStep: StudioStep;
+  creationMode: CreationMode;
+  fulfillmentFormat: FulfillmentFormat;
+  selectedInterpretationId: string | null;
   viewMode: "RAW_ART" | "MOCKUP";
-  layoutMode: "HORIZONTAL" | "VERTICAL";
+  layoutMode: StudioLayoutMode;
   inputText: string;
   tradition: ScriptCategory;
   treatment: WordTreatment;
@@ -36,7 +60,23 @@ export interface StudioState {
   isSaving: boolean;
   isAddingToCart: boolean;
   statusBanner: StudioStatusBanner | null;
+  cartConfirmation: CartConfirmationBanner | null;
 }
+
+export type StudioStateInput = Omit<
+  StudioState,
+  | "activeStep"
+  | "creationMode"
+  | "fulfillmentFormat"
+  | "selectedInterpretationId"
+  | "cartConfirmation"
+> & {
+  activeStep?: StudioStep;
+  creationMode?: CreationMode;
+  fulfillmentFormat?: FulfillmentFormat;
+  selectedInterpretationId?: string | null;
+  cartConfirmation?: CartConfirmationBanner | null;
+};
 
 export interface StudioStore {
   getState: () => StudioState;
@@ -46,8 +86,15 @@ export interface StudioStore {
   subscribe: (listener: () => void) => () => void;
 }
 
-export function createStudioStore(initialState: StudioState): StudioStore {
-  let state = initialState;
+export function createStudioStore(initialInput: StudioStateInput): StudioStore {
+  let state: StudioState = {
+    ...initialInput,
+    activeStep: initialInput.activeStep ?? "MEANING",
+    creationMode: initialInput.creationMode ?? "QUOTE",
+    fulfillmentFormat: initialInput.fulfillmentFormat ?? "PHYSICAL",
+    selectedInterpretationId: initialInput.selectedInterpretationId ?? null,
+    cartConfirmation: initialInput.cartConfirmation ?? null,
+  };
   const listeners = new Set<() => void>();
 
   return {

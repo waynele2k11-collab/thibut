@@ -11,6 +11,7 @@ export const SEAL_VERMILION_HEX = "#B71032";
 export const IMPERIAL_GOLD_HEX = "#C5A059";
 export const RICE_PAPER_IVORY_HEX = "#F6F1E7";
 export const STAGE_PAPER_HEX = "#FAF7F2";
+export const GUIDE_SAFE_HEX = "#76777B";
 
 export interface InkSwatchDefinition {
   name: string;

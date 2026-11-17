@@ -10,11 +10,14 @@ export interface ProductVariantMock {
   size: string | null;
   color: string | null;
   colorHex: string | null;
+  retailPriceMinor?: string;
+  mockupImageUrl?: string | null;
 }
 
 export interface ProductMock {
   id: string;
   name: string;
+  category?: string;
   priceMinor: string;
   formattedPrice: string;
   imageUrl: string;

@@ -15,16 +15,18 @@ import {
 } from "@/lib/print/types";
 import { escapeXml } from "@/lib/security/xml";
 import {
+  GUIDE_SAFE_HEX,
   PURE_WHITE_HEX,
   SEAL_VERMILION_HEX,
   STAGE_PAPER_HEX,
 } from "@/lib/studio/inkPalette";
 
 const STAGE_SIZE = 800;
+const MIN_DISPLAY_SIZE = 210;
 const SAFE_PADDING = 48;
 const SAFE_SPAN = STAGE_SIZE - SAFE_PADDING * 2; // 704px
 
-type StageLayerRole = "artwork" | "seal";
+type StageLayerRole = "artwork" | "seal" | "guide";
 
 const objectRoleMap = new WeakMap<fabric.FabricObject, StageLayerRole>();
 const baseFitScaleMap = new WeakMap<fabric.FabricObject, number>();
@@ -36,6 +38,9 @@ export interface StageNormalizedTransforms {
 
 export interface MainStageCanvasRef {
   getNormalizedTransform: () => StageNormalizedTransforms;
+  nudgeArtworkScale: (multiplier: number) => void;
+  rotateArtwork: (deltaDegrees: number) => void;
+  resetTransforms: () => void;
 }
 
 export interface MainStageCanvasProps {
@@ -96,6 +101,20 @@ function findObjectByRole(
   return canvas.getObjects().find((obj) => objectRoleMap.get(obj) === role);
 }
 
+function isOutsideSafePrintArea(obj: fabric.FabricObject): boolean {
+  const centerLeft = obj.left ?? STAGE_SIZE / 2;
+  const centerTop = obj.top ?? STAGE_SIZE / 2;
+  const halfW = ((obj.width ?? 0) * Math.abs(obj.scaleX ?? 1)) / 2;
+  const halfH = ((obj.height ?? 0) * Math.abs(obj.scaleY ?? 1)) / 2;
+
+  return (
+    centerLeft - halfW < SAFE_PADDING - 4 ||
+    centerTop - halfH < SAFE_PADDING - 4 ||
+    centerLeft + halfW > STAGE_SIZE - SAFE_PADDING + 4 ||
+    centerTop + halfH > STAGE_SIZE - SAFE_PADDING + 4
+  );
+}
+
 function applyInkColorToFabricObject(
   target: fabric.FabricObject,
   colorHex: string
@@ -151,10 +170,12 @@ export const MainStageCanvas = forwardRef<
   },
   ref
 ) {
+  const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const inkColorRef = useRef(inkColor);
   const lockedRef = useRef(locked);
+  const viewModeRef = useRef(viewMode);
   const initialArtAppliedRef = useRef(false);
   const initialSealAppliedRef = useRef(false);
 
@@ -163,10 +184,22 @@ export const MainStageCanvas = forwardRef<
   }, [inkColor]);
 
   useEffect(() => {
+    viewModeRef.current = viewMode;
+    if (!canvas) return;
+    const guide = findObjectByRole(canvas, "guide");
+    if (guide) {
+      guide.set({ opacity: viewMode === "RAW_ART" ? 0.22 : 0 });
+      canvas.requestRenderAll();
+    }
+  }, [canvas, viewMode]);
+
+  useEffect(() => {
     lockedRef.current = locked;
     if (!canvas) return;
     canvas.selection = !locked;
     for (const obj of canvas.getObjects()) {
+      const role = objectRoleMap.get(obj);
+      if (role === "guide") continue;
       obj.set({
         selectable: !locked,
         evented: !locked,
@@ -185,12 +218,95 @@ export const MainStageCanvas = forwardRef<
       selection: !lockedRef.current,
     });
 
+    const safeGuide = new fabric.Rect({
+      left: SAFE_PADDING,
+      top: SAFE_PADDING,
+      width: SAFE_SPAN,
+      height: SAFE_SPAN,
+      originX: "left",
+      originY: "top",
+      fill: "transparent",
+      stroke: GUIDE_SAFE_HEX,
+      strokeWidth: 1.5,
+      strokeDashArray: [10, 6],
+      selectable: false,
+      evented: false,
+      excludeFromExport: true,
+      opacity: viewModeRef.current === "RAW_ART" ? 0.22 : 0,
+    });
+    objectRoleMap.set(safeGuide, "guide");
+    fCanvas.add(safeGuide);
+
+    const highlightGuide = (e: { target?: fabric.FabricObject }) => {
+      const target = e.target;
+      if (!target || objectRoleMap.get(target) === "guide") return;
+      const outside = isOutsideSafePrintArea(target);
+      safeGuide.set({
+        opacity: outside ? 0.85 : 0.55,
+        stroke: outside ? SEAL_VERMILION_HEX : GUIDE_SAFE_HEX,
+        strokeWidth: outside ? 2.5 : 1.5,
+      });
+      fCanvas.bringObjectToFront(safeGuide);
+    };
+
+    const settleGuide = () => {
+      safeGuide.set({
+        opacity: viewModeRef.current === "RAW_ART" ? 0.22 : 0,
+        stroke: GUIDE_SAFE_HEX,
+        strokeWidth: 1.5,
+      });
+      fCanvas.requestRenderAll();
+    };
+
+    fCanvas.on("object:moving", highlightGuide);
+    fCanvas.on("object:scaling", highlightGuide);
+    fCanvas.on("object:rotating", highlightGuide);
+    fCanvas.on("mouse:up", settleGuide);
+
     setCanvas(fCanvas);
 
     return () => {
+      fCanvas.off("object:moving", highlightGuide);
+      fCanvas.off("object:scaling", highlightGuide);
+      fCanvas.off("object:rotating", highlightGuide);
+      fCanvas.off("mouse:up", settleGuide);
       fCanvas.dispose();
     };
   }, []);
+
+  // Container-responsive scaling via Fabric setDimensions + setZoom (zero CSS inline styles, crisp vectors)
+  useEffect(() => {
+    if (!canvas || !viewportRef.current) return;
+    const container = viewportRef.current;
+
+    const applyResponsiveDimensions = () => {
+      const rect = container.getBoundingClientRect();
+      const pad = rect.width < 640 ? 16 : 40;
+      const availW = Math.max(MIN_DISPLAY_SIZE, rect.width - pad);
+      const availH = Math.max(MIN_DISPLAY_SIZE, rect.height - pad);
+      const displaySize = Math.round(
+        clamp(Math.min(availW, availH), MIN_DISPLAY_SIZE, STAGE_SIZE)
+      );
+      const zoom = displaySize / STAGE_SIZE;
+
+      canvas.setDimensions({ width: displaySize, height: displaySize });
+      canvas.setZoom(zoom);
+      canvas.requestRenderAll();
+    };
+
+    applyResponsiveDimensions();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(() => {
+        applyResponsiveDimensions();
+      });
+      observer.observe(container);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener("resize", applyResponsiveDimensions);
+    return () => window.removeEventListener("resize", applyResponsiveDimensions);
+  }, [canvas]);
 
   useImperativeHandle(
     stageRef ?? ref,
@@ -248,6 +364,69 @@ export const MainStageCanvas = forwardRef<
 
         return { artwork, seal };
       },
+
+      nudgeArtworkScale: (multiplier: number) => {
+        if (!canvas || lockedRef.current) return;
+        const target =
+          canvas.getActiveObject() &&
+          objectRoleMap.get(canvas.getActiveObject()!) !== "guide"
+            ? canvas.getActiveObject()!
+            : findObjectByRole(canvas, "artwork");
+        if (!target) return;
+
+        const baseFit = baseFitScaleMap.get(target) ?? 1;
+        const currentRelative = (target.scaleX ?? baseFit) / (baseFit || 1);
+        const nextRelative = clamp(currentRelative * multiplier, 0.15, 3.5);
+        const nextScale = baseFit * nextRelative;
+
+        target.set({ scaleX: nextScale, scaleY: nextScale });
+        target.setCoords();
+        canvas.requestRenderAll();
+      },
+
+      rotateArtwork: (deltaDegrees: number) => {
+        if (!canvas || lockedRef.current) return;
+        const target =
+          canvas.getActiveObject() &&
+          objectRoleMap.get(canvas.getActiveObject()!) !== "guide"
+            ? canvas.getActiveObject()!
+            : findObjectByRole(canvas, "artwork");
+        if (!target) return;
+
+        const nextAngle = normalizeAngle((target.angle ?? 0) + deltaDegrees);
+        target.set({ angle: nextAngle });
+        target.setCoords();
+        canvas.requestRenderAll();
+      },
+
+      resetTransforms: () => {
+        if (!canvas || lockedRef.current) return;
+        const artObj = findObjectByRole(canvas, "artwork");
+        if (artObj) {
+          const baseFit = baseFitScaleMap.get(artObj) ?? 1;
+          artObj.set({
+            left: STAGE_SIZE / 2,
+            top: STAGE_SIZE / 2,
+            scaleX: baseFit,
+            scaleY: baseFit,
+            angle: 0,
+          });
+          artObj.setCoords();
+        }
+        const sealObj = findObjectByRole(canvas, "seal");
+        if (sealObj) {
+          const baseSealFit = baseFitScaleMap.get(sealObj) ?? 1;
+          sealObj.set({
+            left: STAGE_SIZE / 2 + 150,
+            top: STAGE_SIZE / 2 + 110,
+            scaleX: baseSealFit,
+            scaleY: baseSealFit,
+            angle: 0,
+          });
+          sealObj.setCoords();
+        }
+        canvas.requestRenderAll();
+      },
     }),
     [canvas, hasSeal, initialArtworkTransform, initialSealTransform]
   );
@@ -265,10 +444,8 @@ export const MainStageCanvas = forwardRef<
       fabric.FabricImage.fromURL(productImageUrl, { crossOrigin: "anonymous" })
         .then((img) => {
           if (isCancelled) return;
-          const width = canvas.width ?? STAGE_SIZE;
-          const height = canvas.height ?? STAGE_SIZE;
-          const scaleX = width / (img.width || 1);
-          const scaleY = height / (img.height || 1);
+          const scaleX = STAGE_SIZE / (img.width || 1);
+          const scaleY = STAGE_SIZE / (img.height || 1);
           const scale = Math.max(scaleX, scaleY);
 
           img.set({
@@ -276,8 +453,8 @@ export const MainStageCanvas = forwardRef<
             scaleY: scale,
             originX: "center",
             originY: "center",
-            left: width / 2,
-            top: height / 2,
+            left: STAGE_SIZE / 2,
+            top: STAGE_SIZE / 2,
           });
 
           canvas.backgroundImage = img;
@@ -301,8 +478,6 @@ export const MainStageCanvas = forwardRef<
     if (!canvas || !artworkSvgUrl) return;
 
     let isCancelled = false;
-    const width = canvas.width ?? STAGE_SIZE;
-    const height = canvas.height ?? STAGE_SIZE;
 
     let preservedNormalized: NormalizedTransform | null = null;
     const existingArtwork = findObjectByRole(canvas, "artwork");
@@ -335,16 +510,18 @@ export const MainStageCanvas = forwardRef<
             options
           );
 
-          const scaleToFitWidth = SAFE_SPAN / (artworkGroup.width || width);
-          const scaleToFitHeight = SAFE_SPAN / (artworkGroup.height || height);
+          const scaleToFitWidth =
+            SAFE_SPAN / (artworkGroup.width || STAGE_SIZE);
+          const scaleToFitHeight =
+            SAFE_SPAN / (artworkGroup.height || STAGE_SIZE);
           const baseFitScale = Math.min(scaleToFitWidth, scaleToFitHeight, 1);
 
           const targetX = preservedNormalized
             ? SAFE_PADDING + preservedNormalized.x * SAFE_SPAN
-            : width / 2;
+            : STAGE_SIZE / 2;
           const targetY = preservedNormalized
             ? SAFE_PADDING + preservedNormalized.y * SAFE_SPAN
-            : height / 2;
+            : STAGE_SIZE / 2;
           const appliedScale =
             baseFitScale * (preservedNormalized?.scale ?? 1);
           const appliedAngle = preservedNormalized?.rotation ?? 0;
@@ -372,8 +549,9 @@ export const MainStageCanvas = forwardRef<
           applyInkColorToFabricObject(artworkGroup, inkColorRef.current);
 
           canvas.add(artworkGroup);
-          if (!lockedRef.current) {
-            canvas.setActiveObject(artworkGroup);
+          const guide = findObjectByRole(canvas, "guide");
+          if (guide) {
+            canvas.bringObjectToFront(guide);
           }
           canvas.requestRenderAll();
         })
@@ -416,8 +594,6 @@ export const MainStageCanvas = forwardRef<
     if (!canvas) return;
 
     let isCancelled = false;
-    const width = canvas.width ?? STAGE_SIZE;
-    const height = canvas.height ?? STAGE_SIZE;
 
     let preservedSealTransform: NormalizedTransform | null = null;
     const existingSeal = findObjectByRole(canvas, "seal");
@@ -474,10 +650,10 @@ export const MainStageCanvas = forwardRef<
           const baseSealFit = 1;
           const targetX = preservedSealTransform
             ? SAFE_PADDING + preservedSealTransform.x * SAFE_SPAN
-            : width / 2 + 150;
+            : STAGE_SIZE / 2 + 150;
           const targetY = preservedSealTransform
             ? SAFE_PADDING + preservedSealTransform.y * SAFE_SPAN
-            : height / 2 + 110;
+            : STAGE_SIZE / 2 + 110;
           const appliedScale =
             baseSealFit * (preservedSealTransform?.scale ?? 1);
           const appliedAngle = preservedSealTransform?.rotation ?? 0;
@@ -503,6 +679,10 @@ export const MainStageCanvas = forwardRef<
           baseFitScaleMap.set(sealGroup, baseSealFit);
 
           canvas.add(sealGroup);
+          const guide = findObjectByRole(canvas, "guide");
+          if (guide) {
+            canvas.bringObjectToFront(guide);
+          }
           canvas.requestRenderAll();
         })
         .catch(() => {
@@ -533,8 +713,11 @@ export const MainStageCanvas = forwardRef<
   ]);
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-4 md:p-8 overflow-auto">
-      <div className="relative bg-surface-container-lowest border border-surface-variant overflow-hidden shrink-0 w-[800px] h-[800px]">
+    <div
+      ref={viewportRef}
+      className="w-full h-full flex items-center justify-center p-2 sm:p-4 lg:p-6 overflow-hidden"
+    >
+      <div className="relative bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden shrink-0">
         <canvas ref={canvasRef} />
       </div>
     </div>

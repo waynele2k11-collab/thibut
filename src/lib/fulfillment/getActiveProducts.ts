@@ -29,21 +29,41 @@ export async function getActiveProductsForStudio(): Promise<ProductMock[]> {
       return [];
     }
 
-    let minRetailMinor: bigint | null = null;
-    for (const v of activeVariants) {
+    const resolvedVariants = activeVariants.flatMap((v) => {
       let candidateMinor = v.baseRetailMinor;
       if (candidateMinor <= 0n) {
         const activePv = v.providerVariants.find(
           (pv) => pv.active && pv.costMinor > 0n
         );
         if (activePv) {
-          candidateMinor = roundUpTo99Minor(activePv.costMinor * 2n);
+          const markup = p.defaultMarkupMinor > 0n ? p.defaultMarkupMinor : 0n;
+          candidateMinor = roundUpTo99Minor(activePv.costMinor * 2n + markup);
         }
       }
-      if (candidateMinor > 0n) {
-        if (minRetailMinor === null || candidateMinor < minRetailMinor) {
-          minRetailMinor = candidateMinor;
-        }
+      if (candidateMinor <= 0n) {
+        return [];
+      }
+      return [
+        {
+          id: v.id,
+          size: v.size,
+          color: v.color,
+          colorHex: v.colorHex,
+          retailPriceMinor: candidateMinor.toString(),
+          mockupImageUrl: v.mockups?.[0]?.asset?.objectKey ?? null,
+          resolvedMinor: candidateMinor,
+        },
+      ];
+    });
+
+    if (resolvedVariants.length === 0) {
+      return [];
+    }
+
+    let minRetailMinor: bigint | null = null;
+    for (const rv of resolvedVariants) {
+      if (minRetailMinor === null || rv.resolvedMinor < minRetailMinor) {
+        minRetailMinor = rv.resolvedMinor;
       }
     }
 
@@ -70,15 +90,18 @@ export async function getActiveProductsForStudio(): Promise<ProductMock[]> {
       {
         id: p.id,
         name: p.name,
+        category: p.category,
         priceMinor: minRetailMinor.toString(),
         formattedPrice: formatMinor(minRetailMinor, "USD"),
         imageUrl,
         description: p.description || "A high-quality blank garment.",
-        variants: activeVariants.map((v) => ({
-          id: v.id,
-          size: v.size,
-          color: v.color,
-          colorHex: v.colorHex,
+        variants: resolvedVariants.map((rv) => ({
+          id: rv.id,
+          size: rv.size,
+          color: rv.color,
+          colorHex: rv.colorHex,
+          retailPriceMinor: rv.retailPriceMinor,
+          mockupImageUrl: rv.mockupImageUrl,
         })),
       },
     ];
