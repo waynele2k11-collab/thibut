@@ -1,71 +1,97 @@
 import prisma from "@/lib/prisma";
 
+export interface DesignCacheKey {
+  phraseKnowledgeId: string;
+  stylePackId: string;
+  rendererVersion: string;
+  script: string;
+}
+
+export interface DesignVariationCacheInput {
+  variationIndex: number;
+  variationNote: string;
+  renderedText: string;
+  assetId: string;
+  provider: string;
+  status: "READY" | "FAILED";
+}
+
 export class DesignCacheService {
   /**
-   * Look up an existing generated visual design based on deterministic parameters.
+   * Deterministic lookup keyed on `(phraseKnowledgeId, stylePackId, rendererVersion, script)`
+   * enforcing TB-CALLI-010 and T-403.
    */
-  public static async findReusableDesign(params: {
-    phraseKnowledgeId: string;
-    stylePackId: string;
-    rendererVersion: string;
-  }) {
-    const design = await prisma.generatedDesign.findFirst({
+  public static async findReusableDesign(params: DesignCacheKey) {
+    return prisma.generatedDesign.findUnique({
       where: {
-        phraseKnowledgeId: params.phraseKnowledgeId,
-        stylePackId: params.stylePackId,
-        rendererVersion: params.rendererVersion,
+        phraseKnowledgeId_stylePackId_rendererVersion_script: {
+          phraseKnowledgeId: params.phraseKnowledgeId,
+          stylePackId: params.stylePackId,
+          rendererVersion: params.rendererVersion,
+          script: params.script,
+        },
       },
       include: {
-        variations: true,
-      }
-    });
-
-    return design;
-  }
-
-  /**
-   * Store a successful generation into the visual cache with its variations.
-   */
-  public static async storeRenderedDesign(params: {
-    phraseKnowledgeId: string;
-    stylePackId: string;
-    rendererVersion: string;
-    variations: {
-      variationIndex: number;
-      variationNote: string;
-      renderedText: string;
-      assetId: string;
-      provider: string;
-      status: "READY" | "FAILED";
-    }[];
-  }) {
-    const existing = await this.findReusableDesign(params);
-    if (existing) {
-      return existing;
-    }
-
-    return await prisma.generatedDesign.create({
-      data: {
-        phraseKnowledgeId: params.phraseKnowledgeId,
-        stylePackId: params.stylePackId,
-        rendererVersion: params.rendererVersion,
         variations: {
-          create: params.variations.map(v => ({
-            ...v
-          }))
-        }
+          orderBy: { variationIndex: "asc" },
+        },
       },
-      include: {
-        variations: true,
-      }
     });
   }
 
   /**
-   * Record a usage of a specific generated design.
+   * Idempotently persists approved variations under the composite unique key
+   * `phraseKnowledgeId_stylePackId_rendererVersion_script` (T-403, T-405).
+   */
+  public static async storeRenderedDesign(
+    params: DesignCacheKey & {
+      variations: DesignVariationCacheInput[];
+    }
+  ) {
+    return prisma.generatedDesign.upsert({
+      where: {
+        phraseKnowledgeId_stylePackId_rendererVersion_script: {
+          phraseKnowledgeId: params.phraseKnowledgeId,
+          stylePackId: params.stylePackId,
+          rendererVersion: params.rendererVersion,
+          script: params.script,
+        },
+      },
+      update: {
+        usageCount: { increment: 1 },
+        lastUsedAt: new Date(),
+      },
+      create: {
+        phraseKnowledgeId: params.phraseKnowledgeId,
+        stylePackId: params.stylePackId,
+        rendererVersion: params.rendererVersion,
+        script: params.script,
+        usageCount: 1,
+        lastUsedAt: new Date(),
+        variations: {
+          create: params.variations.map((v) => ({
+            variationIndex: v.variationIndex,
+            variationNote: v.variationNote,
+            renderedText: v.renderedText,
+            assetId: v.assetId,
+            provider: v.provider,
+            status: v.status,
+          })),
+        },
+      },
+      include: {
+        variations: {
+          orderBy: { variationIndex: "asc" },
+        },
+      },
+    });
+  }
+
+  /**
+   * Increments usage count on cache hit.
    */
   public static async recordUsage(id: string) {
-    return await prisma.generatedDesign.update({
+    return prisma.generatedDesign.update({
       where: { id },
       data: {
         usageCount: { increment: 1 },

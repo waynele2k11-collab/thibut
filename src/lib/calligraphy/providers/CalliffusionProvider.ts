@@ -1,21 +1,22 @@
-import {
-  CalligraphyRendererProvider,
-  CalligraphyRenderRequest,
+import type {
   CalligraphyRenderResult,
+  CalligraphyRendererProvider,
+  CommercialLicensingStatus,
   RendererCapabilities,
 } from "../types";
 
 /**
  * CalliffusionV2 Research Candidate Provider
- * 
- * Status: RESEARCH CANDIDATE (Not approved for commercial production)
- * Licensing: Code/Weights commercial verification pending.
+ *
+ * Status: RESEARCH_ONLY (Not approved for commercial production)
  * Enforces TB-CALLI-008.
  */
 export class CalliffusionProvider implements CalligraphyRendererProvider {
-  public id = "calliffusion-v2-candidate";
-  public name = "CalliffusionV2 Research Adapter";
-  public version = "0.2.0-research";
+  public readonly id = "calliffusion-v2-candidate";
+  public readonly name = "CalliffusionV2 Research Adapter";
+  public readonly version = "0.2.0-research";
+  public readonly commercialLicensingStatus: CommercialLicensingStatus =
+    "RESEARCH_ONLY";
 
   public async getCapabilities(): Promise<RendererCapabilities> {
     return {
@@ -25,18 +26,17 @@ export class CalliffusionProvider implements CalligraphyRendererProvider {
       supportsRealTimeStrokeSynthesis: false,
       maxBatchSize: 4,
       requiresGpu: true,
-      commercialLicensingStatus: "RESEARCH_ONLY",
+      commercialLicensingStatus: this.commercialLicensingStatus,
     };
   }
 
   public async validateAvailability(): Promise<boolean> {
-    // Calliffusion is restricted to research/POC track and requires local GPU cluster or verified API
     return false;
   }
 
-  public async generate(request: CalligraphyRenderRequest): Promise<CalligraphyRenderResult> {
+  public async generate(): Promise<CalligraphyRenderResult> {
     throw new Error(
-      "CalliffusionV2 is currently under Research Evaluation (TB-CALLI-008). Production execution is gated until commercial license audit completes."
+      "CalliffusionV2 is restricted to Research Evaluation (TB-CALLI-008). Commercial execution is gated until license verification completes."
     );
   }
 }

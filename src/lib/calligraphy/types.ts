@@ -1,19 +1,25 @@
 /**
  * THI BÚT CONTROLLED CALLIGRAPHY RENDERER TYPES
- * Version 0.1 — Controlled Brush Rendering Research Track
- * 
+ * Version 0.2 — Deterministic Outlined Brush Engine
+ *
  * Enforces TB-CALLI-001 through TB-CALLI-010.
  */
 
 export type ScriptType =
-  | "HAN"               // Chinese / Hán-Nôm (e.g. 大衛, 阮, 陳)
-  | "JAPANESE_MIXED"    // Kanji + Hiragana / Katakana (e.g. 諦めない, 七転八起, マイケル)
-  | "KOREAN_HANGUL"     // Korean Hangul (e.g. 세라)
-  | "VIETNAMESE_LATIN"  // Vietnamese Latin with tone marks and compound diacritics (e.g. Có chí thì nên, Sức Mạnh)
-  | "ENGLISH_LATIN"     // Latin alphabet (e.g. Never Give Up, David)
+  | "HAN" // Chinese / Hán-Nôm (e.g. 大衛, 上善若水)
+  | "JAPANESE_MIXED" // Kanji + Hiragana / Katakana (e.g. 諦めない, 七転八起, マイケル)
+  | "KOREAN_HANGUL" // Korean Hangul (e.g. 세라, 영원한 사랑)
+  | "VIETNAMESE_LATIN" // Vietnamese Latin with tone marks and compound diacritics (e.g. Có chí thì nên)
+  | "LATIN" // Standard Latin alphabet (e.g. Never Give Up, David)
   | "UNKNOWN";
 
 export type ScriptCompatibility = "NATIVE" | "ADAPTED" | "UNSUPPORTED";
+
+export type CommercialLicensingStatus =
+  | "APPROVED"
+  | "PROPRIETARY_VERIFIED"
+  | "RESEARCH_ONLY"
+  | "UNVERIFIED";
 
 export interface StylePackCapability {
   script: ScriptType;
@@ -38,12 +44,12 @@ export interface StylePack {
 }
 
 export type BrushVariationType =
-  | "01_CONTROLLED"   // Balanced strokes and restrained sumi ink
-  | "02_BOLD"         // Heavy pressure and strong ink mass
-  | "03_DRY_BRUSH"    // Visible texture and broken dry edges
-  | "04_EXPRESSIVE"   // High energy and fluid gestural movement
-  | "05_MINIMAL"      // Light pressure and generous negative space
-  | "06_SIGNATURE";   // Balanced composition with authentic seal treatment
+  | "01_CONTROLLED" // Balanced strokes and restrained sumi ink
+  | "02_BOLD" // Heavy pressure and strong ink mass
+  | "03_DRY_BRUSH" // Visible texture and broken dry edges
+  | "04_EXPRESSIVE" // High energy and fluid gestural movement
+  | "05_MINIMAL" // Light pressure and generous negative space
+  | "06_SIGNATURE"; // Balanced composition with authentic seal treatment
 
 export interface VariationStrategyConfig {
   type: BrushVariationType;
@@ -77,9 +83,11 @@ export interface CalligraphyCandidate {
   variationName: string;
   variationNote: string;
   authoritativeText: string;
+  fontFamily?: string;
   previewAssetUrl: string;
   productionSvg?: string;
   productionAssetUrl?: string;
+  productionAssetId?: string;
   structureGuideUrl?: string;
   provider: string;
   model?: string;
@@ -98,6 +106,7 @@ export interface CalligraphyRenderResult {
   phraseKnowledgeId: string;
   stylePackId: string;
   rendererVersion: string;
+  script?: ScriptType;
   candidates: CalligraphyCandidate[];
   durationMs: number;
   cacheHit: boolean;
@@ -110,13 +119,14 @@ export interface RendererCapabilities {
   supportsRealTimeStrokeSynthesis: boolean;
   maxBatchSize: number;
   requiresGpu: boolean;
-  commercialLicensingStatus: "APPROVED" | "RESEARCH_ONLY" | "PROPRIETARY" | "UNVERIFIED";
+  commercialLicensingStatus: CommercialLicensingStatus;
 }
 
 export interface CalligraphyRendererProvider {
   id: string;
   name: string;
   version: string;
+  commercialLicensingStatus: CommercialLicensingStatus;
   getCapabilities(): Promise<RendererCapabilities>;
   generate(request: CalligraphyRenderRequest): Promise<CalligraphyRenderResult>;
   validateAvailability(): Promise<boolean>;

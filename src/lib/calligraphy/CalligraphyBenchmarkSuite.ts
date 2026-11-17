@@ -1,7 +1,16 @@
-import { BenchmarkMetrics, ScriptType } from "./types";
+import { z } from "zod";
+import { CalligraphyValidationService } from "./CalligraphyValidationService";
 import { DeterministicBrushProvider } from "./providers/DeterministicBrushProvider";
 import { ScriptDetector } from "./ScriptDetector";
-import { CalligraphyValidationService } from "./CalligraphyValidationService";
+import type {
+  BenchmarkMetrics,
+  CalligraphyCandidate,
+  ScriptType,
+} from "./types";
+
+export const BenchmarkRequestSchema = z.object({
+  samplesPerCase: z.number().int().min(1).max(10).default(3),
+});
 
 export interface BenchmarkTestCase {
   id: string;
@@ -19,7 +28,8 @@ export const MANDATORY_BENCHMARK_CASES: BenchmarkTestCase[] = [
     authoritativeText: "大衛",
     expectedScript: "HAN",
     stylePackId: "Shodō",
-    description: "Evaluates Han ideograph structure, stroke completeness, and balanced negative space.",
+    description:
+      "Evaluates Han ideograph structure, stroke completeness, and balanced negative space.",
   },
   {
     id: "bench_02_japanese",
@@ -27,7 +37,8 @@ export const MANDATORY_BENCHMARK_CASES: BenchmarkTestCase[] = [
     authoritativeText: "諦めない",
     expectedScript: "JAPANESE_MIXED",
     stylePackId: "Shodō",
-    description: "Evaluates mixed Kanji + Hiragana stroke harmony, cursive kana flow, and radical preservation.",
+    description:
+      "Evaluates mixed Kanji + Hiragana stroke harmony, cursive kana flow, and radical preservation.",
   },
   {
     id: "bench_03_vietnamese",
@@ -35,24 +46,27 @@ export const MANDATORY_BENCHMARK_CASES: BenchmarkTestCase[] = [
     authoritativeText: "Có chí thì nên",
     expectedScript: "VIETNAMESE_LATIN",
     stylePackId: "Thi Bút Brush",
-    description: "Evaluates 100% preservation of Vietnamese acute accents, tone marks, word order, and Thư Pháp stroke kinetics.",
+    description:
+      "Evaluates 100% preservation of Vietnamese acute accents, tone marks, word order, and Thư Pháp stroke kinetics.",
   },
   {
     id: "bench_04_english",
     name: "English Latin Brush",
     authoritativeText: "Never Give Up",
-    expectedScript: "ENGLISH_LATIN",
+    expectedScript: "LATIN",
     stylePackId: "Thi Bút Brush",
-    description: "Evaluates modern Latin brush calligraphy, letter spacing, ligature balance, and organic dry-brush edges.",
+    description:
+      "Evaluates modern Latin brush calligraphy, letter spacing, ligature balance, and organic dry-brush edges.",
   },
 ];
 
 export class CalligraphyBenchmarkSuite {
   /**
-   * Run the comprehensive benchmark suite across all 4 mandatory language cases.
-   * Generates 20 raw samples per test case (80 total).
+   * Runs the benchmark suite across all mandatory script traditions.
    */
-  public static async runAll(samplesPerCase: number = 20): Promise<BenchmarkMetrics[]> {
+  public static async runAll(
+    samplesPerCase: number = 20
+  ): Promise<BenchmarkMetrics[]> {
     const provider = new DeterministicBrushProvider();
     const results: BenchmarkMetrics[] = [];
 
@@ -60,7 +74,7 @@ export class CalligraphyBenchmarkSuite {
       const detectedScript = ScriptDetector.detect(testCase.authoritativeText);
       const startTime = Date.now();
 
-      const candidateBatches: any[] = [];
+      const candidateBatches: CalligraphyCandidate[] = [];
       let passCount = 0;
       let failCount = 0;
       let reviewCount = 0;
@@ -91,10 +105,11 @@ export class CalligraphyBenchmarkSuite {
           reviewCount++;
         }
 
-        const val = CalligraphyValidationService.validate({
+        const val = await CalligraphyValidationService.validate({
           authoritativeText: testCase.authoritativeText,
           detectedScript,
           stylePackId: testCase.stylePackId,
+          fontFamily: candidate.fontFamily,
           renderedSvg: candidate.productionSvg,
         });
 
@@ -124,7 +139,7 @@ export class CalligraphyBenchmarkSuite {
         visualQualityScore: 96.5,
         styleFidelityScore: 98.0,
         avgLatencyMs: Math.round(elapsed / samplesPerCase),
-        estimatedCostUsd: 0.0, // Local deterministic engine has zero third-party token cost
+        estimatedCostUsd: 0.0,
         executedAt: new Date(),
         candidates: candidateBatches,
       });

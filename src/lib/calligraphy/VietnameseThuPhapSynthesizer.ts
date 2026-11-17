@@ -1,231 +1,279 @@
-/**
- * Vietnamese Thu Phap Master Calligraphy Synthesizer
- * 
- * Synthesizes authentic Vietnamese Thư Pháp brush artwork with:
- * - Sweeping Dragon Capitals (Nét Rồng Lượn)
- * - Variable-pressure horsehair brush stroke dynamics (Bút Lông)
- * - Calligraphic flying-white bristle texture (Phi Bạch)
- * - Dynamic sweeping underline swash (Nét Liệng Thư Pháp)
- * - Dancing diacritics (Dấu Thư Pháp)
- * - Cinnabar vermilion seal stamp (Ấn Triện Son)
- * - Fine ink splatter accents (Hạt Mực Nho)
- */
+import {
+  DEFAULT_SEAL_FONT_FAMILY,
+  FontRegistryService,
+} from "@/lib/fonts/FontRegistryService";
+import { deterministicUid, escapeXml } from "@/lib/security/xml";
+import { ScriptDetector, UnsupportedScriptError } from "./ScriptDetector";
+import type { BrushVariationType } from "./types";
 
 export interface ThuPhapRenderOptions {
   text: string;
-  variationType: "01_CONTROLLED" | "02_BOLD" | "03_DRY_BRUSH" | "04_EXPRESSIVE" | "05_MINIMAL" | "06_SIGNATURE";
+  variationType: BrushVariationType;
   seed: number;
   isVertical?: boolean;
   stylePackId?: string;
 }
 
-import fs from "fs";
-import path from "path";
-
-const FONT_CACHE: Record<string, string> = {};
-
-function getBase64Font(fileName: string): string {
-  if (FONT_CACHE[fileName]) return FONT_CACHE[fileName];
-  try {
-    const fontPath = path.join(process.cwd(), "public", "fonts", fileName);
-    if (fs.existsSync(fontPath)) {
-      FONT_CACHE[fileName] = fs.readFileSync(fontPath).toString("base64");
-    }
-  } catch (e) {
-    console.warn(`Could not read font ${fileName}:`, e);
-  }
-  return FONT_CACHE[fileName] || "";
+export interface ResolvedThuPhapFont {
+  fontFile: string;
+  fontName: string;
+  defaultHasSeal: boolean;
 }
 
+/**
+ * Vietnamese Thư Pháp Master Calligraphy Synthesizer (T-405, T-411, TB-CALLI-006).
+ *
+ * Outlines glyphs deterministically into crisp `<path d="...">` geometry via
+ * `FontRegistryService.parseOpenTypeFont(...)` with zero embedded multi-MB base64
+ * `@font-face` payloads and zero external Google Fonts `@import` network dependencies.
+ */
 export class VietnameseThuPhapSynthesizer {
-  public static generate(options: ThuPhapRenderOptions): string {
-    const { text, variationType, seed, isVertical = false, stylePackId = "Thi Bút 1" } = options;
-    const trimmed = text.trim();
-    const words = trimmed.split(/\s+/);
+  public static resolveFontConfig(stylePackId = "Thi Bút 1"): ResolvedThuPhapFont {
+    const lowerId = stylePackId.toLowerCase();
 
-    // Resolve font binary and visual style based on selected stylePackId
-    let fontFile = "UtmThuphapThienAn.ttf";
-    let fontName = "UTM ThuPhap Thien An";
-    let defaultHasSeal = false;
-    let customLetterSpacing = "0.02em";
-
-    const lowerId = (stylePackId || "").toLowerCase();
-
-    if (lowerId.includes("arizonia") || lowerId.includes("phượng vũ") || lowerId.includes("phuong vu")) {
-      fontFile = "Arizonia-Regular.ttf";
-      fontName = "Arizonia";
-      customLetterSpacing = "0.05em";
-    } else if (lowerId.includes("great") || lowerId.includes("vibes") || lowerId.includes("long vũ") || lowerId.includes("long vu")) {
-      fontFile = "GreatVibes-Regular.ttf";
-      fontName = "Great Vibes";
-      customLetterSpacing = "0.03em";
-    } else if (lowerId.includes("kaushan") || lowerId.includes("phi bạch") || lowerId.includes("phi bach")) {
-      fontFile = "KaushanScript-Regular.ttf";
-      fontName = "Kaushan Script";
-      customLetterSpacing = "0.03em";
-    } else if (lowerId.includes("caveat") || lowerId.includes("mực nho") || lowerId.includes("muc nho")) {
-      fontFile = "CaveatBrush-Regular.ttf";
-      fontName = "Caveat Brush";
-      customLetterSpacing = "0.04em";
-    } else if (lowerId.includes("alex") || lowerId.includes("khí phách") || lowerId.includes("khi phach")) {
-      fontFile = "AlexBrush-Regular.ttf";
-      fontName = "Alex Brush";
-      customLetterSpacing = "0.04em";
-    } else if (lowerId.includes("thi bút 2") || lowerId.includes("thi but 2") || lowerId.includes("ấn triện") || lowerId.includes("an trien") || lowerId.includes("seal")) {
-      fontFile = "UtmThuphapThienAn.ttf";
-      fontName = "UTM ThuPhap Thien An";
-      defaultHasSeal = true; // Always includes imperial cinnabar red seal stamp
-    } else {
-      // Default: Thi Bút 1 / UTM Thư Pháp Thiên Ân
-      fontFile = "UtmThuphapThienAn.ttf";
-      fontName = "UTM ThuPhap Thien An";
+    if (
+      lowerId.includes("arizonia") ||
+      lowerId.includes("phượng vũ") ||
+      lowerId.includes("phuong vu")
+    ) {
+      return {
+        fontFile: "Arizonia-Regular.ttf",
+        fontName: "Arizonia",
+        defaultHasSeal: false,
+      };
+    }
+    if (
+      lowerId.includes("great") ||
+      lowerId.includes("vibes") ||
+      lowerId.includes("long vũ") ||
+      lowerId.includes("long vu")
+    ) {
+      return {
+        fontFile: "GreatVibes-Regular.ttf",
+        fontName: "Great Vibes",
+        defaultHasSeal: false,
+      };
+    }
+    if (
+      lowerId.includes("allura") ||
+      lowerId.includes("lưu thủy") ||
+      lowerId.includes("luu thuy")
+    ) {
+      return {
+        fontFile: "Allura-Regular.ttf",
+        fontName: "Allura",
+        defaultHasSeal: false,
+      };
+    }
+    if (
+      lowerId.includes("kaushan") ||
+      lowerId.includes("phi bạch") ||
+      lowerId.includes("phi bach")
+    ) {
+      return {
+        fontFile: "KaushanScript-Regular.ttf",
+        fontName: "Kaushan Script",
+        defaultHasSeal: false,
+      };
+    }
+    if (
+      lowerId.includes("caveat") ||
+      lowerId.includes("mực nho") ||
+      lowerId.includes("muc nho")
+    ) {
+      return {
+        fontFile: "CaveatBrush-Regular.ttf",
+        fontName: "Caveat Brush",
+        defaultHasSeal: false,
+      };
+    }
+    if (
+      lowerId.includes("alex") ||
+      lowerId.includes("khí phách") ||
+      lowerId.includes("khi phach")
+    ) {
+      return {
+        fontFile: "AlexBrush-Regular.ttf",
+        fontName: "Alex Brush",
+        defaultHasSeal: false,
+      };
+    }
+    if (
+      lowerId.includes("thi bút 2") ||
+      lowerId.includes("thi but 2") ||
+      lowerId.includes("ấn triện") ||
+      lowerId.includes("an trien") ||
+      lowerId.includes("seal")
+    ) {
+      return {
+        fontFile: "UtmThuphapThienAn.ttf",
+        fontName: "UTM ThuPhap Thien An",
+        defaultHasSeal: true,
+      };
     }
 
-    const base64Data = getBase64Font(fontFile);
-    const fontFaceBlock = base64Data
-      ? `@font-face {
-          font-family: '${fontName}';
-          src: url('data:font/ttf;charset=utf-8;base64,${base64Data}') format('truetype');
-          font-weight: normal;
-          font-style: normal;
-        }`
-      : `@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&amp;family=Caveat+Brush&amp;family=Arizonia&amp;family=Alex+Brush&amp;display=swap');`;
+    return {
+      fontFile: "UtmThuphapThienAn.ttf",
+      fontName: "UTM ThuPhap Thien An",
+      defaultHasSeal: false,
+    };
+  }
 
-    // Variation strategy parameters
-    const pressure = variationType === "02_BOLD" ? 1.5 : variationType === "05_MINIMAL" ? 0.8 : 1.15;
-    const energy = variationType === "04_EXPRESSIVE" ? 1.6 : variationType === "03_DRY_BRUSH" ? 1.25 : 1.0;
-    const dryBrush = variationType === "03_DRY_BRUSH" ? 0.75 : 0.15;
-    const hasSeal = defaultHasSeal || variationType === "06_SIGNATURE" || variationType === "01_CONTROLLED" || variationType === "04_EXPRESSIVE";
+  public static async generate(options: ThuPhapRenderOptions): Promise<string> {
+    const {
+      text,
+      variationType,
+      seed,
+      isVertical = false,
+      stylePackId = "Thi Bút 1",
+    } = options;
 
-    const width = isVertical ? 800 : Math.max(1200, trimmed.length * 180 + 360);
-    const height = isVertical ? Math.max(1200, words.length * 450 + 300) : 720;
+    const trimmed = text.normalize("NFC").trim();
+    const detectedScript = ScriptDetector.detect(trimmed);
+    if (detectedScript === "UNKNOWN") {
+      throw new UnsupportedScriptError(trimmed);
+    }
 
-    // Filters for sumi ink and dry brush bristles
-    const filterId = `thuphap_filter_${seed}`;
-    const swashFilterId = `swash_filter_${seed}`;
+    const words = trimmed.split(/\s+/).filter(Boolean);
+    const { fontFile, fontName, defaultHasSeal } =
+      this.resolveFontConfig(stylePackId);
 
-    const filterDef = `
-      <defs>
-        <style>
-          ${fontFaceBlock}
-          .thu-phap-master {
-            font-family: '${fontName}', 'Great Vibes', 'Alex Brush', cursive;
-            font-weight: 700;
-            letter-spacing: ${customLetterSpacing};
-          }
-        </style>
-        <!-- Sumi ink texture with dry-brush bristle displacement -->
-        <filter id="${filterId}" x="-25%" y="-25%" width="150%" height="150%">
-          <feTurbulence type="fractalNoise" baseFrequency="${(0.038 + dryBrush * 0.06).toFixed(3)}" numOctaves="4" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="${(dryBrush * 18).toFixed(1)}" xChannelSelector="R" yChannelSelector="G" result="displaced" />
-          ${variationType === "02_BOLD" ? `<feGaussianBlur in="displaced" stdDeviation="0.8" result="bleed" /><feMerge><feMergeNode in="bleed" /><feMergeNode in="displaced" /></feMerge>` : `<feMerge><feMergeNode in="displaced" /></feMerge>`}
-        </filter>
-        <!-- Sweeping brush tail filter -->
-        <filter id="${swashFilterId}" x="-20%" y="-20%" width="140%" height="140%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="3" result="swashNoise" />
-          <feDisplacementMap in="SourceGraphic" in2="swashNoise" scale="9" xChannelSelector="R" yChannelSelector="G" result="roughSwash" />
-        </filter>
-      </defs>
-    `;
+    const font = await FontRegistryService.parseOpenTypeFont(fontFile);
 
-    // Render word elements
-    let textElements = "";
-    let swashElements = "";
+    const pressure =
+      variationType === "02_BOLD"
+        ? 1.45
+        : variationType === "05_MINIMAL"
+          ? 0.82
+          : 1.12;
+    const energy =
+      variationType === "04_EXPRESSIVE"
+        ? 1.55
+        : variationType === "03_DRY_BRUSH"
+          ? 1.25
+          : 1.0;
+    const dryBrush = variationType === "03_DRY_BRUSH" ? 0.72 : 0.14;
+    const hasSeal =
+      defaultHasSeal ||
+      variationType === "06_SIGNATURE" ||
+      variationType === "01_CONTROLLED" ||
+      variationType === "04_EXPRESSIVE";
+
+    const width = isVertical
+      ? 800
+      : Math.max(1200, trimmed.length * 165 + 360);
+    const height = isVertical
+      ? Math.max(1200, words.length * 360 + 300)
+      : 720;
+
+    const uidSeed = `${trimmed}|${stylePackId}|${variationType}|${seed}|${isVertical ? "V" : "H"}`;
+    const filterId = deterministicUid(uidSeed, "thuphap-flt");
+    const swashFilterId = deterministicUid(uidSeed, "thuphap-swash");
+
+    const filterDef = `<defs>
+      <filter id="${filterId}" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence type="fractalNoise" baseFrequency="${(0.036 + dryBrush * 0.055).toFixed(3)}" numOctaves="3" seed="${seed}" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="${(dryBrush * 14).toFixed(1)}" xChannelSelector="R" yChannelSelector="G" result="displaced" />
+        ${
+          variationType === "02_BOLD"
+            ? `<feGaussianBlur in="displaced" stdDeviation="0.7" result="bleed" /><feMerge><feMergeNode in="bleed" /><feMergeNode in="displaced" /></feMerge>`
+            : `<feMerge><feMergeNode in="displaced" /></feMerge>`
+        }
+      </filter>
+      <filter id="${swashFilterId}" x="-15%" y="-15%" width="130%" height="130%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="3" seed="${seed + 7}" result="swashNoise" />
+        <feDisplacementMap in="SourceGraphic" in2="swashNoise" scale="7" xChannelSelector="R" yChannelSelector="G" result="roughSwash" />
+      </filter>
+    </defs>`;
+
+    let glyphMarkup = "";
+    let swashMarkup = "";
 
     if (isVertical) {
-      const stepY = 280;
+      const stepY = 260;
       const totalContentHeight = words.length * stepY;
       const startY = (height - totalContentHeight) / 2 + 100;
-      const wordFontSize = Math.floor(160 * pressure);
+      const wordFontSize = Math.floor(155 * pressure);
+      const strokeW = (4.5 * pressure).toFixed(1);
 
+      const wordGroups: string[] = [];
       words.forEach((word, i) => {
         const y = startY + i * stepY;
-        textElements += `
-          <g transform="translate(${width / 2}, ${y})">
-            <!-- Shadow/Bleed layer for ink richness -->
-            <text x="0" y="0" text-anchor="middle" dominant-baseline="central" class="thu-phap-master" font-size="${wordFontSize}" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${(6 * pressure).toFixed(1)}" filter="url(#${filterId})">${word}</text>
-            <!-- Core brush layer -->
-            <text x="0" y="0" text-anchor="middle" dominant-baseline="central" class="thu-phap-master" font-size="${wordFontSize}" fill="#0B0B0B" filter="url(#${filterId})">${word}</text>
-          </g>
-        `;
+        const adv = font.getAdvanceWidth(word, wordFontSize);
+        const baselineY = y + wordFontSize * 0.34;
+        const d = font
+          .getPath(word, width / 2 - adv / 2, baselineY, wordFontSize)
+          .toPathData(2);
+        if (d) {
+          wordGroups.push(
+            `<path d="${d}" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${strokeW}" stroke-linejoin="round" stroke-linecap="round" filter="url(#${filterId})" />`
+          );
+        }
       });
+      glyphMarkup = wordGroups.join("\n        ");
     } else {
-      const textY = height / 2 - 30;
-      const fontSize = Math.floor(180 * pressure);
-      textElements = `
-        <g transform="translate(${width / 2}, ${textY})">
-          <!-- Heavy ink core -->
-          <text x="0" y="0" text-anchor="middle" dominant-baseline="central" class="thu-phap-master" font-size="${fontSize}" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${(7 * pressure).toFixed(1)}" stroke-linejoin="round" filter="url(#${filterId})">${trimmed}</text>
-          <text x="0" y="0" text-anchor="middle" dominant-baseline="central" class="thu-phap-master" font-size="${fontSize}" fill="#0B0B0B" filter="url(#${filterId})">${trimmed}</text>
-        </g>
-      `;
+      const textY = height / 2 - 28;
+      const fontSize = Math.floor(175 * pressure);
+      const adv = font.getAdvanceWidth(trimmed, fontSize);
+      const baselineY = textY + fontSize * 0.34;
+      const d = font
+        .getPath(trimmed, width / 2 - adv / 2, baselineY, fontSize)
+        .toPathData(2);
+      const strokeW = (5.0 * pressure).toFixed(1);
 
-      // Master Thư Pháp Sweeping Dragon Tail Swash (Nét Liệng Rồng Bay)
+      if (d) {
+        glyphMarkup = `<path d="${d}" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${strokeW}" stroke-linejoin="round" stroke-linecap="round" filter="url(#${filterId})" />`;
+      }
+
       if (variationType !== "05_MINIMAL") {
-        const startX = width * 0.12;
-        const endX = width * 0.88;
-        const swashBaseY = textY + fontSize * 0.48;
-        
+        const startX = width * 0.14;
+        const endX = width * 0.86;
+        const swashBaseY = textY + fontSize * 0.5;
         const c1X = width * 0.32;
-        const c1Y = swashBaseY + 45 * energy;
+        const c1Y = swashBaseY + 42 * energy;
         const c2X = width * 0.68;
-        const c2Y = swashBaseY - 22 * energy;
+        const c2Y = swashBaseY - 20 * energy;
 
-        swashElements = `
-          <g id="thu-phap-master-swash" filter="url(#${swashFilterId})">
-            <!-- Main sweeping brush stroke -->
-            <path d="M ${startX} ${swashBaseY} C ${c1X} ${c1Y}, ${c2X} ${c2Y}, ${endX} ${swashBaseY + 16}" 
-                  fill="none" 
-                  stroke="#0B0B0B" 
-                  stroke-width="${Math.max(6, 12 * pressure)}" 
-                  stroke-linecap="round" />
-            <!-- Upper feathering trail (Nét tơ phi bạch) -->
-            <path d="M ${startX + 40} ${swashBaseY + 6} C ${c1X + 25} ${c1Y + 8}, ${c2X - 20} ${c2Y + 5}, ${endX - 50} ${swashBaseY + 12}" 
-                  fill="none" 
-                  stroke="#0B0B0B" 
-                  stroke-width="${Math.max(2.5, 5 * pressure)}" 
-                  stroke-linecap="round" 
-                  opacity="0.8" />
-            <!-- Whispering trail -->
-            <path d="M ${startX + 80} ${swashBaseY + 12} C ${c1X + 40} ${c1Y + 14}, ${c2X} ${c2Y + 10}, ${endX - 90} ${swashBaseY + 8}" 
-                  fill="none" 
-                  stroke="#0B0B0B" 
-                  stroke-width="2" 
-                  stroke-linecap="round" 
-                  opacity="0.5" />
-            
-            <!-- Fine Ink Splatters (Hạt mực nho) -->
-            <circle cx="${endX - 22}" cy="${swashBaseY - 14}" r="3.5" fill="#0B0B0B" />
-            <circle cx="${endX + 12}" cy="${swashBaseY + 24}" r="2.2" fill="#0B0B0B" />
-            <circle cx="${endX + 26}" cy="${swashBaseY + 12}" r="1.5" fill="#0B0B0B" />
-            <circle cx="${startX - 12}" cy="${swashBaseY - 8}" r="2.8" fill="#0B0B0B" />
-            <circle cx="${startX + 18}" cy="${swashBaseY + 22}" r="1.8" fill="#0B0B0B" />
-            <circle cx="${width * 0.48}" cy="${swashBaseY + 48}" r="2.0" fill="#0B0B0B" />
-          </g>
-        `;
+        swashMarkup = `<g id="${deterministicUid(uidSeed, "swash-grp")}" filter="url(#${swashFilterId})">
+          <path d="M ${startX.toFixed(1)} ${swashBaseY.toFixed(1)} C ${c1X.toFixed(1)} ${c1Y.toFixed(1)}, ${c2X.toFixed(1)} ${c2Y.toFixed(1)}, ${endX.toFixed(1)} ${(swashBaseY + 14).toFixed(1)}" fill="none" stroke="#0B0B0B" stroke-width="${Math.max(5, 10 * pressure).toFixed(1)}" stroke-linecap="round" />
+          <path d="M ${(startX + 36).toFixed(1)} ${(swashBaseY + 6).toFixed(1)} C ${(c1X + 22).toFixed(1)} ${(c1Y + 8).toFixed(1)}, ${(c2X - 18).toFixed(1)} ${(c2Y + 5).toFixed(1)}, ${(endX - 48).toFixed(1)} ${(swashBaseY + 11).toFixed(1)}" fill="none" stroke="#0B0B0B" stroke-width="${Math.max(2, 4 * pressure).toFixed(1)}" stroke-linecap="round" opacity="0.78" />
+          <circle cx="${(endX - 20).toFixed(1)}" cy="${(swashBaseY - 12).toFixed(1)}" r="3.2" fill="#0B0B0B" />
+          <circle cx="${(endX + 10).toFixed(1)}" cy="${(swashBaseY + 22).toFixed(1)}" r="2.0" fill="#0B0B0B" />
+          <circle cx="${(startX - 10).toFixed(1)}" cy="${(swashBaseY - 8).toFixed(1)}" r="2.4" fill="#0B0B0B" />
+        </g>`;
       }
     }
 
-    // Imperial Red Cinnabar Seal (Ấn Triện Son 詩筆)
-    let sealSvg = "";
+    let sealMarkup = "";
     if (hasSeal) {
-      const sealX = isVertical ? width - 160 : width - 160;
+      const sealFont = await FontRegistryService.parseOpenTypeFont(
+        DEFAULT_SEAL_FONT_FAMILY
+      );
+      const sealGlyphSize = 36;
+      const sealAdv = sealFont.getAdvanceWidth("印", sealGlyphSize);
+      const sealPath = sealFont
+        .getPath("印", 34 - sealAdv / 2, 34 + sealGlyphSize * 0.35, sealGlyphSize)
+        .toPathData(2);
+      const sealX = width - 160;
       const sealY = isVertical ? height - 180 : height - 160;
-      sealSvg = `
-        <g id="cinnabar-seal-stamp" transform="translate(${sealX}, ${sealY})">
-          <rect width="68" height="68" rx="8" fill="#B3261E" />
-          <rect x="5" y="5" width="58" height="58" rx="4" fill="none" stroke="#F6F1E7" stroke-width="2.5" />
-          <text x="34" y="41" text-anchor="middle" dominant-baseline="central" font-family="serif" font-size="28" font-weight="bold" fill="#F6F1E7">詩筆</text>
-        </g>
-      `;
+
+      sealMarkup = `<g id="${deterministicUid(uidSeed, "seal")}" transform="translate(${sealX}, ${sealY})">
+        <rect width="68" height="68" rx="8" fill="#B71032" />
+        <rect x="5" y="5" width="58" height="58" rx="4" fill="none" stroke="#FBF9F4" stroke-width="2.5" />
+        <path d="${sealPath}" fill="#FBF9F4" />
+      </g>`;
     }
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
+    const escapedText = escapeXml(trimmed);
+    const escapedFont = escapeXml(fontName);
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${escapedText}" data-font="${escapedFont}">
+      <desc>${escapedText}</desc>
       ${filterDef}
-      <g id="calligraphy-art" class="protected-media">
-        ${textElements}
-        ${swashElements}
-        ${sealSvg}
+      <g id="${deterministicUid(uidSeed, "art")}" class="protected-media">
+        ${glyphMarkup}
+        ${swashMarkup}
+        ${sealMarkup}
       </g>
     </svg>`;
   }

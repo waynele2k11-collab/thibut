@@ -1,73 +1,133 @@
-import {
-  CalligraphyRendererProvider,
+import { deterministicUid } from "@/lib/security/xml";
+import { CalligraphyValidationService } from "../CalligraphyValidationService";
+import { ScriptDetector, UnsupportedScriptError } from "../ScriptDetector";
+import { StructureGuideGenerator } from "../StructureGuideGenerator";
+import type {
+  BrushVariationType,
+  CalligraphyCandidate,
   CalligraphyRenderRequest,
   CalligraphyRenderResult,
-  CalligraphyCandidate,
+  CalligraphyRendererProvider,
+  CommercialLicensingStatus,
   RendererCapabilities,
-  BrushVariationType,
 } from "../types";
-import { StructureGuideGenerator } from "../StructureGuideGenerator";
-import { CalligraphyValidationService } from "../CalligraphyValidationService";
 
 export class StructureConditionedAIProvider implements CalligraphyRendererProvider {
-  public id = "structure-guided-ai-v1";
-  public name = "Structure-Conditioned AI Brush Engine";
-  public version = "0.1.0-poc";
+  public readonly id = "structure-guided-ai-v1";
+  public readonly name = "Structure-Conditioned AI Brush Engine";
+  public readonly version = "0.2.0-poc";
+  public readonly commercialLicensingStatus: CommercialLicensingStatus =
+    "PROPRIETARY_VERIFIED";
 
   public async getCapabilities(): Promise<RendererCapabilities> {
     return {
-      supportedScripts: ["HAN", "JAPANESE_MIXED", "KOREAN_HANGUL", "VIETNAMESE_LATIN", "ENGLISH_LATIN"],
+      supportedScripts: [
+        "HAN",
+        "JAPANESE_MIXED",
+        "KOREAN_HANGUL",
+        "VIETNAMESE_LATIN",
+        "LATIN",
+      ],
       supportsVectorSvg: false,
       supportsTransparentPng: true,
       supportsRealTimeStrokeSynthesis: false,
       maxBatchSize: 6,
       requiresGpu: true,
-      commercialLicensingStatus: "PROPRIETARY",
+      commercialLicensingStatus: this.commercialLicensingStatus,
     };
   }
 
   public async validateAvailability(): Promise<boolean> {
-    return Boolean(process.env.OPENAI_API_KEY || process.env.FAL_KEY || process.env.GEMINI_API_KEY);
+    return Boolean(
+      process.env.OPENAI_API_KEY ||
+        process.env.FAL_KEY ||
+        process.env.GEMINI_API_KEY
+    );
   }
 
-  public async generate(request: CalligraphyRenderRequest): Promise<CalligraphyRenderResult> {
+  public async generate(
+    request: CalligraphyRenderRequest
+  ): Promise<CalligraphyRenderResult> {
     const startTime = Date.now();
+    const normalizedText = request.authoritativeText.normalize("NFC").trim();
+    const detectedScript =
+      request.script === "UNKNOWN"
+        ? "UNKNOWN"
+        : ScriptDetector.detect(normalizedText);
+
+    if (detectedScript === "UNKNOWN") {
+      throw new UnsupportedScriptError(normalizedText);
+    }
+
     const isVertical = request.orientationPreference === "VERTICAL";
-    const structureGuide = StructureGuideGenerator.generate(
-      request.authoritativeText,
-      request.script,
+    const structureGuide = await StructureGuideGenerator.generate(
+      normalizedText,
+      detectedScript,
       isVertical
     );
 
-    const variationTypes: { type: BrushVariationType; name: string; note: string }[] = [
-      { type: "01_CONTROLLED", name: "Controlled", note: "Balanced classical strokes, restrained sumi ink density." },
-      { type: "02_BOLD", name: "Bold", note: "Heavy pressure and strong ink mass with deep authoritative strokes." },
-      { type: "03_DRY_BRUSH", name: "Dry Brush", note: "Visible bristle texture and broken dry ink edges (Hihaku effect)." },
-      { type: "04_EXPRESSIVE", name: "Expressive", note: "Dynamic gestural energy, fluid speed, and organic stroke movement." },
-      { type: "05_MINIMAL", name: "Minimal", note: "Light pressure, delicate touch, and generous negative space." },
-      { type: "06_SIGNATURE", name: "Signature", note: "Balanced master composition complete with authentic red vermilion seal stamp." },
+    const variationTypes: ReadonlyArray<{
+      type: BrushVariationType;
+      name: string;
+      note: string;
+    }> = [
+      {
+        type: "01_CONTROLLED",
+        name: "Controlled",
+        note: "Balanced classical strokes, restrained sumi ink density.",
+      },
+      {
+        type: "02_BOLD",
+        name: "Bold",
+        note: "Heavy pressure and strong ink mass with deep authoritative strokes.",
+      },
+      {
+        type: "03_DRY_BRUSH",
+        name: "Dry Brush",
+        note: "Visible bristle texture and broken dry ink edges (Hihaku effect).",
+      },
+      {
+        type: "04_EXPRESSIVE",
+        name: "Expressive",
+        note: "Dynamic gestural energy, fluid speed, and organic stroke movement.",
+      },
+      {
+        type: "05_MINIMAL",
+        name: "Minimal",
+        note: "Light pressure, delicate touch, and generous negative space.",
+      },
+      {
+        type: "06_SIGNATURE",
+        name: "Signature",
+        note: "Balanced master composition complete with authentic red vermilion seal stamp.",
+      },
     ];
 
-    const count = Math.min(request.variationCount || 6, 6);
+    const count = Math.min(Math.max(request.variationCount || 6, 1), 6);
     const candidates: CalligraphyCandidate[] = [];
 
     for (let i = 0; i < count; i++) {
+      const itemStart = Date.now();
       const v = variationTypes[i];
-      const seed = (request.seed || 2000) + i * 23;
+      const seed = (request.seed ?? 2000) + i * 23;
 
-      const validation = CalligraphyValidationService.validate({
-        authoritativeText: request.authoritativeText,
-        detectedScript: request.script,
+      // Raster/AI image candidates lack vector glyph verification -> gated as REVIEW (TB-CALLI-003)
+      const validation = await CalligraphyValidationService.validate({
+        authoritativeText: normalizedText,
+        detectedScript,
         stylePackId: request.stylePackId,
         renderedImageUrl: structureGuide.svgDataUri,
       });
 
       candidates.push({
-        id: `ai_${request.phraseKnowledgeId || "poc"}_${v.type}_${seed}`,
+        id: deterministicUid(
+          `${request.phraseKnowledgeId || "ai"}|${v.type}|${seed}`,
+          "ai-cand"
+        ),
         variationType: v.type,
         variationName: v.name,
         variationNote: v.note,
-        authoritativeText: request.authoritativeText,
+        authoritativeText: normalizedText,
         previewAssetUrl: structureGuide.svgDataUri,
         structureGuideUrl: structureGuide.svgDataUri,
         provider: this.id,
@@ -77,7 +137,7 @@ export class StructureConditionedAIProvider implements CalligraphyRendererProvid
         seed,
         validationStatus: validation.status,
         validationReasons: validation.reasons,
-        generationDurationMs: 420 + Math.floor(Math.random() * 300),
+        generationDurationMs: Math.max(1, Date.now() - itemStart),
         createdAt: new Date(),
       });
     }
@@ -86,6 +146,7 @@ export class StructureConditionedAIProvider implements CalligraphyRendererProvid
       phraseKnowledgeId: request.phraseKnowledgeId,
       stylePackId: request.stylePackId,
       rendererVersion: this.version,
+      script: detectedScript,
       candidates,
       durationMs: Date.now() - startTime,
       cacheHit: false,

@@ -1,27 +1,29 @@
-import prisma from "@/lib/prisma";
-import { 
-  CulturalInputType, 
-  InterpretationType, 
-  VerificationStatus, 
-  KnowledgeSource 
+import "server-only";
+import type {
+  CulturalInputType,
+  InterpretationType,
+  KnowledgeSource,
+  Prisma,
+  VerificationStatus,
 } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
 export class CulturalKnowledgeService {
   /**
-   * Normalizes the cultural input for consistent cache lookups.
-   * e.g., "  David " -> "david"
+   * Normalizes cultural input for deterministic cache lookups.
    */
   public static normalizeInput(input: string): string {
     return input
+      .normalize("NFC")
       .trim()
       .replace(/\s+/g, " ")
-      .toLowerCase(); // Case-fold for matching where linguistically safe
+      .toLowerCase();
   }
 
   /**
-   * Look up existing knowledge in the cache.
-   * Prioritizes HUMAN_VERIFIED over AUTO_VALIDATED over GENERATED.
-   * Never returns REJECTED or DEPRECATED.
+   * Looks up verified/generated knowledge in the database cache.
+   * Prioritizes HUMAN_VERIFIED -> AUTO_VALIDATED -> GENERATED.
+   * Never returns REJECTED, DEPRECATED, or MOCK entries.
    */
   public static async lookup(
     rawInput: string,
@@ -33,7 +35,7 @@ export class CulturalKnowledgeService {
   ) {
     const normalized = this.normalizeInput(rawInput);
 
-    const whereClause: any = {
+    const whereClause: Prisma.PhraseKnowledgeWhereInput = {
       normalizedInput: normalized,
       inputType,
       targetLanguage,
@@ -45,23 +47,25 @@ export class CulturalKnowledgeService {
       },
     };
 
-    if (transformationType) whereClause.interpretationType = transformationType;
-    if (sourceLanguage) whereClause.sourceLanguage = sourceLanguage;
-    if (engineVersion) whereClause.engineVersion = engineVersion;
+    if (transformationType) {
+      whereClause.interpretationType = transformationType;
+    }
+    if (sourceLanguage) {
+      whereClause.sourceLanguage = sourceLanguage;
+    }
+    if (engineVersion) {
+      whereClause.engineVersion = engineVersion;
+    }
 
     const results = await prisma.phraseKnowledge.findMany({
       where: whereClause,
-      orderBy: [
-        // Prisma doesn't support ENUM sorting out of the box natively by priority like this easily,
-        // so we fetch the valid ones and sort them in JS. Or we could just use a simple sort.
-        // We'll fetch them all and sort them in memory since there won't be that many hits for a single word.
-      ],
     });
 
-    if (results.length === 0) return null;
+    if (results.length === 0) {
+      return null;
+    }
 
-    // Sort by VerificationStatus priority: HUMAN_VERIFIED (1) -> AUTO_VALIDATED (2) -> GENERATED (3)
-    const priority = {
+    const priority: Record<VerificationStatus, number> = {
       HUMAN_VERIFIED: 1,
       AUTO_VALIDATED: 2,
       GENERATED: 3,
@@ -69,13 +73,14 @@ export class CulturalKnowledgeService {
       DEPRECATED: 99,
     };
 
-    const sorted = results.sort((a, b) => priority[a.verificationStatus] - priority[b.verificationStatus]);
-
-    return sorted; // Returns all valid interpretations found
+    return [...results].sort(
+      (a, b) => priority[a.verificationStatus] - priority[b.verificationStatus]
+    );
   }
 
   /**
-   * Store a newly generated interpretation into the cache.
+   * Stores a server-generated authoritative interpretation into `PhraseKnowledge`.
+   * Must NEVER be called with raw unverified client-supplied interpretation text (TB-CALLI-001).
    */
   public static async storeGenerated(params: {
     rawInput: string;
@@ -90,27 +95,26 @@ export class CulturalKnowledgeService {
     confidence?: number;
     engineVersion?: string;
     verificationStatus?: VerificationStatus;
+    source?: KnowledgeSource;
   }) {
     const normalizedInput = this.normalizeInput(params.rawInput);
+    const engineVersion = params.engineVersion || "CULTURAL_ENGINE_V2";
 
-    // Prevent duplicate entries for the exact same interpretation logic.
     const existing = await prisma.phraseKnowledge.findFirst({
       where: {
         normalizedInput,
         inputType: params.inputType,
         targetLanguage: params.targetLanguage,
         interpretationType: params.interpretationType,
-        sourceLanguage: params.sourceLanguage,
-        engineVersion: params.engineVersion || "CULTURAL_ENGINE_V1",
         renderedText: params.renderedText,
       },
     });
 
     if (existing) {
-      return existing; // Already exists
+      return existing;
     }
 
-    return await prisma.phraseKnowledge.create({
+    return prisma.phraseKnowledge.create({
       data: {
         normalizedInput,
         displayInput: params.rawInput.trim(),
@@ -123,18 +127,15 @@ export class CulturalKnowledgeService {
         meaning: params.meaning,
         explanation: params.explanation,
         confidence: params.confidence,
-        engineVersion: params.engineVersion || "CULTURAL_ENGINE_V1",
+        engineVersion,
         verificationStatus: params.verificationStatus || "GENERATED",
-        source: "AI",
+        source: params.source || "AI",
       },
     });
   }
 
-  /**
-   * Record a usage of a specific knowledge entry.
-   */
   public static async recordUsage(id: string) {
-    return await prisma.phraseKnowledge.update({
+    return prisma.phraseKnowledge.update({
       where: { id },
       data: {
         usageCount: { increment: 1 },
@@ -143,11 +144,8 @@ export class CulturalKnowledgeService {
     });
   }
 
-  /**
-   * Admin: Reject a knowledge entry.
-   */
   public static async reject(id: string) {
-    return await prisma.phraseKnowledge.update({
+    return prisma.phraseKnowledge.update({
       where: { id },
       data: { verificationStatus: "REJECTED" },
     });

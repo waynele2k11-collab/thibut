@@ -1,43 +1,41 @@
 import {
-  CalligraphyRendererProvider,
-  CalligraphyRenderRequest,
-  CalligraphyRenderResult,
-  CalligraphyCandidate,
-  RendererCapabilities,
-  BrushVariationType,
-  VariationStrategyConfig,
-} from "../types";
-import { StructureGuideGenerator } from "../StructureGuideGenerator";
+  DEFAULT_SEAL_FONT_FAMILY,
+  FontRegistryService,
+} from "@/lib/fonts/FontRegistryService";
+import { deterministicUid, escapeXml } from "@/lib/security/xml";
 import { CalligraphyValidationService } from "../CalligraphyValidationService";
+import { ScriptDetector, UnsupportedScriptError } from "../ScriptDetector";
+import { StructureGuideGenerator } from "../StructureGuideGenerator";
+import {
+  type CalligraphyCandidate,
+  type CalligraphyRenderRequest,
+  type CalligraphyRenderResult,
+  type CalligraphyRendererProvider,
+  type CommercialLicensingStatus,
+  type RendererCapabilities,
+  type ScriptType,
+  type VariationStrategyConfig,
+} from "../types";
 import { VietnameseThuPhapSynthesizer } from "../VietnameseThuPhapSynthesizer";
 
-import fs from "fs";
-import path from "path";
-
-const FONT_BASE64_CACHE: Record<string, string> = {};
-function getFontBase64(fileName: string): string {
-  if (FONT_BASE64_CACHE[fileName]) return FONT_BASE64_CACHE[fileName];
-  try {
-    const fontPath = path.join(process.cwd(), "public", "fonts", fileName);
-    if (fs.existsSync(fontPath)) {
-      FONT_BASE64_CACHE[fileName] = fs.readFileSync(fontPath).toString("base64");
-    }
-  } catch (e) {
-    console.warn(`Could not read font ${fileName}:`, e);
-  }
-  return FONT_BASE64_CACHE[fileName] || "";
+interface ResolvedProviderFont {
+  fontFile: string;
+  fontName: string;
+  useThuPhapSynthesizer: boolean;
 }
 
 export class DeterministicBrushProvider implements CalligraphyRendererProvider {
-  public id = "deterministic-brush-v1";
-  public name = "Thi Bút Deterministic Brush Engine";
-  public version = "1.2.0-thuphap-master";
+  public readonly id = "deterministic-brush-v1";
+  public readonly name = "Thi Bút Deterministic Brush Engine";
+  public readonly version = "2.0.0-outlined-master";
+  public readonly commercialLicensingStatus: CommercialLicensingStatus = "APPROVED";
 
-  private variationConfigs: VariationStrategyConfig[] = [
+  private readonly variationConfigs: VariationStrategyConfig[] = [
     {
       type: "01_CONTROLLED",
       name: "Controlled",
-      description: "Balanced strokes and restrained ink with clean classical precision.",
+      description:
+        "Balanced strokes and restrained ink with clean classical precision.",
       pressureMultiplier: 1.0,
       dryBrushIntensity: 0.1,
       energyFactor: 0.8,
@@ -47,18 +45,20 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
     {
       type: "02_BOLD",
       name: "Bold",
-      description: "Heavy pressure and strong ink mass with deep authoritative strokes.",
-      pressureMultiplier: 1.4,
+      description:
+        "Heavy pressure and strong ink mass with deep authoritative strokes.",
+      pressureMultiplier: 1.38,
       dryBrushIntensity: 0.05,
       energyFactor: 1.1,
-      inkBleed: 0.3,
+      inkBleed: 0.28,
       includeSeal: false,
     },
     {
       type: "03_DRY_BRUSH",
       name: "Dry Brush",
-      description: "Visible bristle texture and broken dry ink edges (Hihaku effect).",
-      pressureMultiplier: 0.9,
+      description:
+        "Visible bristle texture and broken dry ink edges (Hihaku effect).",
+      pressureMultiplier: 0.92,
       dryBrushIntensity: 0.65,
       energyFactor: 1.2,
       inkBleed: 0.0,
@@ -67,18 +67,20 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
     {
       type: "04_EXPRESSIVE",
       name: "Expressive",
-      description: "Dynamic gestural energy, fluid speed, and organic stroke movement.",
+      description:
+        "Dynamic gestural energy, fluid speed, and organic stroke movement.",
       pressureMultiplier: 1.15,
       dryBrushIntensity: 0.3,
-      energyFactor: 1.5,
-      inkBleed: 0.25,
+      energyFactor: 1.48,
+      inkBleed: 0.22,
       includeSeal: false,
     },
     {
       type: "05_MINIMAL",
       name: "Minimal",
-      description: "Light pressure, delicate touch, and generous negative space.",
-      pressureMultiplier: 0.75,
+      description:
+        "Light pressure, delicate touch, and generous negative space.",
+      pressureMultiplier: 0.78,
       dryBrushIntensity: 0.15,
       energyFactor: 0.6,
       inkBleed: 0.05,
@@ -87,7 +89,8 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
     {
       type: "06_SIGNATURE",
       name: "Signature",
-      description: "Balanced master composition complete with authentic red vermilion seal stamp.",
+      description:
+        "Balanced master composition complete with authentic red vermilion seal stamp.",
       pressureMultiplier: 1.05,
       dryBrushIntensity: 0.2,
       energyFactor: 0.9,
@@ -98,13 +101,19 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
 
   public async getCapabilities(): Promise<RendererCapabilities> {
     return {
-      supportedScripts: ["HAN", "JAPANESE_MIXED", "KOREAN_HANGUL", "VIETNAMESE_LATIN", "ENGLISH_LATIN"],
+      supportedScripts: [
+        "HAN",
+        "JAPANESE_MIXED",
+        "KOREAN_HANGUL",
+        "VIETNAMESE_LATIN",
+        "LATIN",
+      ],
       supportsVectorSvg: true,
       supportsTransparentPng: true,
       supportsRealTimeStrokeSynthesis: true,
       maxBatchSize: 6,
       requiresGpu: false,
-      commercialLicensingStatus: "APPROVED",
+      commercialLicensingStatus: this.commercialLicensingStatus,
     };
   }
 
@@ -112,42 +121,65 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
     return true;
   }
 
-  public async generate(request: CalligraphyRenderRequest): Promise<CalligraphyRenderResult> {
+  public async generate(
+    request: CalligraphyRenderRequest
+  ): Promise<CalligraphyRenderResult> {
     const startTime = Date.now();
+    const normalizedText = request.authoritativeText.normalize("NFC").trim();
+    const detectedScript =
+      request.script === "UNKNOWN"
+        ? "UNKNOWN"
+        : ScriptDetector.detect(normalizedText);
+
+    if (detectedScript === "UNKNOWN") {
+      throw new UnsupportedScriptError(normalizedText);
+    }
+
     const count = Math.min(Math.max(request.variationCount || 6, 1), 6);
     const selectedConfigs = this.variationConfigs.slice(0, count);
-
     const isVertical = request.orientationPreference === "VERTICAL";
-    const structureGuide = StructureGuideGenerator.generate(
-      request.authoritativeText,
-      request.script,
+
+    const structureGuide = await StructureGuideGenerator.generate(
+      normalizedText,
+      detectedScript,
       isVertical
+    );
+
+    const resolvedFont = await this.resolveFontForRequest(
+      normalizedText,
+      detectedScript,
+      request.stylePackId
     );
 
     const candidates: CalligraphyCandidate[] = [];
 
     for (let i = 0; i < selectedConfigs.length; i++) {
+      const candidateStart = Date.now();
       const config = selectedConfigs[i];
-      const variationSeed = (request.seed || 1000) + i * 17;
+      const variationSeed = (request.seed ?? 1000) + i * 17;
 
-      const svgOutput = this.renderBrushSvg({
-        text: request.authoritativeText,
-        script: request.script,
+      const svgOutput = await this.renderBrushSvg({
+        text: normalizedText,
+        script: detectedScript,
         config,
         isVertical,
         seed: variationSeed,
         stylePackId: request.stylePackId,
+        resolvedFont,
       });
 
-      // Execute Automated Character and Diacritic Validation
-      const validation = CalligraphyValidationService.validate({
-        authoritativeText: request.authoritativeText,
-        detectedScript: request.script,
+      const validation = await CalligraphyValidationService.validate({
+        authoritativeText: normalizedText,
+        detectedScript,
         stylePackId: request.stylePackId,
+        fontFamily: resolvedFont.fontFile,
         renderedSvg: svgOutput,
       });
 
-      const candidateId = `cand_${request.phraseKnowledgeId || "poc"}_${config.type}_${variationSeed}`;
+      const candidateId = deterministicUid(
+        `${request.phraseKnowledgeId || "cand"}|${request.stylePackId}|${config.type}|${variationSeed}`,
+        "cand"
+      );
       const previewDataUri = `data:image/svg+xml;utf8,${encodeURIComponent(svgOutput)}`;
 
       candidates.push({
@@ -155,9 +187,11 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
         variationType: config.type,
         variationName: config.name,
         variationNote: config.description,
-        authoritativeText: request.authoritativeText,
+        authoritativeText: normalizedText,
+        fontFamily: resolvedFont.fontName,
         previewAssetUrl: previewDataUri,
         productionSvg: svgOutput,
+        productionAssetUrl: previewDataUri,
         structureGuideUrl: structureGuide.svgDataUri,
         provider: this.id,
         model: "Deterministic-Brush-Synthesizer",
@@ -166,44 +200,204 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
         seed: variationSeed,
         validationStatus: validation.status,
         validationReasons: validation.reasons,
-        generationDurationMs: 15 + Math.floor(Math.random() * 20),
+        generationDurationMs: Math.max(1, Date.now() - candidateStart),
         createdAt: new Date(),
       });
     }
-
-    const durationMs = Date.now() - startTime;
 
     return {
       phraseKnowledgeId: request.phraseKnowledgeId,
       stylePackId: request.stylePackId,
       rendererVersion: this.version,
+      script: detectedScript,
       candidates,
-      durationMs,
+      durationMs: Date.now() - startTime,
       cacheHit: false,
     };
   }
 
-  private renderBrushSvg(params: {
+  private async resolveFontForRequest(
+    text: string,
+    script: ScriptType,
+    stylePackId: string
+  ): Promise<ResolvedProviderFont> {
+    if (script === "UNKNOWN") {
+      throw new UnsupportedScriptError(text);
+    }
+
+    // Explicit Japanese Shodō style packs / font selections
+    if (
+      stylePackId === "Japanese 1" ||
+      stylePackId === "Shodō" ||
+      stylePackId.includes("Boku")
+    ) {
+      return {
+        fontFile: "YujiBoku-Regular.ttf",
+        fontName: "Yuji Boku",
+        useThuPhapSynthesizer: false,
+      };
+    }
+    if (stylePackId === "Japanese 2" || stylePackId.includes("Syuku")) {
+      // T-402 / TB-CALLI-006: Must map to YujiSyuku-Regular.ttf (NEVER silently alias YujiBoku!)
+      return {
+        fontFile: "YujiSyuku-Regular.ttf",
+        fontName: "Yuji Syuku",
+        useThuPhapSynthesizer: false,
+      };
+    }
+    if (stylePackId === "Japanese 3" || stylePackId.includes("Mai")) {
+      return {
+        fontFile: "YujiMai-Regular.ttf",
+        fontName: "Yuji Mai",
+        useThuPhapSynthesizer: false,
+      };
+    }
+
+    // Explicit Chinese Shūfǎ style packs / font selections
+    if (stylePackId === "Chinese 1" || stylePackId.includes("Liu Jian")) {
+      return {
+        fontFile: "LiuJianMaoCao-Regular.ttf",
+        fontName: "Liu Jian Mao Cao",
+        useThuPhapSynthesizer: false,
+      };
+    }
+    if (stylePackId === "Chinese 2" || stylePackId.includes("Long Cang")) {
+      return {
+        fontFile: "LongCang-Regular.ttf",
+        fontName: "Long Cang",
+        useThuPhapSynthesizer: false,
+      };
+    }
+    if (stylePackId === "Chinese 3" || stylePackId.includes("Ma Shan")) {
+      return {
+        fontFile: "MaShanZheng-Regular.ttf",
+        fontName: "Ma Shan Zheng",
+        useThuPhapSynthesizer: false,
+      };
+    }
+    if (stylePackId === "Chinese 4" || stylePackId.includes("Zhi Mang")) {
+      return {
+        fontFile: "ZhiMangXing-Regular.ttf",
+        fontName: "Zhi Mang Xing",
+        useThuPhapSynthesizer: false,
+      };
+    }
+
+    // Explicit Korean Seoye style packs / font selections
+    if (stylePackId === "Korean 1" || stylePackId.includes("Nanum")) {
+      return {
+        fontFile: "NanumBrushScript-Regular.ttf",
+        fontName: "Nanum Brush Script",
+        useThuPhapSynthesizer: false,
+      };
+    }
+    if (
+      stylePackId === "Korean 2" ||
+      stylePackId.includes("Dokdo") ||
+      stylePackId.includes("East Sea")
+    ) {
+      return {
+        fontFile: "EastSeaDokdo-Regular.ttf",
+        fontName: "East Sea Dokdo",
+        useThuPhapSynthesizer: false,
+      };
+    }
+
+    // Explicit Vietnamese Thư Pháp style packs
+    if (
+      stylePackId.startsWith("Thi Bút") ||
+      stylePackId.toLowerCase().includes("utm") ||
+      stylePackId.toLowerCase().includes("great vibes") ||
+      stylePackId.toLowerCase().includes("long vũ") ||
+      stylePackId.toLowerCase().includes("allura") ||
+      stylePackId.toLowerCase().includes("lưu thủy") ||
+      stylePackId.toLowerCase().includes("kaushan") ||
+      stylePackId.toLowerCase().includes("phi bạch") ||
+      stylePackId.toLowerCase().includes("caveat") ||
+      stylePackId.toLowerCase().includes("mực nho") ||
+      stylePackId.toLowerCase().includes("arizonia") ||
+      stylePackId.toLowerCase().includes("phượng vũ") ||
+      stylePackId.toLowerCase().includes("alex brush") ||
+      stylePackId.toLowerCase().includes("khí phách")
+    ) {
+      const cfg = VietnameseThuPhapSynthesizer.resolveFontConfig(stylePackId);
+      return {
+        fontFile: cfg.fontFile,
+        fontName: cfg.fontName,
+        useThuPhapSynthesizer: true,
+      };
+    }
+
+    // Generic Pan-Asian style packs (Classic, Ink, Zen, Seal, Modern, Luxury, Street, Minimal)
+    switch (script) {
+      case "VIETNAMESE_LATIN":
+      case "LATIN": {
+        const cfg = VietnameseThuPhapSynthesizer.resolveFontConfig(stylePackId);
+        return {
+          fontFile: cfg.fontFile,
+          fontName: cfg.fontName,
+          useThuPhapSynthesizer: true,
+        };
+      }
+      case "JAPANESE_MIXED":
+        return {
+          fontFile: "YujiBoku-Regular.ttf",
+          fontName: "Yuji Boku",
+          useThuPhapSynthesizer: false,
+        };
+      case "KOREAN_HANGUL":
+        return {
+          fontFile: "NanumBrushScript-Regular.ttf",
+          fontName: "Nanum Brush Script",
+          useThuPhapSynthesizer: false,
+        };
+      case "HAN": {
+        const hasLongCang = await FontRegistryService.hasGlyphCoverage(
+          "LongCang-Regular.ttf",
+          text
+        );
+        if (hasLongCang) {
+          return {
+            fontFile: "LongCang-Regular.ttf",
+            fontName: "Long Cang",
+            useThuPhapSynthesizer: false,
+          };
+        }
+        return {
+          fontFile: "YujiBoku-Regular.ttf",
+          fontName: "Yuji Boku",
+          useThuPhapSynthesizer: false,
+        };
+      }
+      default:
+        throw new UnsupportedScriptError(text);
+    }
+  }
+
+  private async renderBrushSvg(params: {
     text: string;
-    script: string;
+    script: ScriptType;
     config: VariationStrategyConfig;
     isVertical: boolean;
     seed: number;
     stylePackId: string;
-  }): string {
-    const { text, script, config, isVertical, seed, stylePackId } = params;
-    const chars = Array.from(text.trim());
-    const charCount = chars.length;
+    resolvedFont: ResolvedProviderFont;
+  }): Promise<string> {
+    const {
+      text,
+      script,
+      config,
+      isVertical,
+      seed,
+      stylePackId,
+      resolvedFont,
+    } = params;
 
-    const isThuPhap = 
-      stylePackId.startsWith("Thi Bút") ||
-      stylePackId === "Classic" ||
-      stylePackId === "Street" ||
-      stylePackId === "Seal" ||
-      script === "VIETNAMESE_LATIN" ||
-      script === "ENGLISH_LATIN";
+    if (script === "UNKNOWN") {
+      throw new UnsupportedScriptError(text);
+    }
 
-    if (isThuPhap) {
+    if (resolvedFont.useThuPhapSynthesizer) {
       return VietnameseThuPhapSynthesizer.generate({
         text,
         variationType: config.type,
@@ -213,174 +407,101 @@ export class DeterministicBrushProvider implements CalligraphyRendererProvider {
       });
     }
 
-    let fontFamily = "'Yuji Boku', serif";
-    let fontFile = "YujiBoku-Regular.ttf";
-    let fontName = "Yuji Boku";
+    // Parse licensed font server-side via FontRegistryService (throws FontNotFoundError / FontLicenseError if missing/unlicensed)
+    const font = await FontRegistryService.parseOpenTypeFont(
+      resolvedFont.fontFile
+    );
 
-    if (stylePackId === "Japanese 1" || stylePackId === "Shodō" || stylePackId.includes("Boku")) {
-      fontFamily = "'Yuji Boku', serif";
-      fontFile = "YujiBoku-Regular.ttf";
-      fontName = "Yuji Boku";
-    } else if (stylePackId === "Japanese 2" || stylePackId.includes("Syuku")) {
-      fontFamily = "'Yuji Syuku', serif";
-      fontFile = "YujiBoku-Regular.ttf";
-      fontName = "Yuji Syuku";
-    } else if (stylePackId === "Japanese 3" || stylePackId.includes("Mai")) {
-      fontFamily = "'Yuji Mai', cursive";
-      fontFile = "YujiMai-Regular.ttf";
-      fontName = "Yuji Mai";
-    } else if (stylePackId === "Chinese 1" || stylePackId.includes("Liu Jian")) {
-      fontFamily = "'Liu Jian Mao Cao', cursive";
-      fontFile = "LiuJianMaoCao-Regular.ttf";
-      fontName = "Liu Jian Mao Cao";
-    } else if (stylePackId === "Chinese 2" || stylePackId.includes("Long Cang") || stylePackId === "Ink") {
-      fontFamily = "'Long Cang', cursive";
-      fontFile = "LongCang-Regular.ttf";
-      fontName = "Long Cang";
-    } else if (stylePackId === "Chinese 3" || stylePackId.includes("Ma Shan")) {
-      fontFamily = "'Ma Shan Zheng', cursive";
-      fontFile = "MaShanZheng-Regular.ttf";
-      fontName = "Ma Shan Zheng";
-    } else if (stylePackId === "Chinese 4" || stylePackId.includes("Zhi Mang")) {
-      fontFamily = "'Zhi Mang Xing', cursive";
-      fontFile = "ZhiMangXing-Regular.ttf";
-      fontName = "Zhi Mang Xing";
-    } else if (stylePackId === "Korean 1" || stylePackId.includes("Nanum") || stylePackId === "Zen") {
-      fontFamily = "'Nanum Brush Script', cursive";
-      fontFile = "NanumBrushScript-Regular.ttf";
-      fontName = "Nanum Brush Script";
-    } else if (stylePackId === "Korean 2" || stylePackId.includes("Dokdo")) {
-      fontFamily = "'East Sea Dokdo', cursive";
-      fontFile = "EastSeaDokdo-Regular.ttf";
-      fontName = "East Sea Dokdo";
-    } else {
-      if (script === "HAN") {
-        fontFamily = "'Long Cang', cursive";
-        fontFile = "LongCang-Regular.ttf";
-        fontName = "Long Cang";
-      } else if (script === "JAPANESE_MIXED") {
-        fontFamily = "'Yuji Boku', serif";
-        fontFile = "YujiBoku-Regular.ttf";
-        fontName = "Yuji Boku";
-      } else if (script === "KOREAN_HANGUL") {
-        fontFamily = "'Nanum Brush Script', cursive";
-        fontFile = "NanumBrushScript-Regular.ttf";
-        fontName = "Nanum Brush Script";
-      }
-    }
+    const chars = Array.from(text.trim());
+    const charCount = chars.length;
 
-    const width = isVertical ? 480 : Math.max(800, charCount * 140 + 240);
-    const height = isVertical ? Math.max(800, charCount * 220 + 200) : 560;
+    const width = isVertical ? 520 : Math.max(820, charCount * 145 + 240);
+    const height = isVertical ? Math.max(820, charCount * 215 + 220) : 560;
 
-    const fontSize = Math.floor((isVertical ? 150 : 160) * config.pressureMultiplier);
-    const strokeWidth = (3.5 * config.pressureMultiplier).toFixed(1);
-    const turbulenceFreq = (0.035 + config.dryBrushIntensity * 0.09).toFixed(3);
-    const displacementScale = (config.dryBrushIntensity * 16).toFixed(1);
+    const fontSize = Math.floor(
+      (isVertical ? 148 : 158) * config.pressureMultiplier
+    );
+    const strokeWidth = (3.2 * config.pressureMultiplier).toFixed(1);
+    const turbulenceFreq = (0.035 + config.dryBrushIntensity * 0.085).toFixed(3);
+    const displacementScale = (config.dryBrushIntensity * 14).toFixed(1);
 
-    const fontBase64 = getFontBase64(fontFile);
-    const fontFaceBlock = fontBase64
-      ? `@font-face {
-          font-family: '${fontName}';
-          src: url('data:font/ttf;charset=utf-8;base64,${fontBase64}') format('truetype');
-          font-weight: normal;
-          font-style: normal;
-        }`
-      : `@import url('https://fonts.googleapis.com/css2?family=Long+Cang&amp;family=Ma+Shan+Zheng&amp;family=Zhi+Mang+Xing&amp;family=Yuji+Boku&amp;family=Yuji+Mai&amp;family=Nanum+Brush+Script&amp;family=East+Sea+Dokdo&amp;display=swap');`;
+    const uidSeed = `${text}|${stylePackId}|${config.type}|${seed}|${isVertical ? "V" : "H"}`;
+    const brushFilterId = deterministicUid(uidSeed, "brush-flt");
 
-    const filterDef = `
-      <style>
-        ${fontFaceBlock}
-        .thu-phap-text {
-          font-family: '${fontName}', ${fontFamily};
-          font-weight: 700;
-          letter-spacing: ${isThuPhap ? "0.05em" : "0.02em"};
-        }
-      </style>
-      <filter id="brushFilter_${seed}" x="-25%" y="-25%" width="150%" height="150%">
-        <feTurbulence type="fractalNoise" baseFrequency="${turbulenceFreq}" numOctaves="4" result="noise" />
+    const filterDef = `<defs>
+      <filter id="${brushFilterId}" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence type="fractalNoise" baseFrequency="${turbulenceFreq}" numOctaves="3" seed="${seed}" result="noise" />
         <feDisplacementMap in="SourceGraphic" in2="noise" scale="${displacementScale}" xChannelSelector="R" yChannelSelector="G" result="rough" />
-        ${config.inkBleed > 0.1 ? `<feGaussianBlur in="rough" stdDeviation="${(config.inkBleed * 1.8).toFixed(1)}" result="bleed" />
-        <feMerge>
-          <feMergeNode in="bleed" />
-          <feMergeNode in="rough" />
-        </feMerge>` : `<feMerge><feMergeNode in="rough" /></feMerge>`}
+        ${
+          config.inkBleed > 0.1
+            ? `<feGaussianBlur in="rough" stdDeviation="${(config.inkBleed * 1.6).toFixed(1)}" result="bleed" /><feMerge><feMergeNode in="bleed" /><feMergeNode in="rough" /></feMerge>`
+            : `<feMerge><feMergeNode in="rough" /></feMerge>`
+        }
       </filter>
-      <filter id="swashFilter_${seed}" x="-20%" y="-20%" width="140%" height="140%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G" result="roughSwash" />
-      </filter>
-    `;
+    </defs>`;
 
-    let glyphElements = "";
-    let decorativeSwash = "";
+    const pathElements: string[] = [];
 
     if (isVertical) {
-      const stepY = (height - 220) / Math.max(charCount, 1);
-      chars.forEach((char, i) => {
+      const nonSpaceChars = chars.filter((c) => !/\s/.test(c));
+      const stepY = (height - 220) / Math.max(nonSpaceChars.length, 1);
+      nonSpaceChars.forEach((char, i) => {
         const y = 130 + i * stepY;
-        glyphElements += `<text x="50%" y="${y}" text-anchor="middle" dominant-baseline="central" class="thu-phap-text" font-size="${fontSize}" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${strokeWidth}" filter="url(#brushFilter_${seed})">${char}</text>`;
+        const adv = font.getAdvanceWidth(char, fontSize);
+        const d = font
+          .getPath(char, width / 2 - adv / 2, y + fontSize * 0.35, fontSize)
+          .toPathData(2);
+        if (d) {
+          pathElements.push(
+            `<path d="${d}" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${strokeWidth}" stroke-linejoin="round" stroke-linecap="round" filter="url(#${brushFilterId})" />`
+          );
+        }
       });
     } else {
-      const textY = isThuPhap ? height / 2 - 20 : height / 2;
-      glyphElements = `<text x="50%" y="${textY}" text-anchor="middle" dominant-baseline="central" class="thu-phap-text" font-size="${fontSize}" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${strokeWidth}" filter="url(#brushFilter_${seed})">${text}</text>`;
-
-      // Vietnamese Thư Pháp Sweeping Brush Tail / Underline Swash (Nét Liệng Thư Pháp)
-      if (isThuPhap && config.type !== "05_MINIMAL") {
-        const startX = width * 0.18;
-        const endX = width * 0.82;
-        const swashY = textY + fontSize * 0.52;
-        const ctrlX1 = width * 0.35;
-        const ctrlY1 = swashY + 38 * config.energyFactor;
-        const ctrlX2 = width * 0.65;
-        const ctrlY2 = swashY - 18 * config.energyFactor;
-
-        decorativeSwash = `
-          <g id="thu-phap-swash" filter="url(#swashFilter_${seed})">
-            <!-- Dynamic Sweeping Brush Underline -->
-            <path d="M ${startX} ${swashY} C ${ctrlX1} ${ctrlY1}, ${ctrlX2} ${ctrlY2}, ${endX} ${swashY + 12}" 
-                  fill="none" 
-                  stroke="#0B0B0B" 
-                  stroke-width="${Math.max(4, 7 * config.pressureMultiplier)}" 
-                  stroke-linecap="round" />
-            <!-- Secondary energetic brush trail -->
-            <path d="M ${startX + 30} ${swashY + 6} C ${ctrlX1 + 20} ${ctrlY1 + 10}, ${ctrlX2} ${ctrlY2 + 5}, ${endX - 40} ${swashY + 10}" 
-                  fill="none" 
-                  stroke="#0B0B0B" 
-                  stroke-width="${Math.max(2, 3 * config.pressureMultiplier)}" 
-                  stroke-linecap="round" 
-                  opacity="0.75" />
-            <!-- Ink Splatter Particles (Mực nho) -->
-            ${config.energyFactor > 1.0 ? `
-              <circle cx="${endX - 15}" cy="${swashY - 10}" r="2.5" fill="#0B0B0B" />
-              <circle cx="${endX + 8}" cy="${swashY + 18}" r="1.8" fill="#0B0B0B" />
-              <circle cx="${startX + 10}" cy="${swashY - 8}" r="2.0" fill="#0B0B0B" />
-            ` : ""}
-          </g>
-        `;
+      const textY = height / 2;
+      const adv = font.getAdvanceWidth(text, fontSize);
+      const d = font
+        .getPath(text, width / 2 - adv / 2, textY + fontSize * 0.35, fontSize)
+        .toPathData(2);
+      if (d) {
+        pathElements.push(
+          `<path d="${d}" fill="#0B0B0B" stroke="#0B0B0B" stroke-width="${strokeWidth}" stroke-linejoin="round" stroke-linecap="round" filter="url(#${brushFilterId})" />`
+        );
       }
     }
 
-    // Seal Stamp (Triện son / Red Cinnabar Seal)
     let sealSvg = "";
-    if (config.includeSeal || stylePackId === "Seal" || config.type === "06_SIGNATURE") {
+    if (
+      config.includeSeal ||
+      stylePackId === "Seal" ||
+      config.type === "06_SIGNATURE"
+    ) {
+      const sealFont = await FontRegistryService.parseOpenTypeFont(
+        DEFAULT_SEAL_FONT_FAMILY
+      );
+      const sealGlyphSize = 32;
+      const sealAdv = sealFont.getAdvanceWidth("印", sealGlyphSize);
+      const sealPath = sealFont
+        .getPath("印", 30 - sealAdv / 2, 30 + sealGlyphSize * 0.35, sealGlyphSize)
+        .toPathData(2);
       const sealX = width - 110;
       const sealY = height - 110;
-      sealSvg = `
-        <g id="cinnabar-seal" transform="translate(${sealX}, ${sealY})">
-          <rect width="60" height="60" rx="6" fill="#B3261E" />
-          <rect x="4" y="4" width="52" height="52" rx="3" fill="none" stroke="#F6F1E7" stroke-width="2" />
-          <text x="30" y="36" text-anchor="middle" dominant-baseline="central" font-family="serif" font-size="24" font-weight="bold" fill="#F6F1E7">詩筆</text>
-        </g>
-      `;
+
+      sealSvg = `<g id="${deterministicUid(uidSeed, "seal")}" transform="translate(${sealX}, ${sealY})">
+        <rect width="60" height="60" rx="6" fill="#B71032" />
+        <rect x="4" y="4" width="52" height="52" rx="3" fill="none" stroke="#FBF9F4" stroke-width="2" />
+        <path d="${sealPath}" fill="#FBF9F4" />
+      </g>`;
     }
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
-      <defs>
-        ${filterDef}
-      </defs>
-      <g id="calligraphy-art" class="protected-media">
-        ${glyphElements}
-        ${decorativeSwash}
+    const escapedText = escapeXml(text);
+    const escapedFont = escapeXml(resolvedFont.fontName);
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${escapedText}" data-font="${escapedFont}">
+      <desc>${escapedText}</desc>
+      ${filterDef}
+      <g id="${deterministicUid(uidSeed, "art")}" class="protected-media">
+        ${pathElements.join("\n        ")}
         ${sealSvg}
       </g>
     </svg>`;

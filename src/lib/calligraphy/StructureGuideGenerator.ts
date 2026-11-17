@@ -1,75 +1,126 @@
-import { ScriptType } from "./types";
+import { FontRegistryService } from "@/lib/fonts/FontRegistryService";
+import { deterministicUid, escapeXml } from "@/lib/security/xml";
+import { ScriptDetector, UnsupportedScriptError } from "./ScriptDetector";
+import type { ScriptType } from "./types";
 
 export interface StructureGuide {
   text: string;
   script: ScriptType;
   svgDataUri: string;
+  svg: string;
+  fontFile: string;
   charCount: number;
   isVertical: boolean;
   boundingBox: { width: number; height: number };
 }
 
+async function resolveStructureGuideFontFile(
+  text: string,
+  script: ScriptType
+): Promise<string> {
+  switch (script) {
+    case "HAN": {
+      const hasLongCang = await FontRegistryService.hasGlyphCoverage(
+        "LongCang-Regular.ttf",
+        text
+      );
+      if (hasLongCang) {
+        return "LongCang-Regular.ttf";
+      }
+      return "YujiBoku-Regular.ttf";
+    }
+    case "JAPANESE_MIXED":
+      return "YujiBoku-Regular.ttf";
+    case "KOREAN_HANGUL":
+      return "NanumBrushScript-Regular.ttf";
+    case "VIETNAMESE_LATIN":
+    case "LATIN":
+      return "UtmThuphapThienAn.ttf";
+    default:
+      throw new UnsupportedScriptError(text);
+  }
+}
+
 /**
- * Deterministic Glyph & Structure Guide Generator
- * Produces crisp, high-contrast, mathematically authoritative glyph foundations
- * ensuring zero character hallucination or missing diacritics.
+ * Deterministic Glyph & Structure Guide Generator (T-405, T-411, TB-CALLI-006).
+ * Produces crisp, outlined `<path d="...">` glyph foundations using server-local
+ * licensed fonts via `FontRegistryService.parseOpenTypeFont`, with zero external
+ * Google Fonts `@import` network calls.
  */
 export class StructureGuideGenerator {
-  public static generate(
+  public static async generate(
     text: string,
     script: ScriptType,
     isVertical: boolean = false
-  ): StructureGuide {
-    const chars = Array.from(text.trim());
+  ): Promise<StructureGuide> {
+    const trimmed = text.normalize("NFC").trim();
+    const detected = script === "UNKNOWN" ? "UNKNOWN" : ScriptDetector.detect(trimmed);
+    if (detected === "UNKNOWN") {
+      throw new UnsupportedScriptError(trimmed);
+    }
+
+    const chars = Array.from(trimmed);
     const charCount = chars.length;
 
-    // Font selection based on detected script family
-    let fontFamily = "'Alex Brush', 'Dancing Script', cursive";
-    if (script === "HAN") {
-      fontFamily = "'Long Cang', 'Ma Shan Zheng', cursive";
-    } else if (script === "JAPANESE_MIXED") {
-      fontFamily = "'Yuji Boku', 'Yuji Syuku', serif";
-    } else if (script === "KOREAN_HANGUL") {
-      fontFamily = "'Nanum Brush Script', 'East Sea Dokdo', cursive";
-    } else if (script === "VIETNAMESE_LATIN") {
-      fontFamily = "'Alex Brush', 'Dancing Script', cursive";
-    } else {
-      fontFamily = "'Alex Brush', 'Dancing Script', cursive";
-    }
+    const fontFile = await resolveStructureGuideFontFile(trimmed, detected);
+    const font = await FontRegistryService.parseOpenTypeFont(fontFile);
 
-    const width = isVertical ? 300 : Math.max(600, charCount * 120 + 100);
-    const height = isVertical ? Math.max(600, charCount * 180 + 100) : 400;
+    const width = isVertical ? 320 : Math.max(600, charCount * 120 + 120);
+    const height = isVertical ? Math.max(600, charCount * 180 + 120) : 400;
 
-    let contentSvg = "";
+    const pathElements: string[] = [];
 
     if (isVertical) {
-      const stepY = (height - 100) / Math.max(charCount, 1);
-      chars.forEach((char, i) => {
+      const tokens =
+        detected === "VIETNAMESE_LATIN" || detected === "LATIN"
+          ? trimmed.split(/\s+/).filter(Boolean)
+          : chars.filter((c) => !/\s/.test(c));
+      const stepY = (height - 120) / Math.max(tokens.length, 1);
+      const fontSize = 112;
+
+      tokens.forEach((tok, i) => {
         const y = 80 + i * stepY;
-        contentSvg += `<text x="50%" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="${fontFamily}" font-size="120" font-weight="700" fill="#000000">${char}</text>`;
+        const adv = font.getAdvanceWidth(tok, fontSize);
+        const d = font
+          .getPath(tok, width / 2 - adv / 2, y + fontSize * 0.34, fontSize)
+          .toPathData(2);
+        if (d) {
+          pathElements.push(`<path d="${d}" fill="#000000" />`);
+        }
       });
     } else {
-      contentSvg = `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-family="${fontFamily}" font-size="96" font-weight="700" fill="#000000">${text}</text>`;
+      const fontSize = 96;
+      const adv = font.getAdvanceWidth(trimmed, fontSize);
+      const d = font
+        .getPath(trimmed, width / 2 - adv / 2, height / 2 + fontSize * 0.34, fontSize)
+        .toPathData(2);
+      if (d) {
+        pathElements.push(`<path d="${d}" fill="#000000" />`);
+      }
     }
 
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
-      <defs>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&amp;family=Dancing+Script:wght@700&amp;family=Long+Cang&amp;family=Yuji+Boku&amp;family=Nanum+Brush+Script&amp;display=swap');
-        </style>
-      </defs>
+    const escaped = escapeXml(trimmed);
+    const groupUid = deterministicUid(
+      `${trimmed}|${detected}|${isVertical ? "V" : "H"}`,
+      "guide"
+    );
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${escaped}">
+      <desc>${escaped}</desc>
       <rect width="100%" height="100%" fill="#ffffff" />
-      <g id="structure-glyphs">
-        ${contentSvg}
+      <g id="${groupUid}">
+        ${pathElements.join("\n        ")}
       </g>
     </svg>`;
 
     const svgDataUri = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 
     return {
-      text,
-      script,
+      text: trimmed,
+      script: detected,
       svgDataUri,
+      svg,
+      fontFile,
       charCount,
       isVertical,
       boundingBox: { width, height },

@@ -1,29 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { 
   Palette, 
   ShieldCheck, 
-  AlertTriangle, 
-  CheckCircle2, 
   Play, 
   Loader2, 
-  Layers, 
   Cpu, 
-  Lock, 
   Eye, 
   ThumbsUp, 
   ThumbsDown,
-  RefreshCw
 } from "lucide-react";
 import { BenchmarkMetrics, CalligraphyCandidate } from "@/lib/calligraphy/types";
 
 export default function AdminCalligraphyDiagnosticsPage() {
-  const [runningBenchmark, setRunningBenchmark] = useState(false);
+  const [runningBenchmark, setRunningBenchmark] = useState(true);
   const [benchmarkMetrics, setBenchmarkMetrics] = useState<BenchmarkMetrics[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<CalligraphyCandidate | null>(null);
   const [humanReviewStatus, setHumanReviewStatus] = useState<Record<string, "APPROVED" | "REJECTED">>({});
-  const [humanNotes, setHumanNotes] = useState<Record<string, string>>({});
 
   const providers = [
     {
@@ -58,19 +53,24 @@ export default function AdminCalligraphyDiagnosticsPage() {
     },
   ];
 
+  const fetchBenchmarkResults = useCallback(async () => {
+    const res = await fetch("/api/admin/calligraphy/benchmark", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ samplesPerCase: 6 }),
+    });
+    const data: { results?: BenchmarkMetrics[] } = await res.json();
+    return data.results;
+  }, []);
+
   const handleRunBenchmark = async () => {
     setRunningBenchmark(true);
     try {
-      const res = await fetch("/api/admin/calligraphy/benchmark", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ samplesPerCase: 6 }),
-      });
-      const data = await res.json();
-      if (data.results) {
-        setBenchmarkMetrics(data.results);
-        if (data.results[0]?.candidates?.[0]) {
-          setSelectedCandidate(data.results[0].candidates[0]);
+      const results = await fetchBenchmarkResults();
+      if (results) {
+        setBenchmarkMetrics(results);
+        if (results[0]?.candidates?.[0]) {
+          setSelectedCandidate(results[0].candidates[0]);
         }
       }
     } catch (err) {
@@ -81,8 +81,28 @@ export default function AdminCalligraphyDiagnosticsPage() {
   };
 
   useEffect(() => {
-    handleRunBenchmark();
-  }, []);
+    let cancelled = false;
+    fetchBenchmarkResults()
+      .then((results) => {
+        if (!cancelled && results) {
+          setBenchmarkMetrics(results);
+          if (results[0]?.candidates?.[0]) {
+            setSelectedCandidate(results[0].candidates[0]);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Benchmark error:", err);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setRunningBenchmark(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchBenchmarkResults]);
 
   return (
     <div className="space-y-8 pb-16">
@@ -240,10 +260,13 @@ export default function AdminCalligraphyDiagnosticsPage() {
               </span>
               <div className="aspect-square bg-white border border-[#E5E0D8] rounded-lg overflow-hidden flex items-center justify-center p-4">
                 {selectedCandidate.structureGuideUrl && (
-                  <img
+                  <Image
                     src={selectedCandidate.structureGuideUrl}
                     alt="Structure Guide"
-                    className="max-h-full max-w-full object-contain"
+                    width={512}
+                    height={512}
+                    unoptimized
+                    className="max-h-full max-w-full w-auto h-auto object-contain"
                   />
                 )}
               </div>
@@ -260,10 +283,13 @@ export default function AdminCalligraphyDiagnosticsPage() {
                 </span>
                 <div className="aspect-square bg-[#0B0B0B] border border-[#222222] rounded-lg overflow-hidden flex items-center justify-center p-4">
                   {selectedCandidate.previewAssetUrl && (
-                    <img
+                    <Image
                       src={selectedCandidate.previewAssetUrl}
                       alt="Generated Art"
-                      className="max-h-full max-w-full object-contain filter invert"
+                      width={512}
+                      height={512}
+                      unoptimized
+                      className="max-h-full max-w-full w-auto h-auto object-contain filter invert"
                     />
                   )}
                 </div>
