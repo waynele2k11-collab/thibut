@@ -36,7 +36,7 @@ export default function KoreanSeoyePage() {
             When writing a foreign name in Korean calligraphy, the most common and authentic approach is <strong>Hangul transliteration</strong>. This means we write out the phonetic sounds of your English name using the beautiful Hangul alphabet. 
           </p>
           <p>
-            For example, the name "Wayne" becomes "웨인" (We-in), perfectly capturing the pronunciation while styling it in dynamic brush strokes.
+            For example, the name &ldquo;Wayne&rdquo; becomes &ldquo;웨인&rdquo; (We-in), perfectly capturing the pronunciation while styling it in dynamic brush strokes.
           </p>
 
           <h3>What is Korean Seoye?</h3>

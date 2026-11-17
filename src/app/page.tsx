@@ -1,5 +1,5 @@
 import { ArrowRight, Paintbrush, SlidersHorizontal, Truck } from "lucide-react";
-import Link from "next/link";
+import Image from "next/image";
 import { Hero } from "@/components/home/Hero";
 
 export default function Home() {
@@ -34,7 +34,7 @@ export default function Home() {
             {/* Category 1 */}
             <a className="group block min-w-[72vw] sm:min-w-[60vw] md:min-w-0 snap-start flex-shrink-0" href="#">
               <div className="relative overflow-hidden aspect-[4/5] bg-surface-container-highest mb-6">
-                <img alt="Personalized Name Hoodie" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/mockups/hoodie.jpg" />
+                <Image alt="Personalized Name Hoodie" fill sizes="(max-width: 768px) 72vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" src="/mockups/hoodie.jpg" />
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
               </div>
               <h3 className="font-headline-sm text-headline-sm text-primary mb-2">Names & Identity</h3>
@@ -44,7 +44,7 @@ export default function Home() {
             {/* Category 2 */}
             <a className="group block min-w-[72vw] sm:min-w-[60vw] md:min-w-0 snap-start flex-shrink-0" href="#">
               <div className="relative overflow-hidden aspect-[4/5] bg-surface-container-highest mb-6">
-                <img alt="Framed Poetry Print" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/mockups/framed_print.jpg" />
+                <Image alt="Framed Poetry Print" fill sizes="(max-width: 768px) 72vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" src="/mockups/framed_print.jpg" />
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
               </div>
               <h3 className="font-headline-sm text-headline-sm text-primary mb-2">Poetry & Quotes</h3>
@@ -54,7 +54,7 @@ export default function Home() {
             {/* Category 3 */}
             <a className="group block min-w-[72vw] sm:min-w-[60vw] md:min-w-0 snap-start flex-shrink-0" href="#">
               <div className="relative overflow-hidden aspect-[4/5] bg-surface-container-highest mb-6">
-                <img alt="Heritage Seal Stamp" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/mockups/seal.jpg" />
+                <Image alt="Heritage Seal Stamp" fill sizes="(max-width: 768px) 72vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" src="/mockups/seal.jpg" />
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
               </div>
               <h3 className="font-headline-sm text-headline-sm text-primary mb-2">Heritage & Values</h3>
@@ -72,7 +72,7 @@ export default function Home() {
           <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
             <div className="text-center mb-16">
               <h2 className="font-headline-md text-headline-md text-primary mb-4">The Process</h2>
-              <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">From an artist's brush to a statement piece, understand the journey of personalization.</p>
+              <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">From an artist&rsquo;s brush to a statement piece, understand the journey of personalization.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">

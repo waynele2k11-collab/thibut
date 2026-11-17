@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Sparkles, Compass } from "lucide-react";
+import { ArrowRight, BookOpen, Compass } from "lucide-react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {

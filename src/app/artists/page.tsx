@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Feather, ShieldCheck, DollarSign, Sliders, Check } from "lucide-react";
+import { ArrowRight, Feather, Check } from "lucide-react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -45,8 +45,8 @@ export default function ArtistsPage() {
         <div className="p-8 md:p-12 bg-[#111111] border border-[#222222] rounded-2xl mb-16 shadow-xl max-w-4xl mx-auto text-center">
           <span className="font-mono text-xs text-[#B3261E] uppercase tracking-widest">Our Core Mission</span>
           <h2 className="font-serif text-3xl md:text-4xl font-bold mt-4 mb-6">
-            "Artists create the art. <br className="hidden sm:block" />
-            Thi Bút helps introduce it to the world."
+            &ldquo;Artists create the art. <br className="hidden sm:block" />
+            Thi Bút helps introduce it to the world.&rdquo;
           </h2>
           <p className="text-[#A8A399] text-base max-w-2xl mx-auto leading-relaxed">
             We handle cultural interpretation engines, automated 300 DPI print-master rendering, worldwide Printful fulfillment, and secure customer billing so creators can focus purely on original artistic expression.

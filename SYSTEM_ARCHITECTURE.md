@@ -149,7 +149,7 @@ The COMPOSE flow allows users to overlay generated, deterministic artwork onto p
                ▼
      ┌──────────────────────┐
      │ BACKGROUND JOB LAYER │
-     │ (BullMQ / Worker)    │
+     │ (Inngest Functions)  │
      │                      │
      │ Translation          │
      │ Generation           │
@@ -409,50 +409,176 @@ model Interpretation {
 }
 
 model Order {
-  id            String      @id @default(uuid())
-  orderNumber   String      @unique
-  buyerId       String
-  currency      String
-  status        OrderStatus
-  subtotalMinor BigInt
-  shippingMinor BigInt
-  taxMinor      BigInt
-  totalMinor    BigInt
+  id                      String            @id @default(uuid())
+  orderNumber             String            @unique
+  buyerId                 String?
+  buyerEmail              String?
+  anonymousSessionId      String?
+  shippingAddressJson     Json?
+  stripeCheckoutSessionId String?           @unique
+  externalFulfillmentId   String?           @unique
+  currency                String
+  status                  OrderStatus       @default(PENDING_PAYMENT)
+  paymentStatus           PaymentStatus     @default(PENDING)
+  fulfillmentStatus       FulfillmentStatus @default(PENDING)
+  subtotalMinor           BigInt
+  discountMinor           BigInt            @default(0)
+  shippingMinor           BigInt
+  taxMinor                BigInt
+  totalMinor              BigInt
 
-  items         OrderItem[]
+  items    OrderItem[]
+  payments Payment[]
 
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  placedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model OrderItem {
-  id                          String   @id @default(uuid())
+  id                          String             @id @default(uuid())
   orderId                     String
-  order                       Order    @relation(fields: [orderId], references: [id])
+  order                       Order              @relation(fields: [orderId], references: [id])
   creatorId                   String
   designId                    String
   designVersionId             String
+  licenseOfferId              String?
+  galleryItemId               String?
   personalizationVersionId    String?
+  catalogProductId            String?
+  catalogVariantId            String?
   quantity                    Int
+  placement                   String             @default("front")
   artworkRevenueMinor         BigInt
   personalizationRevenueMinor BigInt
   productRevenueMinor         BigInt
+  fulfillmentCostMinor        BigInt             @default(0)
   creatorRoyaltyMinor         BigInt
   platformRevenueMinor        BigInt
   totalMinor                  BigInt
-  createdAt                   DateTime @default(now())
+  licenseGrant                LicenseGrant?
+  earning                     CreatorEarning?
+  snapshot                    OrderItemSnapshot?
+  createdAt                   DateTime           @default(now())
+}
+
+model OrderItemSnapshot {
+  orderItemId         String    @id
+  orderItem           OrderItem @relation(fields: [orderItemId], references: [id])
+  designTitle         String
+  creatorName         String
+  productName         String?
+  variantName         String?
+  color               String?
+  size                String?
+  licenseTermsJson    Json
+  personalizationJson Json?
+  printPlacementJson  Json?
+  pricingJson         Json
+}
+
+model LicenseGrant {
+  id                  String       @id @default(uuid())
+  orderItemId         String       @unique
+  orderItem           OrderItem    @relation(fields: [orderItemId], references: [id])
+  licenseOfferId      String
+  licenseOffer        LicenseOffer @relation(fields: [licenseOfferId], references: [id])
+  buyerId             String?
+  creatorId           String
+  designId            String
+  designVersionId     String
+  licenseType         LicenseType
+  priceMinor          BigInt
+  currency            String
+  allowName           Boolean
+  allowQuote          Boolean
+  allowTranslation    Boolean
+  allowCalligraphy    Boolean
+  allowAIRestyle      Boolean
+  allowCommercial     Boolean
+  allowModelTraining  Boolean      @default(false) // INV-010
+  termsSnapshot       Json
+  permissionsSnapshot Json
+  grantedAt           DateTime     @default(now())
+  revokedAt           DateTime?
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  orderId           String
+  order             Order         @relation(fields: [orderId], references: [id])
+  provider          String        @default("stripe")
+  providerPaymentId String?
+  providerChargeId  String?       @unique
+  amountMinor       BigInt
+  currency          String
+  status            PaymentStatus @default(PENDING)
+  capturedAt        DateTime?
+  createdAt         DateTime      @default(now())
+}
+
+model Refund {
+  id               String    @id @default(uuid())
+  orderId          String
+  paymentId        String?
+  providerRefundId String?   @unique
+  amountMinor      BigInt
+  reason           String?
+  status           String    @default("PENDING")
+  createdAt        DateTime  @default(now())
+  processedAt      DateTime?
 }
 
 model CreatorEarning {
-  id              String               @id @default(uuid())
-  creatorId       String
-  creator         CreatorProfile       @relation(fields: [creatorId], references: [id])
-  orderItemId     String
-  netCreatorMinor BigInt
-  currency        String
-  status          CreatorEarningStatus
-  eligibleAt      DateTime?
-  createdAt       DateTime             @default(now())
+  id                String               @id @default(uuid())
+  creatorId         String
+  creator           CreatorProfile       @relation(fields: [creatorId], references: [id])
+  orderItemId       String               @unique
+  orderItem         OrderItem            @relation(fields: [orderItemId], references: [id])
+  grossLicenseMinor BigInt
+  adjustmentMinor   BigInt               @default(0)
+  netCreatorMinor   BigInt
+  currency          String
+  status            CreatorEarningStatus @default(PENDING)
+  eligibleAt        DateTime?
+  createdAt         DateTime             @default(now())
+}
+
+model LedgerAccount {
+  id           String            @id @default(uuid())
+  code         String            @unique
+  name         String
+  type         LedgerAccountType
+  ownerType    String?
+  ownerId      String?
+  balanceMinor BigInt            @default(0)
+  currency     String            @default("USD")
+  postings     LedgerPosting[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model LedgerTransaction {
+  id            String          @id @default(uuid())
+  type          String
+  description   String
+  referenceType String?
+  referenceId   String?
+  currency      String          @default("USD")
+  postings      LedgerPosting[]
+  createdAt     DateTime        @default(now())
+  postedAt      DateTime        @default(now())
+}
+
+model LedgerPosting {
+  id            String            @id @default(uuid())
+  transactionId String
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id])
+  accountId     String
+  account       LedgerAccount     @relation(fields: [accountId], references: [id])
+  amountMinor   BigInt // SUM(amountMinor) per LedgerTransaction MUST equal 0 (INV-009)
+  currency      String
+  createdAt     DateTime          @default(now())
 }
 
 model WebhookEvent {

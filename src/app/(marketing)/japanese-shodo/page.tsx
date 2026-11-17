@@ -36,7 +36,7 @@ export default function JapaneseShodoPage() {
             When writing a non-Japanese name in Japanese, you generally have two beautiful options in Shodō:
           </p>
           <ul>
-            <li><strong>Phonetic (Katakana):</strong> This is the most accurate translation of how your name sounds. For example, "Wayne" becomes "ウェイン".</li>
+            <li><strong>Phonetic (Katakana):</strong> This is the most accurate translation of how your name sounds. For example, &ldquo;Wayne&rdquo; becomes &ldquo;ウェイン&rdquo;.</li>
             <li><strong>Meaning (Kanji):</strong> You can select Kanji characters that match the underlying meaning or spirit of your name. This creates a deeply poetic piece of art.</li>
           </ul>
 

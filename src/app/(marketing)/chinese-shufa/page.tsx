@@ -43,7 +43,7 @@ export default function ChineseShufaPage() {
 
           <h3>What is Shūfǎ?</h3>
           <p>
-            Shūfǎ (書法) is the revered art of Chinese calligraphy. For millennia, it has been considered one of the highest forms of fine art in Chinese culture, intimately connected with poetry and painting. The brush strokes capture the "Qi" (vital energy) of the artist.
+            Shūfǎ (書法) is the revered art of Chinese calligraphy. For millennia, it has been considered one of the highest forms of fine art in Chinese culture, intimately connected with poetry and painting. The brush strokes capture the &ldquo;Qi&rdquo; (vital energy) of the artist.
           </p>
           
           <h3>Personalized Chinese Gifts</h3>

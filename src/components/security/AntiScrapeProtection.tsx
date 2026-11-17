@@ -3,9 +3,16 @@
 import { useEffect } from "react";
 
 /**
- * Global Anti-Scrape & Image Protection Component
- * Prevents unauthorized image downloading, dragging, context-menu saving,
- * and keyboard shortcuts for image extraction.
+ * Cosmetic UX Deterrence Component (NOT a security boundary — see T-094).
+ *
+ * NOTE: Client-side context-menu, drag, and shortcut interception is purely cosmetic UX
+ * friction against casual right-click saving. Authoritative asset protection is enforced
+ * strictly on the server:
+ *   1. High-resolution 4500x5400 @ 300 DPI `PRINT_MASTER` assets are NEVER sent to unauthenticated
+ *      browser clients; public gallery/studio views receive low-resolution previews only.
+ *   2. Paid digital downloads require a cryptographically signed JWT (`DOWNLOAD_TOKEN_SECRET`)
+ *      bound to a verified `PAID` / `SUCCEEDED` `OrderItem`.
+ *   3. User-uploaded assets default to `visibility: PRIVATE` (INV-014).
  */
 export function AntiScrapeProtection() {
   useEffect(() => {

@@ -1,7 +1,5 @@
-import { Header } from "@/components/layout/Header";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import Image from "next/image";
 
 export const metadata = {
   title: "About Thi Bút — Meaning Before Style",
@@ -116,7 +114,7 @@ export default function AboutPage() {
           
           <div className="bg-background/10 rounded-3xl p-8 md:p-12 border border-surface-variant/20">
             <h3 className="font-label-caps text-label-caps text-surface-variant uppercase tracking-widest mb-10">
-              Example: The Name "David"
+              Example: The Name &ldquo;David&rdquo;
             </h3>
             <div className="space-y-10">
               <div>

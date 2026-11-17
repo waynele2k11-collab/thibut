@@ -2,7 +2,6 @@ import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Image as ImageIcon } from "lucide-react";
-import { format } from "date-fns";
 
 export default async function AdminArtDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

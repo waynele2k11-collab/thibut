@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, CheckCircle2, Lock, FileText } from "lucide-react";
+import { ArrowRight, ShieldCheck, CheckCircle2, Lock } from "lucide-react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {

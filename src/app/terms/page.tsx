@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { ArrowRight, FileCheck, Shield, AlertTriangle } from "lucide-react";
+import { FileCheck } from "lucide-react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
