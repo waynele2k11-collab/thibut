@@ -9,6 +9,12 @@ import { safeRedirectPath } from "@/lib/security/redirect";
 
 const HSTS_HEADER_VALUE = "max-age=63072000; includeSubDomains; preload";
 
+export const CSP_REPORT_TO_HEADER_VALUE = JSON.stringify({
+  group: "csp-endpoint",
+  max_age: 10886400,
+  endpoints: [{ url: "/api/csp-report" }],
+});
+
 export function buildCspHeader(
   nonce: string,
   isDev = process.env.NODE_ENV === "development"
@@ -16,9 +22,9 @@ export function buildCspHeader(
   const directives = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com${isDev ? " 'unsafe-eval'" : ""}`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' https://files.cdn.printful.com blob: data: https:",
-    "font-src 'self' data: https://fonts.gstatic.com",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' blob: data: https://files.cdn.printful.com https://*.public.blob.vercel-storage.com https://*.blob.vercel-storage.com https://*.supabase.co",
+    "font-src 'self' data:",
     `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com${isDev ? " ws: http:" : ""}`,
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
     "object-src 'none'",
@@ -31,14 +37,18 @@ export function buildCspHeader(
     directives.push("upgrade-insecure-requests");
   }
 
+  directives.push("report-uri /api/csp-report", "report-to csp-endpoint");
+
   return directives.join("; ");
 }
 
-function applySecurityHeaders(
+export function applySecurityHeaders(
   response: NextResponse,
   cspHeaderValue: string
 ): NextResponse {
   response.headers.set("Content-Security-Policy", cspHeaderValue);
+  response.headers.set("Report-To", CSP_REPORT_TO_HEADER_VALUE);
+  response.headers.set("Reporting-Endpoints", 'csp-endpoint="/api/csp-report"');
   response.headers.set("Strict-Transport-Security", HSTS_HEADER_VALUE);
   return response;
 }

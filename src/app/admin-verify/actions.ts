@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import * as nextHeaders from "next/headers";
 import { z } from "zod";
 import { requireAdmin } from "@/utils/admin/auth";
 import {
@@ -8,10 +8,28 @@ import {
   signAdminStepUpToken,
   timingSafeEqualString,
 } from "@/lib/security/tokens";
-import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
+import {
+  enforceDistributedRateLimit,
+  getClientIpFromHeaders,
+  RateLimitError,
+} from "@/lib/security/rate-limit";
 
 const MasterPasswordSchema = z.string().min(1).max(512);
 const STEPUP_TTL_SECONDS = 60 * 60 * 8; // 8 hours
+
+async function safeReadRequestHeaders(): Promise<Headers> {
+  const maybeHeaders = (
+    nextHeaders as { headers?: () => Promise<Headers> | Headers }
+  ).headers;
+  if (typeof maybeHeaders === "function") {
+    try {
+      return await maybeHeaders();
+    } catch {
+      return new Headers();
+    }
+  }
+  return new Headers();
+}
 
 export async function verifyMasterPassword(
   password: string
@@ -19,7 +37,17 @@ export async function verifyMasterPassword(
   const admin = await requireAdmin({ allowBeforeStepUp: true });
 
   try {
-    enforceRateLimit({
+    const reqHeaders = await safeReadRequestHeaders();
+    const clientIp = getClientIpFromHeaders(reqHeaders, admin.id);
+
+    await enforceDistributedRateLimit({
+      bucket: "admin-stepup-ip",
+      key: clientIp,
+      limit: 10,
+      windowMs: 15 * 60_000,
+    });
+
+    await enforceDistributedRateLimit({
       bucket: "admin-stepup",
       key: admin.id,
       limit: 5,
@@ -52,7 +80,7 @@ export async function verifyMasterPassword(
 
   try {
     const token = await signAdminStepUpToken(admin.id, STEPUP_TTL_SECONDS);
-    const cookieStore = await cookies();
+    const cookieStore = await nextHeaders.cookies();
 
     // Remove legacy forgeable plaintext cookie if present
     cookieStore.delete("admin_master_pwd_verified");

@@ -1,7 +1,7 @@
 "use server";
 
 import crypto from "node:crypto";
-import { cookies } from "next/headers";
+import * as nextHeaders from "next/headers";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { createClient } from "@/utils/supabase/server";
@@ -10,11 +10,29 @@ import {
   signDeviceTrustToken,
   timingSafeEqualString,
 } from "@/lib/security/tokens";
-import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
+import {
+  enforceDistributedRateLimit,
+  getClientIpFromHeaders,
+  RateLimitError,
+} from "@/lib/security/rate-limit";
 
 const DevicePinSchema = z.string().trim().regex(/^\d{6}$/, "Invalid or expired PIN");
 const MAX_PIN_ATTEMPTS = 5;
 const DEVICE_TRUST_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+
+async function safeReadRequestHeaders(): Promise<Headers> {
+  const maybeHeaders = (
+    nextHeaders as { headers?: () => Promise<Headers> | Headers }
+  ).headers;
+  if (typeof maybeHeaders === "function") {
+    try {
+      return await maybeHeaders();
+    } catch {
+      return new Headers();
+    }
+  }
+  return new Headers();
+}
 
 export async function verifyDevicePin(
   pin: string
@@ -35,7 +53,17 @@ export async function verifyDevicePin(
   }
 
   try {
-    enforceRateLimit({
+    const reqHeaders = await safeReadRequestHeaders();
+    const clientIp = getClientIpFromHeaders(reqHeaders, user.id);
+
+    await enforceDistributedRateLimit({
+      bucket: "device-pin-verify-ip",
+      key: clientIp,
+      limit: 20,
+      windowMs: 10 * 60_000,
+    });
+
+    await enforceDistributedRateLimit({
       bucket: "device-pin-verify",
       key: user.id,
       limit: 10,
@@ -111,7 +139,7 @@ export async function verifyDevicePin(
       data: { verified: true, deviceId },
     });
 
-    const cookieStore = await cookies();
+    const cookieStore = await nextHeaders.cookies();
     cookieStore.delete("device_trust");
     cookieStore.set(DEVICE_TRUST_COOKIE, token, {
       httpOnly: true,

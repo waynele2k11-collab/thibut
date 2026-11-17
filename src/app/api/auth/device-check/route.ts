@@ -8,9 +8,13 @@ import {
   DEVICE_TRUST_COOKIE,
   verifyDeviceTrustToken,
 } from "@/lib/security/tokens";
-import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
+import {
+  enforceDistributedRateLimit,
+  getClientIpFromHeaders,
+  RateLimitError,
+} from "@/lib/security/rate-limit";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = await createClient();
     const {
@@ -31,7 +35,14 @@ export async function POST() {
     }
 
     try {
-      enforceRateLimit({
+      const clientIp = getClientIpFromHeaders(request.headers, user.id);
+      await enforceDistributedRateLimit({
+        bucket: "device-pin-generate-ip",
+        key: clientIp,
+        limit: 10,
+        windowMs: 10 * 60_000,
+      });
+      await enforceDistributedRateLimit({
         bucket: "device-pin-generate",
         key: user.id,
         limit: 3,

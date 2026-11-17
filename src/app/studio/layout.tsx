@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { studioBrushFontVariables } from "@/fonts/index";
 import { createClient } from "@/utils/supabase/server";
 import {
   DEVICE_TRUST_COOKIE,
@@ -29,5 +30,5 @@ export default async function StudioLayout({
     redirect("/auth/verify-device?callbackUrl=/studio");
   }
 
-  return <>{children}</>;
+  return <div className={studioBrushFontVariables}>{children}</div>;
 }

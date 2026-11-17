@@ -1,6 +1,10 @@
-import { 
-  Dancing_Script, 
-  Caveat, 
+import {
+  Inter,
+  Playfair_Display,
+  Noto_Sans_JP,
+  Noto_Serif_JP,
+  Dancing_Script,
+  Caveat,
   Alex_Brush,
   Great_Vibes,
   Kaushan_Script,
@@ -8,21 +12,53 @@ import {
   Arizonia,
   Allura,
   Yuji_Boku,
-  Yuji_Syuku, 
-  Yuji_Mai, 
-  East_Sea_Dokdo, 
-  Nanum_Brush_Script, 
+  Yuji_Syuku,
+  Yuji_Mai,
+  East_Sea_Dokdo,
+  Nanum_Brush_Script,
   Long_Cang,
-  Ma_Shan_Zheng, 
-  Zhi_Mang_Xing 
+  Ma_Shan_Zheng,
+  Zhi_Mang_Xing,
 } from "next/font/google";
 
-// 🇻🇳 Vietnamese / Latin Thư Pháp Suite
+// ── DESIGN.md Core UI & Editorial Fonts (Self-Hosted via next/font/google) ──
+export const fontInter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-inter",
+  display: "swap",
+  preload: true,
+});
+
+export const fontPlayfair = Playfair_Display({
+  subsets: ["latin", "vietnamese"],
+  weight: ["600", "700"],
+  variable: "--font-playfair",
+  display: "swap",
+  preload: true,
+});
+
+export const fontNotoSansJp = Noto_Sans_JP({
+  weight: ["400", "700"],
+  variable: "--font-noto-sans-jp",
+  display: "swap",
+  preload: false,
+});
+
+export const fontNotoSerifJp = Noto_Serif_JP({
+  weight: ["400", "700"],
+  variable: "--font-noto-serif-jp",
+  display: "swap",
+  preload: false,
+});
+
+// 🇻🇳 Vietnamese / Latin Thư Pháp Suite (Scoped to /create and /studio previews)
 export const fontVnGreatVibes = Great_Vibes({
   subsets: ["latin", "vietnamese"],
   weight: ["400"],
   variable: "--font-vn-greatvibes",
   display: "swap",
+  preload: false,
 });
 
 export const fontVnKaushan = Kaushan_Script({
@@ -30,6 +66,7 @@ export const fontVnKaushan = Kaushan_Script({
   weight: ["400"],
   variable: "--font-vn-kaushan",
   display: "swap",
+  preload: false,
 });
 
 export const fontVnCaveatBrush = Caveat_Brush({
@@ -37,6 +74,7 @@ export const fontVnCaveatBrush = Caveat_Brush({
   weight: ["400"],
   variable: "--font-vn-caveatbrush",
   display: "swap",
+  preload: false,
 });
 
 export const fontVnArizonia = Arizonia({
@@ -44,6 +82,7 @@ export const fontVnArizonia = Arizonia({
   weight: ["400"],
   variable: "--font-vn-arizonia",
   display: "swap",
+  preload: false,
 });
 
 export const fontVnAllura = Allura({
@@ -51,6 +90,7 @@ export const fontVnAllura = Allura({
   weight: ["400"],
   variable: "--font-vn-allura",
   display: "swap",
+  preload: false,
 });
 
 export const fontVnAlexBrush = Alex_Brush({
@@ -58,6 +98,7 @@ export const fontVnAlexBrush = Alex_Brush({
   weight: ["400"],
   variable: "--font-vn-alex",
   display: "swap",
+  preload: false,
 });
 
 export const fontVnDancingScript = Dancing_Script({
@@ -65,6 +106,7 @@ export const fontVnDancingScript = Dancing_Script({
   weight: ["400", "700"],
   variable: "--font-vn-dancing",
   display: "swap",
+  preload: false,
 });
 
 export const fontVnCaveat = Caveat({
@@ -72,6 +114,7 @@ export const fontVnCaveat = Caveat({
   weight: ["400", "700"],
   variable: "--font-vn-caveat",
   display: "swap",
+  preload: false,
 });
 
 // 🇯🇵 Japanese (Shodō / Dry Brush & Classical Calligraphy)
@@ -132,4 +175,27 @@ export const fontCnZhiMangXing = Zhi_Mang_Xing({
   display: "swap",
   preload: false,
 });
+
+/**
+ * Joined CSS variable classes for calligraphic preview fonts.
+ * Scoped strictly to `/create` and `/studio` layouts (R-101, DESIGN.md §1).
+ */
+export const studioBrushFontVariables = [
+  fontVnGreatVibes.variable,
+  fontVnKaushan.variable,
+  fontVnCaveatBrush.variable,
+  fontVnArizonia.variable,
+  fontVnAllura.variable,
+  fontVnAlexBrush.variable,
+  fontVnDancingScript.variable,
+  fontVnCaveat.variable,
+  fontJpYujiBoku.variable,
+  fontJpYujiSyuku.variable,
+  fontJpYujiMai.variable,
+  fontKrNanumBrush.variable,
+  fontKrEastSeaDokdo.variable,
+  fontCnLongCang.variable,
+  fontCnMaShanZheng.variable,
+  fontCnZhiMangXing.variable,
+].join(" ");
 
