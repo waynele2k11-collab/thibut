@@ -1,61 +1,102 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { Resend } from "resend";
 import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
-import { Resend } from "resend";
+import {
+  DEVICE_TRUST_COOKIE,
+  verifyDeviceTrustToken,
+} from "@/lib/security/tokens";
+import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 
 export async function POST() {
   try {
     const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
     if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const cookieStore = await cookies();
-    const deviceTrust = cookieStore.get("device_trust")?.value;
+    const rawDeviceTrust = cookieStore.get(DEVICE_TRUST_COOKIE)?.value;
+    const verifiedDevice = await verifyDeviceTrustToken(rawDeviceTrust, user.id);
 
-    if (deviceTrust === "verified") {
+    if (verifiedDevice) {
       return NextResponse.json({ status: "trusted" });
     }
 
-    // Generate a new 6 digit PIN
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    try {
+      enforceRateLimit({
+        bucket: "device-pin-generate",
+        key: user.id,
+        limit: 3,
+        windowMs: 10 * 60_000,
+      });
+    } catch (rateErr: unknown) {
+      if (rateErr instanceof RateLimitError) {
+        return NextResponse.json(
+          { error: "Too many verification requests. Please wait before trying again." },
+          {
+            status: 429,
+            headers: { "Retry-After": String(rateErr.retryAfterSeconds) },
+          }
+        );
+      }
+      throw rateErr;
+    }
+
+    const code = crypto.randomInt(100000, 1000000).toString();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-    // Make sure user exists in Prisma
-    let dbUser = await prisma.user.findUnique({ where: { email: user.email || "" } });
+    let dbUser = await prisma.user.findUnique({ where: { id: user.id } });
     if (!dbUser && user.email) {
+      dbUser = await prisma.user.findUnique({ where: { email: user.email } });
+    }
+    if (!dbUser && user.email) {
+      const metadataName =
+        typeof user.user_metadata?.full_name === "string"
+          ? user.user_metadata.full_name
+          : "Creator";
       dbUser = await prisma.user.create({
         data: {
           id: user.id,
           email: user.email,
-          name: user.user_metadata?.full_name || "Creator",
-        }
+          name: metadataName,
+        },
       });
     }
 
     if (!dbUser) {
-      return NextResponse.json({ error: "Database error" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Account synchronization required" },
+        { status: 500 }
+      );
     }
 
-    if (prisma.deviceVerification) {
-      await prisma.deviceVerification.create({
-        data: {
-          userId: dbUser.id,
-          code,
-          expiresAt,
-        }
-      });
-    } else {
-      await prisma.$executeRaw`
-        INSERT INTO "DeviceVerification" ("id", "userId", "code", "expiresAt", "verified", "createdAt")
-        VALUES (gen_random_uuid()::text, ${dbUser.id}, ${code}, ${expiresAt}, false, NOW())
-      `;
-    }
+    // Invalidate any prior unverified PINs for this user before issuing a new one
+    await prisma.deviceVerification.deleteMany({
+      where: {
+        userId: dbUser.id,
+        verified: false,
+      },
+    });
 
-    // Send Email via Resend with graceful fallback
+    await prisma.deviceVerification.create({
+      data: {
+        userId: dbUser.id,
+        code,
+        attempts: 0,
+        expiresAt,
+      },
+    });
+
+    const isProd = process.env.NODE_ENV === "production";
+
     if (process.env.RESEND_API_KEY && user.email) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
@@ -67,20 +108,37 @@ export async function POST() {
         });
 
         if (resendError) {
-          console.warn("Resend API notice:", resendError);
-          console.log(`\n========================================\n[AUTH PIN] Code for ${user.email}: ${code}\n========================================\n`);
+          console.warn("[Auth] Resend delivery failed");
+          if (isProd) {
+            return NextResponse.json(
+              { error: "Unable to deliver verification code" },
+              { status: 502 }
+            );
+          }
         }
-      } catch (emailErr) {
-        console.warn("Email send exception:", emailErr);
-        console.log(`\n========================================\n[AUTH PIN] Code for ${user.email}: ${code}\n========================================\n`);
+      } catch {
+        console.warn("[Auth] Email provider exception");
+        if (isProd) {
+          return NextResponse.json(
+            { error: "Unable to deliver verification code" },
+            { status: 502 }
+          );
+        }
       }
-    } else {
-      console.log(`\n========================================\n[AUTH PIN] Code for ${user.email}: ${code}\n========================================\n`);
+    } else if (isProd) {
+      console.error("[Auth] RESEND_API_KEY not configured in production");
+      return NextResponse.json(
+        { error: "Verification delivery service unavailable" },
+        { status: 503 }
+      );
     }
 
     return NextResponse.json({ status: "requires_pin" });
-  } catch (error: any) {
-    console.error("Device check error:", error);
-    return NextResponse.json({ error: error?.message || "Internal Server Error" }, { status: 500 });
+  } catch (error: unknown) {
+    console.error(
+      "[Auth] Device check error:",
+      error instanceof Error ? error.name : "UnknownError"
+    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

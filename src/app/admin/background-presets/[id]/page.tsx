@@ -1,18 +1,20 @@
 import { PresetForm } from "../PresetForm";
 import prisma from "@/lib/prisma";
+import type { BackgroundPreset } from "@prisma/client";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 
-export default async function EditBackgroundPresetPage({ params }: { params: { id: string } }) {
-  let preset: any = null;
+export default async function EditBackgroundPresetPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  let preset: BackgroundPreset | null = null;
   if (prisma.backgroundPreset) {
     preset = await prisma.backgroundPreset.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
   } else {
-    const records: any[] = await prisma.$queryRaw`
-      SELECT * FROM "BackgroundPreset" WHERE "id" = ${params.id} LIMIT 1
+    const records = await prisma.$queryRaw<BackgroundPreset[]>`
+      SELECT * FROM "BackgroundPreset" WHERE "id" = ${id} LIMIT 1
     `;
     preset = records[0] || null;
   }
@@ -29,7 +31,7 @@ export default async function EditBackgroundPresetPage({ params }: { params: { i
         </Link>
         <div>
           <h1 className="font-display-md text-display-sm text-[#111111] mb-2">Edit Preset</h1>
-          <p className="font-body text-[#A09D96]">Update "{preset.name}"</p>
+          <p className="font-body text-[#A09D96]">Update &ldquo;{preset.name}&rdquo;</p>
         </div>
       </div>
 

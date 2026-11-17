@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowRight, Mail, Phone, Loader2 } from "lucide-react";
+import { Mail, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function AuthForm() {
-  const [method, setMethod] = useState<"phone" | "email">("phone");
   const [contact, setContact] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
@@ -55,8 +54,8 @@ export default function AuthForm() {
         router.push(callbackUrl);
       }
 
-    } catch (err: any) {
-      setError(err.message || "Failed to log in. Please try again.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to log in. Please try again.");
       setLoading(false);
     }
   };
@@ -74,8 +73,8 @@ export default function AuthForm() {
       });
       if (error) throw error;
       setError("Password reset email sent. Please check your inbox."); // Not an error, just using the state to show a message
-    } catch (err: any) {
-      setError(err.message || "Failed to send reset email.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to send reset email.");
     } finally {
       setLoading(false);
     }

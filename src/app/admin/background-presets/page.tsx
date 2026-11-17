@@ -1,14 +1,15 @@
 import prisma from "@/lib/prisma";
+import type { BackgroundPreset } from "@prisma/client";
 import Link from "next/link";
 import { PresetRow } from "./PresetRow";
 import { Plus } from "lucide-react";
 
 export default async function BackgroundPresetsPage() {
-  const presets: any[] = prisma.backgroundPreset
+  const presets: BackgroundPreset[] = prisma.backgroundPreset
     ? await prisma.backgroundPreset.findMany({
         orderBy: { sortOrder: "asc" },
       })
-    : await prisma.$queryRaw`
+    : await prisma.$queryRaw<BackgroundPreset[]>`
         SELECT * FROM "BackgroundPreset"
         ORDER BY "sortOrder" ASC
       `;

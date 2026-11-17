@@ -1,25 +1,76 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { z } from "zod";
+import { requireAdmin } from "@/utils/admin/auth";
+import {
+  ADMIN_STEPUP_COOKIE,
+  signAdminStepUpToken,
+  timingSafeEqualString,
+} from "@/lib/security/tokens";
+import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 
-export async function verifyMasterPassword(password: string) {
-  const masterPassword = process.env.ADMIN_MASTER_PASSWORD;
+const MasterPasswordSchema = z.string().min(1).max(512);
+const STEPUP_TTL_SECONDS = 60 * 60 * 8; // 8 hours
 
-  if (!masterPassword) {
-    return { success: false, error: "ADMIN_MASTER_PASSWORD is not configured in .env" };
+export async function verifyMasterPassword(
+  password: string
+): Promise<{ success: boolean; error?: string }> {
+  const admin = await requireAdmin({ allowBeforeStepUp: true });
+
+  try {
+    enforceRateLimit({
+      bucket: "admin-stepup",
+      key: admin.id,
+      limit: 5,
+      windowMs: 15 * 60_000,
+    });
+  } catch (error: unknown) {
+    if (error instanceof RateLimitError) {
+      return {
+        success: false,
+        error: "Too many verification attempts. Please try again later.",
+      };
+    }
+    return { success: false, error: "Invalid credentials" };
   }
 
-  if (password === masterPassword) {
+  const parsed = MasterPasswordSchema.safeParse(password);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid credentials" };
+  }
+
+  const masterPassword = process.env.ADMIN_MASTER_PASSWORD;
+  if (!masterPassword) {
+    timingSafeEqualString(parsed.data, "unconfigured-admin-stepup-sentinel-value");
+    return { success: false, error: "Invalid credentials" };
+  }
+
+  if (!timingSafeEqualString(parsed.data, masterPassword)) {
+    return { success: false, error: "Invalid credentials" };
+  }
+
+  try {
+    const token = await signAdminStepUpToken(admin.id, STEPUP_TTL_SECONDS);
     const cookieStore = await cookies();
-    cookieStore.set("admin_master_pwd_verified", "true", {
+
+    // Remove legacy forgeable plaintext cookie if present
+    cookieStore.delete("admin_master_pwd_verified");
+
+    cookieStore.set(ADMIN_STEPUP_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24, // 1 day
+      sameSite: "lax",
+      maxAge: STEPUP_TTL_SECONDS,
       path: "/",
     });
-    return { success: true };
-  }
 
-  return { success: false, error: "Incorrect password" };
+    return { success: true };
+  } catch (error: unknown) {
+    console.error(
+      "[AdminVerify] Step-up token issuance failed:",
+      error instanceof Error ? error.name : "UnknownError"
+    );
+    return { success: false, error: "Invalid credentials" };
+  }
 }

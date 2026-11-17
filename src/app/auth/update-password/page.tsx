@@ -35,8 +35,8 @@ export default function UpdatePasswordPage() {
       } else {
         router.push("/studio");
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to update password. Please try again.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to update password. Please try again.");
       setLoading(false);
     }
   };

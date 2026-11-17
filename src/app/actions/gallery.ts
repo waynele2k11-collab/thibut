@@ -1,112 +1,247 @@
 "use server";
 
-import prisma from "@/lib/prisma";
-import { UploadService } from "@/lib/services/UploadService";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import prisma from "@/lib/prisma";
+import { MAX_UPLOAD_BYTES, UploadService } from "@/lib/services/UploadService";
+import { assertAdminApi, requireAdmin } from "@/utils/admin/auth";
 
-export async function createGalleryItem(formData: FormData) {
+const CreateGalleryFormSchema = z.object({
+  designId: z.string().trim().min(1, "Design is required").max(128),
+  catalogProductId: z
+    .string()
+    .trim()
+    .min(1, "Catalog product is required")
+    .max(128),
+  category: z.string().trim().max(80).optional().default("NAME"),
+  status: z.enum(["active", "draft"]).optional().default("draft"),
+  price: z
+    .string()
+    .trim()
+    .regex(/^\d+(\.\d{1,2})?$/, "Price must be a valid USD amount")
+    .optional(),
+  title: z.string().trim().max(200).optional(),
+  subtitle: z.string().trim().max(500).optional(),
+});
+
+const GalleryItemIdSchema = z.string().trim().min(1).max(128);
+
+function getStringField(
+  formData: FormData,
+  key: string
+): string | undefined {
+  const raw = formData.get(key);
+  if (typeof raw !== "string") return undefined;
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function parseUsdToMinorBigInt(priceStr: string | undefined): bigint {
+  if (!priceStr) return 3500n;
+  const [dollarsPart = "0", centsPart = ""] = priceStr.split(".");
+  const paddedCents = `${centsPart}00`.slice(0, 2);
+  return BigInt(dollarsPart) * 100n + BigInt(paddedCents);
+}
+
+export async function createGalleryItem(
+  formData: FormData
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  const admin = await requireAdmin();
+
+  const parsedFields = CreateGalleryFormSchema.safeParse({
+    designId: getStringField(formData, "designId") ?? "",
+    catalogProductId: getStringField(formData, "catalogProductId") ?? "",
+    category: getStringField(formData, "category"),
+    status: getStringField(formData, "status"),
+    price: getStringField(formData, "price"),
+    title: getStringField(formData, "title"),
+    subtitle: getStringField(formData, "subtitle"),
+  });
+
+  if (!parsedFields.success) {
+    return {
+      success: false,
+      error:
+        parsedFields.error.issues[0]?.message ?? "Invalid gallery form input",
+    };
+  }
+
+  const imageEntry = formData.get("productImage");
+  if (!(imageEntry instanceof File) || imageEntry.size === 0) {
+    return {
+      success: false,
+      error: "Product mockup image is required.",
+    };
+  }
+
+  if (imageEntry.size > MAX_UPLOAD_BYTES) {
+    return {
+      success: false,
+      error: "Product mockup image exceeds 10MB size limit.",
+    };
+  }
+
   try {
-    const designId = formData.get("designId") as string;
-    const catalogProductId = formData.get("catalogProductId") as string;
-    const category = formData.get("category") as string;
-    const status = formData.get("status") as string;
-    const priceStr = formData.get("price") as string;
-    const imageFile = formData.get("productImage") as File;
-    const title = formData.get("title") as string;
-    const subtitle = formData.get("subtitle") as string;
-    
-    if (!designId || !catalogProductId || !imageFile) {
-      return { success: false, error: "Missing required fields or image." };
+    const rawBuffer = Buffer.from(await imageEntry.arrayBuffer());
+    const sniffed = UploadService.sniffImageMagicBytes(rawBuffer);
+    if (!sniffed) {
+      return {
+        success: false,
+        error:
+          "Invalid image file signature. Only PNG, JPEG, and WEBP images are allowed.",
+      };
     }
 
-    // 1. Fetch related data
+    const {
+      designId,
+      catalogProductId,
+      category,
+      status,
+      price,
+      title,
+      subtitle,
+    } = parsedFields.data;
+
     const design = await prisma.design.findUnique({
       where: { id: designId },
       include: {
         versions: {
           include: { assets: { include: { asset: true } } },
           orderBy: { versionNumber: "desc" },
-          take: 1
-        }
-      }
+          take: 1,
+        },
+      },
     });
 
     const product = await prisma.catalogProduct.findUnique({
-      where: { id: catalogProductId }
+      where: { id: catalogProductId },
+      include: {
+        variants: {
+          where: { active: true },
+        },
+      },
     });
 
     if (!design || !product) {
       return { success: false, error: "Design or product not found." };
     }
 
-    // 2. Upload Mockup Image
-    const uploadRes = await UploadService.uploadImage(imageFile, imageFile.name, "gallery-mockups");
-    if (!uploadRes.success || !uploadRes.url) {
-      return { success: false, error: "Failed to upload product image: " + uploadRes.error };
+    const uploadRes = await UploadService.uploadImage(
+      rawBuffer,
+      imageEntry.name,
+      "gallery-mockups"
+    );
+
+    if (
+      !uploadRes.success ||
+      !uploadRes.objectKey ||
+      !uploadRes.mimeType ||
+      !uploadRes.sha256 ||
+      !uploadRes.storageProvider
+    ) {
+      return {
+        success: false,
+        error: uploadRes.error ?? "Failed to upload product image.",
+      };
     }
 
-    // 3. Determine artwork URLs (fallback to dummy or empty if not available in DB structure)
-    const latestVersion = design.versions?.[0];
+    const mockupAsset = await prisma.asset.create({
+      data: {
+        objectKey: uploadRes.objectKey,
+        mimeType: uploadRes.mimeType,
+        sha256: uploadRes.sha256,
+        width: uploadRes.width ?? null,
+        height: uploadRes.height ?? null,
+        sizeBytes: uploadRes.sizeBytes ?? null,
+        storageProvider: uploadRes.storageProvider,
+        ownerId: admin.id,
+        visibility: "PUBLIC",
+      },
+    });
+
+    const productImageUrl = `/api/uploads/background?assetId=${encodeURIComponent(
+      mockupAsset.id
+    )}`;
+
+    const latestVersion = design.versions[0];
     let artworkPreviewUrl = "";
     let productionArtworkUrl = "";
-    
-    if (latestVersion && latestVersion.assets && latestVersion.assets.length > 0) {
-      // Find a working asset or preview
-      const previewAsset = latestVersion.assets.find(a => a.type === "PREVIEW")?.asset;
-      const originalAsset = latestVersion.assets.find(a => a.type === "ORIGINAL")?.asset;
-      
-      artworkPreviewUrl = previewAsset?.objectKey || originalAsset?.objectKey || "";
-      productionArtworkUrl = originalAsset?.objectKey || previewAsset?.objectKey || "";
+
+    if (latestVersion && latestVersion.assets.length > 0) {
+      const previewAsset = latestVersion.assets.find(
+        (a) => a.type === "PREVIEW"
+      )?.asset;
+      const originalAsset = latestVersion.assets.find(
+        (a) => a.type === "ORIGINAL"
+      )?.asset;
+
+      artworkPreviewUrl =
+        previewAsset?.objectKey || originalAsset?.objectKey || "";
+      productionArtworkUrl =
+        originalAsset?.objectKey || previewAsset?.objectKey || "";
     }
 
-    // Prepare slug
-    const slugBase = (title || design.title).toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const slug = `${slugBase}-${Date.now().toString().slice(-6)}`;
+    const availableSizes = Array.from(
+      new Set(
+        product.variants
+          .map((v) => v.size?.trim())
+          .filter((s): s is string => Boolean(s))
+      )
+    );
+    const availableColors = Array.from(
+      new Set(
+        product.variants
+          .map((v) => v.color?.trim())
+          .filter((c): c is string => Boolean(c))
+      )
+    );
+    const defaultColor = availableColors[0] ?? null;
 
-    // 4. Create GalleryItem
+    const slugBase = (title || design.title)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    const slug = `${slugBase || "gallery-item"}-${Date.now()
+      .toString()
+      .slice(-6)}`;
+
+    const listedPriceMinor = parseUsdToMinorBigInt(price);
+
     const galleryItem = await prisma.galleryItem.create({
       data: {
         slug,
         title: title || design.title,
         subtitle: subtitle || design.description || null,
         description: design.description,
-        
         sourceText: design.title,
-        sourceLanguage: "VI", // Defaulting, could be improved
+        sourceLanguage: "VI",
         tradition: "VIETNAMESE_THU_PHAP",
-        
         artworkId: design.id,
         artworkPreviewUrl,
         productionArtworkUrl,
-        
         productType: product.id,
         productName: product.name,
-        productImageUrl: uploadRes.url,
-        
-        listedPriceCents: priceStr ? Math.floor(parseFloat(priceStr) * 100) : 3500, // Default to $35.00
+        productImageUrl,
+        listedPriceMinor,
         currency: "USD",
-        
-        requiresSize: product.sizes.length > 0,
-        requiresColor: product.colors.length > 0,
-        defaultColor: product.defaultColor,
-        availableSizes: product.sizes,
-        availableColors: product.colors.map(c => c.name),
-        
+        requiresSize: availableSizes.length > 0,
+        requiresColor: availableColors.length > 0,
+        defaultColor,
+        availableSizes,
+        availableColors,
         category: category || "NAME",
         productCategory: product.category || "APPAREL",
-        
         published: status === "active",
         purchasable: true,
-      }
+      },
     });
 
-    // Also create the DesignProduct linkage just in case it's used elsewhere
     await prisma.designProduct.upsert({
       where: {
         designId_catalogProductId: {
           designId: design.id,
           catalogProductId: product.id,
-        }
+        },
       },
       create: {
         designId: design.id,
@@ -115,27 +250,50 @@ export async function createGalleryItem(formData: FormData) {
       },
       update: {
         active: status === "active",
-      }
+      },
     });
 
     revalidatePath("/admin/gallery");
     revalidatePath("/gallery");
-    
+
     return { success: true, id: galleryItem.id };
-  } catch (error: any) {
-    console.error("Failed to create gallery item:", error);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    console.error(
+      "[GalleryActions] Failed to create gallery item:",
+      error instanceof Error ? error.name : "UnknownError"
+    );
+    return {
+      success: false,
+      error: "Failed to create gallery item.",
+    };
   }
 }
 
 export async function getGalleryItemById(id: string) {
+  const parsedId = GalleryItemIdSchema.safeParse(id);
+  if (!parsedId.success) {
+    return null;
+  }
+
+  let isAdmin = false;
   try {
-    const item = await prisma.galleryItem.findUnique({
-      where: { id }
+    await assertAdminApi();
+    isAdmin = true;
+  } catch {
+    isAdmin = false;
+  }
+
+  try {
+    return await prisma.galleryItem.findFirst({
+      where: isAdmin
+        ? { id: parsedId.data }
+        : { id: parsedId.data, published: true },
     });
-    return item;
-  } catch (error) {
-    console.error("Error fetching gallery item:", error);
+  } catch (error: unknown) {
+    console.error(
+      "[GalleryActions] Error fetching gallery item:",
+      error instanceof Error ? error.name : "UnknownError"
+    );
     return null;
   }
 }

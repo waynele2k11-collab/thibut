@@ -1,42 +1,80 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
+import { z } from "zod";
+import prisma from "@/lib/prisma";
+import { AdminAuthError, assertAdminApi } from "@/utils/admin/auth";
+
+const GalleryIdSchema = z.string().trim().min(1).max(128);
+
+const SafeImageUrlSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2048)
+  .refine(
+    (val) =>
+      (val.startsWith("/") && !val.startsWith("//")) ||
+      val.startsWith("https://"),
+    "Custom image URL must be a relative path or HTTPS URL"
+  );
+
+const PatchGalleryItemSchema = z.object({
+  customImageUrl: SafeImageUrlSchema.nullable().optional(),
+  published: z.boolean().optional(),
+  listedPriceMinor: z
+    .union([
+      z.number().int().nonnegative().max(100_000_00),
+      z.string().regex(/^\d+$/),
+    ])
+    .optional(),
+});
+
+function serializeGalleryItem<T extends { listedPriceMinor: bigint }>(item: T) {
+  return {
+    ...item,
+    listedPriceMinor: item.listedPriceMinor.toString(),
+  };
+}
 
 export async function DELETE(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await assertAdminApi();
+
     const { id } = await params;
-
-    // 1. Verify Admin Status
-    let isAuthorized = false;
-    const cookieStore = await cookies();
-    if (cookieStore.get('admin_master_pwd_verified')?.value === 'true') {
-      isAuthorized = true;
-    } else {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email === 'waynele2k11@gmail.com') {
-        isAuthorized = true;
-      }
+    const parsedId = GalleryIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return NextResponse.json({ error: "Invalid gallery item ID" }, { status: 400 });
     }
 
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const existing = await prisma.galleryItem.findUnique({
+      where: { id: parsedId.data },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Gallery item not found" }, { status: 404 });
     }
 
-    // 2. Delete from Database
     await prisma.galleryItem.delete({
-      where: { id }
+      where: { id: parsedId.data },
     });
 
     return NextResponse.json({ success: true });
-
-  } catch (error: any) {
-    console.error('Failed to delete gallery item:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    console.error(
+      "[AdminGallery DELETE] Failed to delete gallery item:",
+      error instanceof Error ? error.name : "UnknownError"
+    );
+    return NextResponse.json(
+      { error: "Failed to delete gallery item" },
+      { status: 500 }
+    );
   }
 }
 
@@ -45,54 +83,72 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await assertAdminApi();
+
     const { id } = await params;
-
-    // 1. Verify Admin Status
-    let isAuthorized = false;
-    const cookieStore = await cookies();
-    if (cookieStore.get('admin_master_pwd_verified')?.value === 'true') {
-      isAuthorized = true;
-    } else {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email === 'waynele2k11@gmail.com') {
-        isAuthorized = true;
-      }
+    const parsedId = GalleryIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return NextResponse.json({ error: "Invalid gallery item ID" }, { status: 400 });
     }
 
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const rawBody: unknown = await req.json().catch(() => null);
+    const parsedBody = PatchGalleryItemSchema.safeParse(rawBody);
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        { error: "Invalid update payload" },
+        { status: 400 }
+      );
     }
 
-    const body = await req.json();
-    const { customImageUrl } = body;
-
-    // Get current item to retain existing mockupTransform data
     const currentItem = await prisma.galleryItem.findUnique({
-      where: { id }
+      where: { id: parsedId.data },
     });
 
     if (!currentItem) {
-      return NextResponse.json({ error: 'Gallery item not found' }, { status: 404 });
+      return NextResponse.json({ error: "Gallery item not found" }, { status: 404 });
     }
 
-    const currentTransform = (currentItem.mockupTransform as any) || {};
+    const updateData: Prisma.GalleryItemUpdateInput = {};
 
-    // 2. Update Database
+    if (parsedBody.data.customImageUrl !== undefined) {
+      const existingTransform =
+        currentItem.mockupTransform &&
+        typeof currentItem.mockupTransform === "object" &&
+        !Array.isArray(currentItem.mockupTransform)
+          ? { ...(currentItem.mockupTransform as Prisma.JsonObject) }
+          : {};
+      existingTransform.customImageUrl = parsedBody.data.customImageUrl;
+      updateData.mockupTransform = existingTransform;
+    }
+
+    if (parsedBody.data.published !== undefined) {
+      updateData.published = parsedBody.data.published;
+    }
+
+    if (parsedBody.data.listedPriceMinor !== undefined) {
+      updateData.listedPriceMinor = BigInt(parsedBody.data.listedPriceMinor);
+    }
+
     const updated = await prisma.galleryItem.update({
-      where: { id },
-      data: {
-        mockupTransform: {
-          ...currentTransform,
-          customImageUrl
-        }
-      }
+      where: { id: parsedId.data },
+      data: updateData,
     });
 
-    return NextResponse.json({ success: true, item: updated });
-
-  } catch (error: any) {
-    console.error('Failed to update gallery item:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      item: serializeGalleryItem(updated),
+    });
+  } catch (error: unknown) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    console.error(
+      "[AdminGallery PATCH] Failed to update gallery item:",
+      error instanceof Error ? error.name : "UnknownError"
+    );
+    return NextResponse.json(
+      { error: "Failed to update gallery item" },
+      { status: 500 }
+    );
   }
 }

@@ -1,57 +1,76 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
+import { z } from "zod";
+import prisma from "@/lib/prisma";
+import { AdminAuthError, assertAdminApi } from "@/utils/admin/auth";
+
+const CreateGalleryRouteSchema = z.object({
+  svgBase64: z.string().min(1).max(2_000_000),
+  product: z.string().trim().min(1).max(200),
+  color: z.string().trim().max(100).optional(),
+  mockupUrl: z.string().trim().max(2048).optional(),
+  placement: z.string().trim().max(100).optional(),
+  category: z.string().trim().min(1).max(100).default("NAME"),
+  text: z.string().trim().min(1).max(500),
+  tradition: z
+    .string()
+    .trim()
+    .min(1)
+    .max(100)
+    .default("VIETNAMESE_THU_PHAP"),
+  interpretation: z
+    .object({
+      type: z.string().max(100).optional(),
+      meaning: z.string().max(1000).optional(),
+    })
+    .optional(),
+  basePriceMinor: z
+    .union([
+      z.number().int().nonnegative().max(100_000_00),
+      z.string().regex(/^\d+$/),
+    ])
+    .default(3500),
+  isApparel: z.boolean().optional().default(true),
+  mockupTransform: z.record(z.string(), z.unknown()).optional(),
+});
 
 export async function POST(req: Request) {
   try {
-    // 1. Verify Admin Status
-    let isAuthorized = false;
-    const cookieStore = await cookies();
-    if (cookieStore.get('admin_master_pwd_verified')?.value === 'true') {
-      isAuthorized = true;
-    } else {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email === 'waynele2k11@gmail.com') {
-        isAuthorized = true;
-      }
+    await assertAdminApi();
+
+    const rawBody: unknown = await req.json().catch(() => null);
+    const parsed = CreateGalleryRouteSchema.safeParse(rawBody);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid gallery item payload" },
+        { status: 400 }
+      );
     }
 
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // 2. Parse Body
-    const body = await req.json();
     const {
       svgBase64,
       product,
       color,
       mockupUrl,
-      placement,
       category,
       text,
       tradition,
       interpretation,
       basePriceMinor,
       isApparel,
-      mockupTransform
-    } = body;
+      mockupTransform,
+    } = parsed.data;
 
-    if (!svgBase64 || !product || !text) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-
-    // 3. Generate SEO Metadata & Pricing
     const slug = `admin-generated-${Date.now()}`;
-    const galleryPriceCents = Math.round(basePriceMinor);
+    const listedPriceMinor = BigInt(basePriceMinor);
 
     const title = `"${text}" in ${tradition.replace(/_/g, " ")}`;
-    const subtitle = `${interpretation.type || 'Custom'} Edition`;
-    const description = `"${text}" rendered in stunning calligraphy. Meaning: ${interpretation.meaning || 'N/A'}`;
+    const subtitle = `${interpretation?.type || "Custom"} Edition`;
+    const description = `"${text}" rendered in stunning calligraphy. Meaning: ${
+      interpretation?.meaning || "N/A"
+    }`;
 
-    // 4. Save to Database
     const galleryItem = await prisma.galleryItem.create({
       data: {
         slug,
@@ -59,32 +78,48 @@ export async function POST(req: Request) {
         subtitle,
         description,
         sourceText: text,
-        sourceLanguage: 'English',
+        sourceLanguage: "English",
         tradition,
-        artworkId: 'admin-studio-vector',
+        artworkId: "admin-studio-vector",
         artworkPreviewUrl: svgBase64,
-        productionArtworkUrl: svgBase64, // Fallback, would ideally generate PNG
+        productionArtworkUrl: svgBase64,
         productType: product,
-        productCategory: isApparel ? 'apparel' : 'accessory',
+        productCategory: isApparel ? "apparel" : "accessory",
         productName: product,
         productImageUrl: mockupUrl || "/mockups/model-male.jpg",
-        defaultColor: color,
-        listedPriceCents: galleryPriceCents,
-        currency: 'USD',
+        defaultColor: color ?? null,
+        availableSizes: [],
+        availableColors: color ? [color] : [],
+        listedPriceMinor,
+        currency: "USD",
         requiresSize: isApparel,
+        requiresColor: Boolean(color),
         category,
         published: true,
-        mockupTransform
-      }
+        mockupTransform: mockupTransform
+          ? (mockupTransform as Prisma.InputJsonValue)
+          : undefined,
+      },
     });
 
-    return NextResponse.json({ success: true, item: galleryItem });
-
-  } catch (error: any) {
-    console.error('Failed to create gallery item:', error);
-    const errorMessage = error.message.split('Unknown arg').length > 1 
-      ? 'Unknown arg' + error.message.split('Unknown arg')[1] 
-      : error.message.substring(error.message.lastIndexOf('Argument'));
-    return NextResponse.json({ error: errorMessage || error.message }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      item: {
+        ...galleryItem,
+        listedPriceMinor: galleryItem.listedPriceMinor.toString(),
+      },
+    });
+  } catch (error: unknown) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    console.error(
+      "[AdminGallery Create] Failed to create gallery item:",
+      error instanceof Error ? error.name : "UnknownError"
+    );
+    return NextResponse.json(
+      { error: "Failed to create gallery item" },
+      { status: 500 }
+    );
   }
 }

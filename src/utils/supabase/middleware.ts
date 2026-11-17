@@ -1,56 +1,124 @@
+import crypto from "node:crypto";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  DEVICE_TRUST_COOKIE,
+  verifyDeviceTrustToken,
+} from "@/lib/security/tokens";
+import { safeRedirectPath } from "@/lib/security/redirect";
 
-export async function updateSession(request: NextRequest) {
+const HSTS_HEADER_VALUE = "max-age=63072000; includeSubDomains; preload";
+
+export function buildCspHeader(
+  nonce: string,
+  isDev = process.env.NODE_ENV === "development"
+): string {
+  const directives = [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com${isDev ? " 'unsafe-eval'" : ""}`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' https://files.cdn.printful.com blob: data: https:",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com${isDev ? " ws: http:" : ""}`,
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'self'",
+  ];
+
+  if (!isDev) {
+    directives.push("upgrade-insecure-requests");
+  }
+
+  return directives.join("; ");
+}
+
+function applySecurityHeaders(
+  response: NextResponse,
+  cspHeaderValue: string
+): NextResponse {
+  response.headers.set("Content-Security-Policy", cspHeaderValue);
+  response.headers.set("Strict-Transport-Security", HSTS_HEADER_VALUE);
+  return response;
+}
+
+export async function updateSession(request: NextRequest): Promise<NextResponse> {
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const cspHeaderValue = buildCspHeader(nonce);
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", cspHeaderValue);
+
   let supabaseResponse = NextResponse.next({
-    request,
+    request: {
+      headers: requestHeaders,
+    },
   });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  let user: { id: string } | null = null;
+
+  if (supabaseUrl && supabaseAnonKey) {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          requestHeaders.set("cookie", request.cookies.toString());
           supabaseResponse = NextResponse.next({
-            request,
+            request: {
+              headers: requestHeaders,
+            },
           });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
         },
       },
-    }
+    });
+
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  }
+
+  const safeCallback = safeRedirectPath(
+    `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    "/studio"
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (
-    !user &&
-    request.nextUrl.pathname.startsWith("/studio")
-  ) {
+  if (!user && request.nextUrl.pathname.startsWith("/studio")) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
-    url.searchParams.set("callbackUrl", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+    url.search = "";
+    url.searchParams.set("next", safeCallback);
+    url.searchParams.set("callbackUrl", safeCallback);
+    return applySecurityHeaders(NextResponse.redirect(url), cspHeaderValue);
   }
 
-  // Enforce Device Trust for /studio routes
+  // Enforce cryptographically signed Device Trust token bound to user.id for /studio routes (T-103)
   if (user && request.nextUrl.pathname.startsWith("/studio")) {
-    const deviceTrust = request.cookies.get("device_trust")?.value;
-    if (deviceTrust !== "verified") {
+    const rawDeviceToken = request.cookies.get(DEVICE_TRUST_COOKIE)?.value;
+    const verifiedDevice = await verifyDeviceTrustToken(rawDeviceToken, user.id);
+    if (!verifiedDevice) {
       const url = request.nextUrl.clone();
       url.pathname = "/auth/verify-device";
-      url.searchParams.set("callbackUrl", request.nextUrl.pathname);
-      return NextResponse.redirect(url);
+      url.search = "";
+      url.searchParams.set("callbackUrl", safeCallback);
+      const redirectResponse = NextResponse.redirect(url);
+      if (request.cookies.has("device_trust")) {
+        redirectResponse.cookies.delete("device_trust");
+      }
+      return applySecurityHeaders(redirectResponse, cspHeaderValue);
     }
   }
 
-  return supabaseResponse;
+  return applySecurityHeaders(supabaseResponse, cspHeaderValue);
 }

@@ -1,70 +1,132 @@
 "use server";
 
+import crypto from "node:crypto";
+import { cookies } from "next/headers";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import {
+  DEVICE_TRUST_COOKIE,
+  signDeviceTrustToken,
+  timingSafeEqualString,
+} from "@/lib/security/tokens";
+import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 
-export async function verifyDevicePin(pin: string) {
+const DevicePinSchema = z.string().trim().regex(/^\d{6}$/, "Invalid or expired PIN");
+const MAX_PIN_ATTEMPTS = 5;
+const DEVICE_TRUST_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+
+export async function verifyDevicePin(
+  pin: string
+): Promise<{ success: boolean; error?: string }> {
+  const parsedPin = DevicePinSchema.safeParse(pin);
+  if (!parsedPin.success) {
+    return { success: false, error: "Invalid or expired PIN" };
+  }
+
   const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
   if (error || !user) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const dbUser = await prisma.user.findUnique({ where: { email: user.email || "" } });
-  
-  if (!dbUser) {
-    return { success: false, error: "User not found in DB" };
-  }
-
-  // Find the most recent active code
-  let verification: { id: string; code: string } | null = null;
-
-  if (prisma.deviceVerification) {
-    verification = await prisma.deviceVerification.findFirst({
-      where: { 
-        userId: dbUser.id, 
-        verified: false,
-        expiresAt: { gt: new Date() }
-      },
-      orderBy: { createdAt: "desc" }
+  try {
+    enforceRateLimit({
+      bucket: "device-pin-verify",
+      key: user.id,
+      limit: 10,
+      windowMs: 10 * 60_000,
     });
-  } else {
-    const records: any[] = await prisma.$queryRaw`
-      SELECT "id", "code" FROM "DeviceVerification"
-      WHERE "userId" = ${dbUser.id} AND "verified" = false AND "expiresAt" > NOW()
-      ORDER BY "createdAt" DESC
-      LIMIT 1
-    `;
-    verification = records[0] || null;
+  } catch (rateErr: unknown) {
+    if (rateErr instanceof RateLimitError) {
+      return {
+        success: false,
+        error: "Too many verification attempts. Please wait before trying again.",
+      };
+    }
+    return { success: false, error: "Verification failed" };
   }
 
-  if (!verification || verification.code !== pin) {
+  let dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+  if (!dbUser && user.email) {
+    dbUser = await prisma.user.findUnique({ where: { email: user.email } });
+  }
+
+  if (!dbUser) {
     return { success: false, error: "Invalid or expired PIN" };
   }
 
-  // Mark verified
-  if (prisma.deviceVerification) {
-    await prisma.deviceVerification.update({
-      where: { id: verification.id },
-      data: { verified: true }
-    });
-  } else {
-    await prisma.$executeRaw`
-      UPDATE "DeviceVerification" SET "verified" = true WHERE "id" = ${verification.id}
-    `;
-  }
-
-  // Set 14-day trust cookie
-  const cookieStore = await cookies();
-  cookieStore.set("device_trust", "verified", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24 * 14, // 14 days
-    path: "/",
+  const verification = await prisma.deviceVerification.findFirst({
+    where: {
+      userId: dbUser.id,
+      verified: false,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
   });
 
-  return { success: true };
+  if (!verification) {
+    return { success: false, error: "Invalid or expired PIN" };
+  }
+
+  if (verification.attempts >= MAX_PIN_ATTEMPTS) {
+    await prisma.deviceVerification.delete({ where: { id: verification.id } });
+    return {
+      success: false,
+      error: "Too many failed attempts. Please request a new PIN.",
+    };
+  }
+
+  if (!timingSafeEqualString(verification.code, parsedPin.data)) {
+    const nextAttempts = verification.attempts + 1;
+    if (nextAttempts >= MAX_PIN_ATTEMPTS) {
+      await prisma.deviceVerification.delete({ where: { id: verification.id } });
+      return {
+        success: false,
+        error: "Too many failed attempts. Please request a new PIN.",
+      };
+    }
+
+    await prisma.deviceVerification.update({
+      where: { id: verification.id },
+      data: { attempts: { increment: 1 } },
+    });
+
+    return { success: false, error: "Invalid or expired PIN" };
+  }
+
+  try {
+    const deviceId = crypto.randomUUID();
+    const token = await signDeviceTrustToken(
+      { userId: user.id, deviceId },
+      DEVICE_TRUST_TTL_SECONDS
+    );
+
+    await prisma.deviceVerification.update({
+      where: { id: verification.id },
+      data: { verified: true, deviceId },
+    });
+
+    const cookieStore = await cookies();
+    cookieStore.delete("device_trust");
+    cookieStore.set(DEVICE_TRUST_COOKIE, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: DEVICE_TRUST_TTL_SECONDS,
+      path: "/",
+    });
+
+    return { success: true };
+  } catch (err: unknown) {
+    console.error(
+      "[VerifyDevice] Failed to issue device trust token:",
+      err instanceof Error ? err.name : "UnknownError"
+    );
+    return { success: false, error: "Device verification unavailable" };
+  }
 }

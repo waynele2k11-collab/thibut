@@ -25,8 +25,8 @@ export function DeleteGalleryItemButton({ id, title }: { id: string; title: stri
       }
 
       router.refresh();
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : "Failed to delete");
       setIsDeleting(false);
     }
   };
