@@ -2,9 +2,21 @@ import { format } from "date-fns";
 import prisma from "@/lib/prisma";
 import { formatUsdMinor } from "@/lib/pricing/quote";
 import { requireAdmin } from "@/utils/admin/auth";
+import { updateOrderFulfillmentFormAction } from "@/app/actions/keepsake-admin";
+import {
+  ADMIN_BUTTON,
+  ADMIN_FIELD,
+  AdminNotice,
+} from "@/components/admin/AdminNotice";
+import { ADMIN_FULFILLMENT_STATUSES } from "@/lib/catalog/adminInput";
 
-export default async function AdminOrdersPage() {
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ notice?: string; error?: string }>;
+}) {
   await requireAdmin();
+  const { notice, error } = await searchParams;
 
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
@@ -31,6 +43,8 @@ export default async function AdminOrdersPage() {
         </div>
       </div>
 
+      <AdminNotice notice={notice} error={error} />
+
       <div className="bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -53,6 +67,9 @@ export default async function AdminOrdersPage() {
                 </th>
                 <th className="px-6 py-4 font-label-caps text-label-caps uppercase text-on-surface-variant">
                   Date
+                </th>
+                <th className="px-6 py-4 font-label-caps text-label-caps uppercase text-on-surface-variant">
+                  In-house fulfilment
                 </th>
               </tr>
             </thead>
@@ -119,13 +136,72 @@ export default async function AdminOrdersPage() {
                     <td className="px-6 py-4 font-body-md text-body-md text-on-surface-variant">
                       {format(new Date(order.createdAt), "MMM d, yyyy")}
                     </td>
+                    <td className="px-6 py-4">
+                      {order.paymentStatus === "SUCCEEDED" &&
+                      !order.externalFulfillmentId ? (
+                        <form
+                          action={updateOrderFulfillmentFormAction}
+                          className="flex flex-col gap-2 min-w-56"
+                        >
+                          <input type="hidden" name="orderId" value={order.id} />
+                          <label htmlFor={`status-${order.id}`} className="sr-only">
+                            Fulfilment status for {order.orderNumber}
+                          </label>
+                          <select
+                            id={`status-${order.id}`}
+                            name="fulfillmentStatus"
+                            defaultValue={
+                              ADMIN_FULFILLMENT_STATUSES.find(
+                                (status) => status === order.fulfillmentStatus
+                              ) ?? "IN_PRODUCTION"
+                            }
+                            className={ADMIN_FIELD}
+                          >
+                            {ADMIN_FULFILLMENT_STATUSES.map((status) => (
+                              <option key={status} value={status}>
+                                {status.replace(/_/g, " ")}
+                              </option>
+                            ))}
+                          </select>
+                          <label htmlFor={`carrier-${order.id}`} className="sr-only">
+                            Carrier for {order.orderNumber}
+                          </label>
+                          <input
+                            id={`carrier-${order.id}`}
+                            name="trackingCarrier"
+                            placeholder="Carrier"
+                            maxLength={40}
+                            defaultValue={order.trackingCarrier ?? ""}
+                            className={ADMIN_FIELD}
+                          />
+                          <label htmlFor={`tracking-${order.id}`} className="sr-only">
+                            Tracking number for {order.orderNumber}
+                          </label>
+                          <input
+                            id={`tracking-${order.id}`}
+                            name="trackingNumber"
+                            placeholder="Tracking number"
+                            maxLength={64}
+                            defaultValue={order.trackingNumber ?? ""}
+                            className={ADMIN_FIELD}
+                          />
+                          <button type="submit" className={ADMIN_BUTTON}>
+                            Update
+                          </button>
+                        </form>
+                      ) : (
+                        <span className="font-body-md text-body-md text-on-surface-variant">
+                          {order.externalFulfillmentId ? "Printful" : "—"}
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
               {orders.length === 0 && (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-6 py-8 text-center font-body-md text-body-md text-on-surface-variant"
                   >
                     No orders found.

@@ -247,6 +247,12 @@ export default async function BuyerOrdersPage() {
                         dateStyle: "medium",
                       }).format(order.createdAt)}
                     </p>
+                    {order.trackingNumber && (
+                      <p className="font-body-md text-body-md text-on-surface">
+                        Tracking: {order.trackingCarrier ? `${order.trackingCarrier} ` : ""}
+                        {order.trackingNumber}
+                      </p>
+                    )}
                   </div>
 
                   <div className="text-right">

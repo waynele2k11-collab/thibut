@@ -133,3 +133,55 @@ export async function sendOrderConfirmationEmail(
 
   return { sent: true };
 }
+
+const OrderShippedEmailSchema = z.object({
+  email: z.string().email(),
+  orderNumber: z.string().min(1).max(128),
+  trackingNumber: z.string().min(1).max(64),
+  trackingCarrier: z.string().max(40).nullable(),
+});
+
+export type OrderShippedEmailParams = z.infer<typeof OrderShippedEmailSchema>;
+
+/** Shipment notice with tracking details for in-house orders (BRD v1.0 §10). */
+export async function sendOrderShippedEmail(
+  params: OrderShippedEmailParams
+): Promise<{ sent: boolean }> {
+  const input = OrderShippedEmailSchema.parse(params);
+
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) {
+    console.info(
+      `[Email] RESEND_API_KEY not configured; skipped shipped notice for order ${input.orderNumber}`
+    );
+    return { sent: false };
+  }
+
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(
+    /\/+$/,
+    ""
+  );
+  const carrierLine = input.trackingCarrier
+    ? `<p>Carrier: ${escapeXml(input.trackingCarrier)}</p>`
+    : "";
+
+  const resend = new Resend(apiKey);
+  await resend.emails.send({
+    from: "Thi Bút <hello@thibut.com>",
+    to: input.email,
+    subject: `Your Thi Bút order ${input.orderNumber} has shipped`,
+    html: `
+      <div style="font-family: sans-serif; padding: 20px;">
+        <h2>Your order is on its way</h2>
+        <p>Order ${escapeXml(input.orderNumber)} has been packed and dispatched.</p>
+        ${carrierLine}
+        <p>Tracking number: <strong>${escapeXml(input.trackingNumber)}</strong></p>
+        <a href="${escapeXml(`${baseUrl}/orders`)}" style="display: inline-block; padding: 10px 20px; background-color: #111; color: #fff; text-decoration: none; border-radius: 5px;">View your order</a>
+        <br/><br/>
+        <p>Thi Bút Support</p>
+      </div>
+    `,
+  });
+
+  return { sent: true };
+}

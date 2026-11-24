@@ -36,6 +36,7 @@ export function AdminSidebar() {
     { name: "Calligraphy", href: "/admin/ai/calligraphy", icon: Palette },
     { name: "Knowledge", href: "/admin/knowledge", icon: BookOpen },
     { name: "Admin Studio", href: "/admin/studio", icon: Palette },
+    { name: "Catalog", href: "/admin/catalog", icon: Store },
     { name: "Gallery", href: "/admin/gallery", icon: Store },
     { name: "Products", href: "/admin/products", icon: Store },
     { name: "Orders", href: "/admin/orders", icon: CreditCard },
@@ -56,7 +57,9 @@ export function AdminSidebar() {
       <nav aria-label="Admin" className="flex-1 py-4 flex flex-col gap-0.5 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive =
+            pathname === item.href ||
+            (item.href === "/admin/catalog" && pathname.startsWith("/admin/catalog/"));
 
           return (
             <Link
