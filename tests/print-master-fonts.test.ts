@@ -774,12 +774,15 @@ test("R-107: public/fonts is removed, assets/fonts holds only licensed fonts, ne
       );
     }
 
-    // 3. next.config.ts outputFileTracingIncludes traces ./assets/fonts/**/* ONLY into the 3 render routes
+    // 3. next.config.ts outputFileTracingIncludes traces ./assets/fonts/**/* ONLY into the 3 render
+    //    routes and the admin keepsake editor (docs/KEEPSAKE_EDITOR_PLAN.md)
     const cfg = nextConfigModule.default;
     assert.deepEqual(cfg.outputFileTracingIncludes, {
       "/api/print-master": ["./assets/fonts/**/*"],
       "/api/download": ["./assets/fonts/**/*"],
       "/api/inngest": ["./assets/fonts/**/*"],
+      "/admin/keepsake-editor": ["./assets/fonts/**/*"],
+      "/admin/keepsake-editor/fonts/*": ["./assets/fonts/**/*"],
     });
 
     // 4. ClientCalligraphyRenderer sealFontUrl uses /api/fonts/* and never /fonts/*.ttf
