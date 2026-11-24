@@ -317,6 +317,245 @@ async function resolveOrCreateStudioDesign(
   };
 }
 
+/**
+ * Resolve the caller's ACTIVE cart (cookie cart first, then latest owned cart) or create one.
+ * A cart is only ever matched to the authenticated user or the signed anonymous session.
+ */
+async function resolveOrCreateActiveCart(
+  tx: Prisma.TransactionClient,
+  caller: {
+    cookieCartId: string | undefined;
+    userId: string | null;
+    anonId: string | null;
+  }
+) {
+  const { cookieCartId, userId, anonId } = caller;
+  let cart = null;
+  if (cookieCartId) {
+    const candidateCart = await tx.cart.findUnique({
+      where: { id: cookieCartId },
+    });
+    if (candidateCart && candidateCart.status === "ACTIVE") {
+      const matchesUser = Boolean(userId && candidateCart.userId === userId);
+      const matchesAnon = Boolean(
+        !userId && anonId && candidateCart.anonymousSessionId === anonId
+      );
+      if (matchesUser || matchesAnon) {
+        cart = candidateCart;
+      }
+    }
+  }
+
+  if (!cart) {
+    cart = await tx.cart.findFirst({
+      where: userId
+        ? { userId, status: "ACTIVE" }
+        : { anonymousSessionId: anonId, status: "ACTIVE" },
+      orderBy: { updatedAt: "desc" },
+    });
+  }
+
+  if (!cart) {
+    cart = await tx.cart.create({
+      data: {
+        userId: userId ?? null,
+        anonymousSessionId: userId ? null : anonId,
+        currency: "USD",
+        status: "ACTIVE",
+      },
+    });
+  }
+  return cart;
+}
+
+const AddCatalogItemInputSchema = z
+  .object({
+    designId: z.string().uuid(),
+    variantId: z.string().trim().min(1).max(128),
+    sides: z.enum(["single", "double"]).default("single"),
+    quantity: z.number().int().min(1).max(100).default(1),
+  })
+  .strict();
+
+export type AddCatalogItemInput = z.input<typeof AddCatalogItemInputSchema>;
+
+/**
+ * Buy Now (BRD v1.0 §05): add unchanged catalog artwork in a validated size to the cart.
+ * No personalization session is created, so no proof approval is required for the item.
+ */
+export async function addCatalogItemToCartAction(
+  rawPayload: unknown
+): Promise<AddToCartResult> {
+  const parsed = AddCatalogItemInputSchema.safeParse(rawPayload);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid cart item payload" };
+  }
+  const input = parsed.data;
+  const placement = input.sides === "double" ? "both" : "front";
+
+  try {
+    const [variant, design] = await Promise.all([
+      prisma.catalogVariant.findUnique({
+        where: { id: input.variantId },
+        include: { product: true, providerVariants: true },
+      }),
+      prisma.design.findUnique({
+        where: { id: input.designId },
+        include: {
+          versions: { orderBy: { versionNumber: "desc" }, take: 1 },
+          licenses: {
+            where: { type: "PERSONAL_PRODUCT", active: true },
+            orderBy: { createdAt: "asc" },
+            take: 1,
+          },
+          products: { where: { active: true } },
+        },
+      }),
+    ]);
+
+    if (!variant || !variant.active || variant.product.status !== "ACTIVE") {
+      return { success: false, error: "Selected size is unavailable" };
+    }
+    if (
+      !design ||
+      design.status !== "PUBLISHED" ||
+      design.visibility !== "PUBLIC" ||
+      design.catalogImageUrls.length === 0
+    ) {
+      return { success: false, error: "This design is unavailable" };
+    }
+    const designVersion = design.versions[0];
+    const licenseOffer = design.licenses[0];
+    const isCompatible = design.products.some(
+      (link) => link.catalogProductId === variant.productId
+    );
+    if (!designVersion || !licenseOffer || !isCompatible) {
+      return {
+        success: false,
+        error: "This design is not available in the selected product",
+      };
+    }
+
+    const unitQuote = calculateItemQuote({
+      isDigital: false,
+      variant,
+      placement,
+      quantity: 1,
+      isPersonalized: false,
+      licenseOffer,
+    });
+
+    const cookieStore = await cookies();
+    const userId = await resolveAuthenticatedUserId();
+    let anonId = await verifyAnonSessionToken(
+      cookieStore.get(ANON_SESSION_COOKIE)?.value
+    );
+
+    if (!userId && !anonId) {
+      const minted = await signAnonSessionToken();
+      anonId = minted.anonId;
+      cookieStore.set(ANON_SESSION_COOKIE, minted.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+      });
+    }
+
+    await enforceDistributedRateLimit({
+      bucket: "action:cart-add",
+      key: userId ? `user:${userId}` : `anon:${anonId ?? "guest"}`,
+      limit: 30,
+      windowMs: 60_000,
+    });
+
+    const cookieCartId = cookieStore.get(CART_ID_COOKIE)?.value;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const cart = await resolveOrCreateActiveCart(tx, {
+        cookieCartId,
+        userId,
+        anonId,
+      });
+
+      // The same unchanged design, size and sides is one cart line with a quantity.
+      const existing = await tx.cartItem.findFirst({
+        where: {
+          cartId: cart.id,
+          designId: design.id,
+          catalogVariantId: variant.id,
+          placement: unitQuote.placement,
+          personalizationVersionId: null,
+        },
+      });
+
+      const cartItem = existing
+        ? await tx.cartItem.update({
+            where: { id: existing.id },
+            data: {
+              quantity: Math.min(existing.quantity + input.quantity, 100),
+            },
+          })
+        : await tx.cartItem.create({
+            data: {
+              cartId: cart.id,
+              creatorId: design.creatorId,
+              designId: design.id,
+              designVersionId: designVersion.id,
+              personalizationVersionId: null,
+              catalogVariantId: variant.id,
+              licenseOfferId: licenseOffer.id,
+              placement: unitQuote.placement,
+              quantity: input.quantity,
+              unitArtworkMinor: unitQuote.artworkMinor,
+              unitPersonalizationMinor: unitQuote.personalizationMinor,
+              unitProductMinor: unitQuote.productMinor,
+            },
+          });
+
+      const items = await tx.cartItem.findMany({
+        where: { cartId: cart.id },
+        select: { quantity: true },
+      });
+      return {
+        cartId: cart.id,
+        cartItemId: cartItem.id,
+        count: items.reduce((acc, row) => acc + row.quantity, 0),
+      };
+    });
+
+    cookieStore.set(CART_ID_COOKIE, result.cartId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+
+    revalidatePath("/cart");
+
+    return {
+      success: true,
+      cartId: result.cartId,
+      cartItemId: result.cartItemId,
+      count: result.count,
+    };
+  } catch (err: unknown) {
+    if (err instanceof RateLimitError) {
+      return {
+        success: false,
+        error: "Too many cart requests. Please wait a moment and try again.",
+      };
+    }
+    if (err instanceof PricingValidationError) {
+      return { success: false, error: err.message };
+    }
+    console.error("[addCatalogItemToCartAction] Failed to add item:", err);
+    return { success: false, error: "Unable to add item to cart" };
+  }
+}
+
 export async function addToCartAction(
   rawPayload: unknown
 ): Promise<AddToCartResult> {
@@ -461,41 +700,11 @@ export async function addToCartAction(
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Resolve isolated Cart strictly owned by this caller
-      let cart = null;
-      if (cookieCartId) {
-        const candidateCart = await tx.cart.findUnique({
-          where: { id: cookieCartId },
-        });
-        if (candidateCart && candidateCart.status === "ACTIVE") {
-          const matchesUser = Boolean(userId && candidateCart.userId === userId);
-          const matchesAnon = Boolean(
-            !userId && anonId && candidateCart.anonymousSessionId === anonId
-          );
-          if (matchesUser || matchesAnon) {
-            cart = candidateCart;
-          }
-        }
-      }
-
-      if (!cart) {
-        cart = await tx.cart.findFirst({
-          where: userId
-            ? { userId, status: "ACTIVE" }
-            : { anonymousSessionId: anonId, status: "ACTIVE" },
-          orderBy: { updatedAt: "desc" },
-        });
-      }
-
-      if (!cart) {
-        cart = await tx.cart.create({
-          data: {
-            userId: userId ?? null,
-            anonymousSessionId: userId ? null : anonId,
-            currency: "USD",
-            status: "ACTIVE",
-          },
-        });
-      }
+      const cart = await resolveOrCreateActiveCart(tx, {
+        cookieCartId,
+        userId,
+        anonId,
+      });
 
       // 2. Resolve real Design + DesignVersion
       const { designId, designVersionId, creatorId } =
