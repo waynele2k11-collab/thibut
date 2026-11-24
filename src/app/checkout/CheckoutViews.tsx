@@ -69,6 +69,15 @@ export function CheckoutLineCard({ line }: { line: CheckoutLineDisplay }) {
     <Card className="p-6 md:p-8 flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start gap-6">
         <div className="w-32 h-32 rounded bg-surface-container-low border border-surface-variant overflow-hidden shrink-0 relative flex items-center justify-center">
+          {line.catalogImageUrl && (
+            <Image
+              src={line.catalogImageUrl}
+              alt={line.designTitle}
+              fill
+              sizes="128px"
+              className="object-cover pointer-events-none select-none"
+            />
+          )}
           {line.mockupUrl && (
             <Image
               src={line.mockupUrl}
@@ -116,7 +125,12 @@ export function CheckoutLineCard({ line }: { line: CheckoutLineDisplay }) {
           </div>
 
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant pt-1 flex items-center gap-1.5">
-            {line.isDigital ? (
+            {line.catalogImageUrl ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+                <span>Made to order · catalog artwork as shown</span>
+              </>
+            ) : line.isDigital ? (
               <>
                 <Download className="w-3.5 h-3.5 text-secondary" aria-hidden="true" />
                 <span>Instant 4500×5400 px @ 300 DPI Master</span>
@@ -131,6 +145,7 @@ export function CheckoutLineCard({ line }: { line: CheckoutLineDisplay }) {
         </div>
       </div>
 
+      {!line.catalogImageUrl && (
       <div className="border-t border-surface-variant pt-5 flex flex-col gap-2">
         <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
           Cultural Meaning &amp; Romanization
@@ -177,6 +192,7 @@ export function CheckoutLineCard({ line }: { line: CheckoutLineDisplay }) {
           )}
         </div>
       </div>
+      )}
     </Card>
   );
 }

@@ -5,8 +5,8 @@ import { type DivisionSlug, isDivisionSlug } from "./divisions";
 
 /**
  * Read model for the made-to-order storefront (BRD v1.0 Milestone 1).
- * Everything returned is plain, serialisable data: BigInt prices are converted to
- * integer-cent numbers and pre-formatted strings so pages and client components can use them.
+ * Everything returned is plain, serialisable data: BigInt prices are pre-formatted to
+ * display strings on the server so pages and client components never do money arithmetic.
  */
 
 export type ImageKind = "CONCEPT_RENDER" | "PRODUCT_PHOTO";
@@ -14,8 +14,6 @@ export type ImageKind = "CONCEPT_RENDER" | "PRODUCT_PHOTO";
 export interface CatalogSizeOption {
   variantId: string;
   size: string;
-  singleCents: number;
-  doubleCents: number;
   singleLabel: string;
   doubleLabel: string;
 }
@@ -84,6 +82,13 @@ const DESIGN_SUMMARY_INCLUDE = {
     },
   },
 } as const;
+
+/** 16000 -> "1.6×", 20000 -> "2×". Integer arithmetic only. */
+export function formatMultiplierBps(bps: number): string {
+  const whole = Math.trunc(bps / 10000);
+  const fraction = String(bps % 10000).padStart(4, "0").replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}×` : `${whole}×`;
+}
 
 function toImageKind(value: string): ImageKind {
   return value === "PRODUCT_PHOTO" ? "PRODUCT_PHOTO" : "CONCEPT_RENDER";
@@ -234,8 +239,6 @@ export async function getCatalogDesign(
             return {
               variantId: variant.id,
               size: variant.size ?? "One size",
-              singleCents: Number(single),
-              doubleCents: Number(double),
               singleLabel: formatMinor(single),
               doubleLabel: formatMinor(double),
             };
@@ -292,7 +295,7 @@ export async function getKeepsakePriceTable(
   }
   const bps = product.doubleSidedMultiplierBps ?? 10000;
   return {
-    multiplierLabel: `${(bps / 10000).toFixed(2).replace(/\.?0+$/, "")}×`,
+    multiplierLabel: formatMultiplierBps(bps),
     sizes: product.variants.map((variant) => {
       const single = variant.baseRetailMinor;
       const double =
@@ -305,8 +308,6 @@ export async function getKeepsakePriceTable(
       return {
         variantId: variant.id,
         size: variant.size ?? "One size",
-        singleCents: Number(single),
-        doubleCents: Number(double),
         singleLabel: formatMinor(single),
         doubleLabel: formatMinor(double),
       };

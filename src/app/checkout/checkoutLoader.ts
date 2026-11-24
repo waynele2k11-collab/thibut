@@ -60,6 +60,8 @@ export interface CheckoutLineDisplay {
   isDigital: boolean;
   previewSvgUri: string | null;
   mockupUrl: string | null;
+  /** Set for Buy Now catalog items: unchanged artwork, no personalization, no proof step. */
+  catalogImageUrl: string | null;
   inputPhrase: string;
   renderedPhrase: string;
   interpretationType: string;
@@ -283,7 +285,7 @@ export async function loadCheckoutViewData(
         status: "empty",
         title: "Your Cart Is Empty",
         message:
-          "There are no active items ready for checkout in this cart. Create a custom calligraphy piece in the Studio to begin.",
+          "There are no active items ready for checkout in this cart.",
       };
     }
 
@@ -318,6 +320,34 @@ export async function loadCheckoutViewData(
         });
 
         const pv = ci.personalizationVersion;
+        const catalogImageUrl = pv ? null : (ci.design.catalogImageUrls[0] ?? null);
+        if (catalogImageUrl) {
+          const usesSideMultiplier =
+            ci.catalogVariant.product.sidePricing === "MULTIPLIER";
+          lines.push({
+            id: ci.id,
+            designTitle: ci.design.title,
+            productTitle: ci.catalogVariant.product.name,
+            variantBadge: ci.catalogVariant.size ?? ci.catalogVariant.sku,
+            placementLabel: usesSideMultiplier
+              ? quote.placement === "both" || quote.placement === "FRONT_AND_BACK"
+                ? "Double-sided"
+                : "Single-sided"
+              : formatPlacementBadge(quote.placement),
+            quantity: quote.quantity,
+            isDigital: false,
+            previewSvgUri: null,
+            mockupUrl: null,
+            catalogImageUrl,
+            inputPhrase: "",
+            renderedPhrase: ci.design.title,
+            interpretationType: "",
+            romanization: null,
+            meaning: null,
+            quote,
+          });
+          continue;
+        }
         const latestInterp = pv?.session?.interpretations[0] ?? null;
         const inputText =
           extractStringField(pv?.inputSnapshot, "text") ??
@@ -343,6 +373,7 @@ export async function loadCheckoutViewData(
           isDigital: false,
           previewSvgUri: svgUri,
           mockupUrl: ci.catalogVariant.mockups[0]?.asset?.objectKey ?? null,
+          catalogImageUrl: null,
           inputPhrase: inputText,
           renderedPhrase:
             extractStringField(pv?.interpretationSnapshot, "text") ??
@@ -380,16 +411,21 @@ export async function loadCheckoutViewData(
       physicalQuantity: totalPhysicalQty,
     });
     const primaryItem = cart.items[0]!;
+    // The licence card describes calligraphy personalization permissions; a cart of
+    // unchanged catalog artwork has nothing to show there.
+    const allCatalogItems = lines.every((line) => line.catalogImageUrl !== null);
     return {
       status: "ready",
       lines,
       shippingMinor: cartShippingMinor,
-      licenseDisplay: buildLicenseDisplay({
-        isDigital: false,
-        designVersionNumber: primaryItem.designVersion.versionNumber,
-        licenseOffer: primaryItem.licenseOffer,
-        policy: primaryItem.design.policyVersions[0] ?? null,
-      }),
+      licenseDisplay: allCatalogItems
+        ? null
+        : buildLicenseDisplay({
+            isDigital: false,
+            designVersionNumber: primaryItem.designVersion.versionNumber,
+            licenseOffer: primaryItem.licenseOffer,
+            policy: primaryItem.design.policyVersions[0] ?? null,
+          }),
       checkoutPayload: { cartId: cart.id },
       backHref: "/cart",
       backLabel: "Back to Cart",
@@ -648,6 +684,7 @@ export async function loadCheckoutViewData(
         mockupUrl: isDigital
           ? null
           : (resolvedVariant?.mockups[0]?.asset?.objectKey ?? null),
+        catalogImageUrl: null,
         inputPhrase,
         renderedPhrase:
           extractStringField(existingPv?.interpretationSnapshot, "text") ??

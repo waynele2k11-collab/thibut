@@ -15,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: "Secure Checkout",
   description:
-    "Review your frozen calligraphy composition, license terms, and server-verified pricing before payment.",
+    "Review your items and server-verified pricing before payment.",
   robots: { index: false, follow: false },
 };
 
@@ -74,7 +74,7 @@ export default async function CheckoutPage({
             Secure Checkout
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Review your frozen calligraphy composition, license terms, and server-verified pricing before payment.
+            Review your items and server-verified pricing before payment.
           </p>
         </header>
 

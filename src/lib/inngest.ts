@@ -24,6 +24,7 @@ import { visualAI } from "@/lib/ai/visual-provider";
 import { CalligraphyService } from "@/lib/calligraphy/CalligraphyService";
 import {
   sendDigitalDownloadEmail,
+  sendOrderConfirmationEmail,
   type DigitalDownloadEmailParams,
 } from "@/lib/email";
 import { PrintfulProvider } from "@/lib/fulfillment/PrintfulProvider";
@@ -683,6 +684,7 @@ export async function executeOrderFulfillmentJob(params: {
           include: {
             catalogVariant: {
               include: {
+                product: true,
                 providerVariants: {
                   include: { provider: true },
                 },
@@ -727,6 +729,54 @@ export async function executeOrderFulfillmentJob(params: {
     );
   }
 
+  // In-house made-to-order items (BRD v1.0 §10) are produced by ThiBút, never by Printful.
+  const inHouseItems = order.items.filter(
+    (item) => item.catalogVariant?.product?.fulfillmentMode === "IN_HOUSE"
+  );
+  const providerItems = order.items.filter(
+    (item) => item.catalogVariant?.product?.fulfillmentMode !== "IN_HOUSE"
+  );
+
+  if (inHouseItems.length > 0) {
+    await step.run("notify-in-house-order", async () => {
+      const recipientEmail = order.buyer?.email ?? order.buyerEmail ?? null;
+      if (!recipientEmail) {
+        return { sent: false as const, reason: "no-recipient-email" };
+      }
+      const result = await sendOrderConfirmationEmail({
+        email: recipientEmail,
+        orderNumber: order.orderNumber,
+        items: inHouseItems.map((item) => ({
+          title: item.snapshot?.designTitle ?? "ThiBút keepsake",
+          detail: [
+            item.snapshot?.productName,
+            item.snapshot?.size,
+            item.placement === "both" ? "Double-sided" : "Single-sided",
+          ]
+            .filter((part): part is string => Boolean(part))
+            .join(" · "),
+          quantity: item.quantity,
+        })),
+      });
+      return { sent: result.sent };
+    });
+  }
+
+  if (providerItems.length === 0) {
+    await step.run("start-in-house-production", async () => {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { fulfillmentStatus: "IN_PRODUCTION" },
+      });
+      return { fulfillmentStatus: "IN_PRODUCTION" as const };
+    });
+    return {
+      success: true as const,
+      providerOrderId: null,
+      fulfillmentStatus: "IN_PRODUCTION" as const,
+    };
+  }
+
   // Step 2: Create Printful Draft Order (idempotent via external_id: order.orderNumber)
   const draftResult = await step.run("create-printful-draft", async () => {
     if (order.externalFulfillmentId) {
@@ -741,7 +791,7 @@ export async function executeOrderFulfillmentJob(params: {
 
     const fulfillmentItems: FulfillmentOrderRequest["items"] = [];
 
-    for (const item of order.items) {
+    for (const item of providerItems) {
       const externalVariantId = resolvePrintfulExternalVariantId(
         item.catalogVariant?.providerVariants
       );

@@ -255,7 +255,7 @@ export default async function CartPage() {
               Your Cart
             </h1>
             <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-              {totalUnits} {totalUnits === 1 ? "item" : "items"} ready for 300 DPI archival production
+              {totalUnits} {totalUnits === 1 ? "item" : "items"}, made to order
             </p>
           </div>
           <Link
@@ -279,10 +279,23 @@ export default async function CartPage() {
             const itemTitle = customPhrase
               ? `“${customPhrase}”`
               : item.design.title;
-            const previewSvgUri = renderCartPreviewUri(
-              item.personalizationVersion?.styleSnapshot,
-              customPhrase || item.design.title
-            );
+            // Buy Now catalog items carry unchanged artwork and no personalization version.
+            const catalogImageUrl = item.personalizationVersion
+              ? null
+              : (item.design.catalogImageUrls[0] ?? null);
+            const isSideMultiplier =
+              item.catalogVariant.product.sidePricing === "MULTIPLIER";
+            const optionLabel = isSideMultiplier
+              ? item.placement === "both"
+                ? "Double-sided"
+                : "Single-sided"
+              : `Placement: ${item.placement.replace(/_/g, " ")}`;
+            const previewSvgUri =
+              catalogImageUrl ??
+              renderCartPreviewUri(
+                item.personalizationVersion?.styleSnapshot,
+                customPhrase || item.design.title
+              );
             const studioSessionId = item.personalizationVersion?.sessionId;
             const variantParts = [
               item.catalogVariant.product.name,
@@ -297,14 +310,20 @@ export default async function CartPage() {
                 key={item.id}
                 className="flex flex-col sm:flex-row gap-4 p-5 bg-surface-container-lowest border border-surface-variant rounded-lg"
               >
-                <div className="w-20 h-20 rounded-lg bg-surface-container-low border border-surface-variant flex items-center justify-center shrink-0 p-2 overflow-hidden">
+                <div
+                  className={`w-20 h-20 rounded-lg bg-surface-container-low border border-surface-variant flex items-center justify-center shrink-0 overflow-hidden ${
+                    catalogImageUrl ? "" : "p-2"
+                  }`}
+                >
                   <Image
                     src={previewSvgUri}
                     alt={itemTitle}
-                    width={72}
-                    height={72}
-                    unoptimized
-                    className="w-full h-full object-contain"
+                    width={catalogImageUrl ? 160 : 72}
+                    height={catalogImageUrl ? 160 : 72}
+                    unoptimized={!catalogImageUrl}
+                    className={`w-full h-full ${
+                      catalogImageUrl ? "object-cover" : "object-contain"
+                    }`}
                   />
                 </div>
 
@@ -318,7 +337,7 @@ export default async function CartPage() {
                         {variantParts.join(" · ")}
                       </p>
                       <p className="font-label-caps text-[11px] uppercase text-on-surface-variant mt-1.5">
-                        Placement: {item.placement.replace(/_/g, " ")} · Unit:{" "}
+                        {optionLabel} · Unit:{" "}
                         {formatUsdMinor(unitMinor)}
                       </p>
                     </div>

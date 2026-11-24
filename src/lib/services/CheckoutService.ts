@@ -1061,14 +1061,20 @@ async function executeCartCheckout(
         },
       });
 
+      const optionLabel =
+        cartItem.catalogVariant.product.sidePricing === "MULTIPLIER"
+          ? quote.placement === "both" || quote.placement === "FRONT_AND_BACK"
+            ? "Double-sided"
+            : "Single-sided"
+          : `Placement: ${quote.placement}`;
       const unitAmountMinor = minorToStripeAmount(
         quote.subtotalMinor / BigInt(quote.quantity)
       );
       stripeLines.push({
         name: `${cartItem.design.title} — ${cartItem.catalogVariant.product.name}`,
-        description: variantLabel
-          ? `${variantLabel} · Placement: ${quote.placement}`
-          : `Placement: ${quote.placement}`,
+        description: [variantLabel, optionLabel]
+          .filter((part): part is string => Boolean(part))
+          .join(" · "),
         unitAmountMinor,
         quantity: quote.quantity,
       });
