@@ -36,7 +36,17 @@ async function readClientCspViolations(
 }
 
 test.describe("Thi Bút E2E Hydration, CSP & Accessibility Smoke Suite (R-601)", () => {
-  for (const route of ["/", "/auth/login", "/custom", "/gallery"]) {
+  for (const route of [
+    "/",
+    "/auth/login",
+    "/custom",
+    "/personal",
+    "/business",
+    "/living",
+    "/how-it-works",
+    "/verse-library",
+    "/business-partners",
+  ]) {
     test(`hydrates ${route} cleanly with zero CSP violations`, async ({
       page,
     }) => {
@@ -50,28 +60,40 @@ test.describe("Thi Bút E2E Hydration, CSP & Accessibility Smoke Suite (R-601)",
     });
   }
 
-  test("paused Studio routes redirect to the custom keepsake page", async ({
+  test("paused Studio and gallery routes redirect to the new storefront", async ({
     page,
   }) => {
     await page.goto("/create");
     await expect(page).toHaveURL(/\/custom$/);
     await expect(
-      page.getByRole("heading", { level: 1, name: /crystal keepsakes/i })
+      page.getByRole("heading", { level: 1, name: /custom design/i })
     ).toBeVisible();
+
+    await page.goto("/gallery");
+    await expect(page).toHaveURL(/\/personal$/);
   });
 
-  test("gallery keepsake price options are interactive after hydration", async ({
+  // Requires the keepsake seed (npm run db:seed:keepsakes) with an ACTIVE resin product.
+  test("Buy Now: design page prices follow size and sides, and the item reaches the cart (BRD §05, §09)", async ({
     page,
   }) => {
     const runtimeErrors = await attachCspViolationCollector(page);
-    await page.goto("/gallery");
+    await page.goto("/design/wedding-tram-nam-hanh-phuc");
 
-    const card = page.getByRole("article").first();
-    await expect(card.getByText("$109")).toBeVisible();
+    await expect(page.getByText("Concept render").first()).toBeVisible();
 
-    await card.getByText("Double-Sided", { exact: true }).click();
-    await card.getByText("8 × 10 in", { exact: true }).click();
-    await expect(card.getByText("$358")).toBeVisible();
+    const price = page.locator("main [aria-live]");
+    await page.getByText("Large", { exact: true }).click();
+    await expect(price).toContainText("$149.00");
+    await page.getByText("Double-Sided", { exact: true }).click();
+    await expect(price).toContainText("$238.40");
+
+    await page.getByRole("button", { name: /buy .* now/i }).click();
+    await page.waitForURL(/\/cart$/);
+    const item = page.getByRole("article").first();
+    await expect(item).toContainText("Trăm Năm Hạnh Phúc");
+    await expect(item).toContainText("Double-sided");
+    await expect(item).toContainText("$238.40");
 
     const violations = await readClientCspViolations(page, runtimeErrors);
     expect(violations).toEqual([]);

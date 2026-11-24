@@ -165,6 +165,17 @@ From the Stitch `spacing` config (consistent across all exports):
 
 ---
 
+### 5.6 Made-to-Order Storefront (Business Requirements v1.0)
+- **Navigation:** Personal · Business · Living · Verse Library · How It Works · Business Partners. The full link row shows from `xl` (1280px); below that the drawer is used, with cart, orders and account icons from `md`.
+- **Division page (`/personal`, `/business`, `/living`):** centred header, a 2/3/4-column grid of subcategory tiles (minimum 64px tall), then the design grid.
+- **Design card:** `aspect-[3/2]` image, category in `label-caps text-secondary`, title in `headline-sm`, "From $X" in `body-md`.
+- **Concept render label:** any image that is not a photograph of a finished product carries the `ConceptRenderBadge` (bottom-left, `bg-inverse-surface/90 text-inverse-on-surface`, `label-caps`). Never remove it from a render.
+- **Design page (`/design/[slug]`):** images left, purchase panel right from `lg` (sticky). Size and sides are radio groups styled as chips: selected `border-primary bg-primary text-on-primary`, unselected `border-outline-variant bg-surface-container-lowest`. Live price in `headline-md` inside an `aria-live` region. Primary action "Buy Now", secondary "Custom Design With Your Photos".
+- **Touch and type minimums:** interactive targets at least 44px (`min-h-11`); no text below 12px (`label-caps`); body copy in `body-md`.
+- **Wording:** "crystal-look resin", never plain "crystal" or "glass".
+
+---
+
 ## 6. UI AGENT RULES (Binding Instructions)
 
 When building or updating any Next.js page, the Agent MUST:

@@ -3,6 +3,41 @@
 
 ---
 
+# PART 0: CURRENT DIRECTION (Business Requirements v1.0, November 2026)
+
+> **Read this first.** Parts 1–3 below describe the original calligraphy Studio and creator
+> marketplace. That product is **paused** (its routes redirect; no code was removed). The
+> business now follows `docs/BUSINESS_REQUIREMENTS_v1.0.md`: made-to-order crystal-look resin
+> products in three divisions, sold through **Buy Now** and **Custom Design**.
+
+## 0.1 What is live (Milestone 1 — Commerce foundation)
+
+| Area | Implementation |
+|:---|:---|
+| Divisions and subcategories | `Category` tree: roots `personal`, `business`, `living`; children `<division>-<slug>`. Reference data in `src/lib/catalog/divisions.ts`. |
+| Catalog artwork | `Design` owned by the platform creator, with `catalogImageUrls` and `imageKind` (`CONCEPT_RENDER` \| `PRODUCT_PHOTO`). |
+| Products and sizes | `CatalogProduct` with `fulfillmentMode = "IN_HOUSE"`; sizes are `CatalogVariant.baseRetailMinor`. |
+| Artwork ↔ product | `DesignProduct` — one artwork, many physical formats. |
+| Double-sided price | `CatalogProduct.sidePricing = "MULTIPLIER"` and `doubleSidedMultiplierBps` (16000 = 1.6×). See `resolveSideSurchargeMinor` in `src/lib/pricing/quote.ts`. |
+| Storefront read model | `src/lib/catalog/keepsakeCatalog.ts` |
+| Buy Now | `addCatalogItemToCartAction` in `src/app/actions/cart.ts` → existing cart → `executeCartCheckout` → Stripe → webhook settlement. No personalization session is created. |
+| Fulfilment | `executeOrderFulfillmentJob` in `src/lib/inngest.ts`: in-house items skip Printful, the order moves to `IN_PRODUCTION`, and a confirmation email is sent. |
+| Administration | `/admin/catalog` (prices, status, multiplier), `/admin/catalog/designs`, `/admin/catalog/categories`, and fulfilment controls on `/admin/orders`. Actions in `src/app/actions/keepsake-admin.ts`. |
+| Seed | `npm run db:seed:keepsakes` (idempotent; never overwrites administrator edits). |
+
+## 0.2 Rules carried from the requirements document
+
+- Market products as **resin or crystal-look**, never as glass or crystal.
+- **APR-009:** every catalog image with `imageKind = "CONCEPT_RENDER"` shows a "Concept render" label (`ConceptRenderBadge`).
+- Unchanged catalog artwork needs no proof. Any personalized artwork requires customer approval before production.
+- Products seed as `DRAFT` in production and must be published by an administrator after manufacturing validation.
+
+## 0.3 Not built yet
+
+Custom Design ordering online (uploads, proofs, approvals), the managed verse and artwork libraries, the English/Vietnamese switch, production jobs and quality control records, partner accounts, and AI assistance. Custom Design orders are taken by email.
+
+---
+
 # PART 1: PRODUCT FOUNDATION & BUSINESS CONCEPT
 
 ## 1. WHAT IS THI BÚT?
