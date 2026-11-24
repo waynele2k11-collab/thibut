@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
     "/api/print-master": ["./assets/fonts/**/*"],
     "/api/download": ["./assets/fonts/**/*"],
     "/api/inngest": ["./assets/fonts/**/*"],
+    // Keepsake editor: the page reads the fonts to list the eligible ones, and the admin-only
+    // font route streams them. Keys are route globs, so the dynamic segment is written as "*".
+    "/admin/keepsake-editor": ["./assets/fonts/**/*"],
+    "/admin/keepsake-editor/fonts/*": ["./assets/fonts/**/*"],
   },
   outputFileTracingExcludes: {
     "/checkout": ["./assets/fonts/**/*"],

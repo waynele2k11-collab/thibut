@@ -25,6 +25,8 @@ export interface FontCatalogItem {
   webEmbedAllowed: boolean;
   licenseVerifiedAt?: string | null;
   licenseVerifiedBy?: string | null;
+  /** The basis of the licence when it is not a standard licence text. Shown to the admin. */
+  licenseNote?: string;
   description: string;
   isWebFont?: boolean;
   cssFontFamily?: string;
@@ -123,13 +125,17 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     sourceUrl: "https://www.fontspace.com/utm-thuphap-thien-an-font-f32777",
     sourceLabel: "FontSpace / Michael Dinh Kien",
     downloadUrl: "https://www.fontspace.com/get/family/nzldj",
-    license: "Free for Personal & Commercial use",
+    // Recorded exactly as found: the font file carries the designer's own line and no formal
+    // licence text. Read from the file's name table on 2026-11-24. Not a written licence.
+    license: 'Designer\'s statement in the font file: "Free for everyone" (no formal licence text)',
     licenseUrl: "https://www.fontspace.com/utm-thuphap-thien-an-font-f32777",
     commercialApproved: true,
     printExportAllowed: true,
     webEmbedAllowed: true,
     licenseVerifiedAt: "2026-08-17",
     licenseVerifiedBy: "system-seed",
+    licenseNote:
+      'Licence basis: the designer\'s line "Free for everyone" inside the font file. There is no formal licence text.',
     description:
       "The gold-standard Vietnamese brush calligraphy typeface with sweeping dragon ascenders.",
     defaultEnabled: true,
@@ -286,6 +292,63 @@ export const INITIAL_FONT_CATALOG: readonly FontCatalogItem[] = [
     licenseVerifiedBy: "system-seed",
     description: "Classic poetic Vietnamese Thư Pháp script with clean rhythm.",
     defaultEnabled: true,
+  },
+  {
+    // Keepsake editor (docs/KEEPSAKE_EDITOR_PLAN.md, KE-02). Not enabled for the paused Studio.
+    id: "pinyon-script",
+    name: "Pinyon Script",
+    familyName: "Pinyon Script",
+    aliases: ["Pinyon Script"],
+    // A round-hand script that covers Vietnamese. It is not thư pháp; the category type has no
+    // plain "script" value, so the label says what it is.
+    category: "VIETNAMESE_THU_PHAP",
+    categoryLabel: "Latin script (not thư pháp)",
+    fileName: "PinyonScript-Regular.ttf",
+    format: "ttf",
+    supportedScripts: ["LATIN", "VIETNAMESE"],
+    previewText: "Trăm Năm",
+    sourceUrl: "https://fonts.google.com/specimen/Pinyon+Script",
+    sourceLabel: "Google Fonts / Nicole Fally",
+    downloadUrl:
+      "https://raw.githubusercontent.com/google/fonts/main/ofl/pinyonscript/PinyonScript-Regular.ttf",
+    license: "OFL-1.1 (SIL Open Font License)",
+    licenseUrl: "https://openfontlicense.org",
+    commercialApproved: true,
+    printExportAllowed: true,
+    webEmbedAllowed: true,
+    // Licence text read from the file's own name table (nameID 13) on this date.
+    licenseVerifiedAt: "2026-11-24",
+    licenseVerifiedBy: "font-file-name-table",
+    description: "Formal round-hand script (not thư pháp) for wedding and anniversary verses.",
+    defaultEnabled: false,
+  },
+  {
+    // Keepsake editor (docs/KEEPSAKE_EDITOR_PLAN.md, KE-02). Not enabled for the paused Studio.
+    id: "sedgwick-ave-display",
+    name: "Sedgwick Ave Display",
+    familyName: "Sedgwick Ave Display",
+    aliases: ["Sedgwick Ave Display"],
+    // A marker face that covers Vietnamese. It is not thư pháp; see Pinyon Script above.
+    category: "VIETNAMESE_THU_PHAP",
+    categoryLabel: "Latin script (not thư pháp)",
+    fileName: "SedgwickAveDisplay-Regular.ttf",
+    format: "ttf",
+    supportedScripts: ["LATIN", "VIETNAMESE"],
+    previewText: "Khai Trương",
+    sourceUrl: "https://fonts.google.com/specimen/Sedgwick+Ave+Display",
+    sourceLabel: "Google Fonts / Pedro Vergani, Kevin Burke",
+    downloadUrl:
+      "https://raw.githubusercontent.com/google/fonts/main/ofl/sedgwickavedisplay/SedgwickAveDisplay-Regular.ttf",
+    license: "OFL-1.1 (SIL Open Font License)",
+    licenseUrl: "https://openfontlicense.org",
+    commercialApproved: true,
+    printExportAllowed: true,
+    webEmbedAllowed: true,
+    // Licence text read from the file's own name table (nameID 13) on this date.
+    licenseVerifiedAt: "2026-11-24",
+    licenseVerifiedBy: "font-file-name-table",
+    description: "Marker hand lettering (not thư pháp) for bold short words.",
+    defaultEnabled: false,
   },
   {
     id: "vni-ong-do",

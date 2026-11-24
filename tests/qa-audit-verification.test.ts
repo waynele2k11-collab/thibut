@@ -1871,8 +1871,12 @@ test("QA Round-2 Regression Gate: fonts quarantine & tracing, zero mock/float/he
       "/api/print-master": ["./assets/fonts/**/*"],
       "/api/download": ["./assets/fonts/**/*"],
       "/api/inngest": ["./assets/fonts/**/*"],
+      // Keepsake editor (docs/KEEPSAKE_EDITOR_PLAN.md): the admin page lists the eligible fonts
+      // and the admin-only font route streams them.
+      "/admin/keepsake-editor": ["./assets/fonts/**/*"],
+      "/admin/keepsake-editor/fonts/*": ["./assets/fonts/**/*"],
     },
-    "next.config.ts must trace ./assets/fonts/**/* strictly into /api/print-master, /api/download, and /api/inngest (R-107)"
+    "next.config.ts must trace ./assets/fonts/**/* strictly into /api/print-master, /api/download, /api/inngest and the admin keepsake editor (R-107)"
   );
 
   // 2. R-108 & R-506: Zero MOCK_, aida-public, Number(*Minor), or toFixed(2) anywhere in src/

@@ -107,7 +107,7 @@ test("Track 4: Creator Studio DesignPolicyQuickEditor renders versioned policy t
   assert.match(html, /Policy v2\.0/);
 });
 
-test("Track 5: Static launch readiness audit verifies 14 on-disk OpenType fonts, migrations, and vercel.json", () => {
+test("Track 5: Static launch readiness audit verifies 16 on-disk OpenType fonts, migrations, and vercel.json", () => {
   const checks = runStaticLaunchReadinessAudit(process.cwd(), {
     ...process.env,
     NODE_ENV: "development",
@@ -116,7 +116,7 @@ test("Track 5: Static launch readiness audit verifies 14 on-disk OpenType fonts,
   const fontCheck = checks.find((c) => c.name.includes("Licensed Brush Fonts"));
   assert.ok(fontCheck);
   assert.equal(fontCheck.status, "PASS");
-  assert.match(fontCheck.detail, /14 commercial print-licensed OpenType fonts/);
+  assert.match(fontCheck.detail, /16 commercial print-licensed OpenType fonts/);
 
   const migCheck = checks.find((c) => c.name.includes("Prisma Migrations"));
   assert.ok(migCheck);
