@@ -17,6 +17,7 @@
     "test:e2e": "playwright test",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "node --import ./scripts/test-loader.mjs scripts/seed-catalog.ts",
+    "db:seed:keepsakes": "node --import ./scripts/test-loader.mjs scripts/seed-keepsakes.ts",
     "launch:check": "node --import ./scripts/test-loader.mjs scripts/launch-readiness.ts"
   },
   "dependencies": {

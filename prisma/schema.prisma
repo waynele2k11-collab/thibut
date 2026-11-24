@@ -502,6 +502,10 @@ model Design {
   categoryId  String?
   category    Category?      @relation(fields: [categoryId], references: [id])
 
+  // BRD v1.0 APR-009: concept renders must never be presented as product photographs
+  imageKind        String   @default("CONCEPT_RENDER") // "CONCEPT_RENDER" | "PRODUCT_PHOTO"
+  catalogImageUrls String[] @default([])
+
   versions       DesignVersion[]
   licenses       LicenseOffer[]
   tags           DesignTag[]
@@ -898,8 +902,13 @@ model CatalogProduct {
   name               String
   category           String // "tee" | "hoodie" | "mug" | "canvas" | "tote"
   description        String?
-  status             String  @default("ACTIVE")
+  status             String  @default("ACTIVE") // "DRAFT" | "ACTIVE" | "QUOTE_ONLY" | "INACTIVE"
   defaultMarkupMinor BigInt  @default(0)
+
+  // BRD v1.0 §09: in-house made-to-order products and configurable side pricing
+  fulfillmentMode          String @default("PRINTFUL") // "PRINTFUL" | "IN_HOUSE"
+  sidePricing              String @default("PLACEMENT_FEE") // "PLACEMENT_FEE" | "MULTIPLIER"
+  doubleSidedMultiplierBps Int? // 16000 = double-sided costs 1.6x single-sided
 
   variants       CatalogVariant[]
   designProducts DesignProduct[]
@@ -1101,6 +1110,8 @@ model Order {
   shippingAddressJson     Json?
   stripeCheckoutSessionId String?           @unique
   externalFulfillmentId   String?           @unique
+  trackingNumber          String?
+  trackingCarrier         String?
   currency                String
   status                  OrderStatus       @default(PENDING_PAYMENT)
   paymentStatus           PaymentStatus     @default(PENDING)
