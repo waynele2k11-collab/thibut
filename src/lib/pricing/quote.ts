@@ -73,6 +73,10 @@ export interface QuoteCatalogVariantInput {
   product?: {
     status?: string;
     defaultMarkupMinor?: bigint;
+    /** "PLACEMENT_FEE" (default) or "MULTIPLIER" for made-to-order keepsakes. */
+    sidePricing?: string | null;
+    /** Basis points: 16000 means double-sided costs 1.6x single-sided. */
+    doubleSidedMultiplierBps?: number | null;
   } | null;
   providerVariants?: QuoteProviderVariantInput[];
 }
@@ -416,6 +420,44 @@ function resolveVariantPricing(variant: QuoteCatalogVariantInput | null | undefi
   return { unitFulfillmentCostMinor, unitBaseRetailMinor };
 }
 
+export const SIDE_PRICING_MULTIPLIER = "MULTIPLIER" as const;
+const BPS_DENOMINATOR = 10000n;
+const DOUBLE_SIDED_PLACEMENTS: ReadonlySet<PlacementValue> = new Set<PlacementValue>([
+  "both",
+  "FRONT_AND_BACK",
+]);
+
+/**
+ * Surcharge added to the single-sided unit price for the chosen placement.
+ *
+ * Products with sidePricing "MULTIPLIER" (BRD v1.0 §09) price a double-sided piece as
+ * base x multiplier, so the surcharge is base x (multiplier - 1), rounded half-up to the
+ * cent. Any other placement on such a product is a single side and carries no surcharge.
+ * All other products keep the flat PLACEMENT_FEE_MINOR table.
+ */
+export function resolveSideSurchargeMinor(
+  variant: QuoteCatalogVariantInput | null | undefined,
+  placement: PlacementValue,
+  unitBaseRetailMinor: bigint
+): bigint {
+  if (variant?.product?.sidePricing !== SIDE_PRICING_MULTIPLIER) {
+    return PLACEMENT_FEE_MINOR[placement];
+  }
+  if (!DOUBLE_SIDED_PLACEMENTS.has(placement)) {
+    return 0n;
+  }
+  const bps = variant.product.doubleSidedMultiplierBps;
+  if (bps == null || !Number.isInteger(bps) || bps < 10000 || bps > 30000) {
+    throw new PricingValidationError(
+      "INVALID_SIDE_MULTIPLIER",
+      `CatalogVariant "${variant.id}" needs a double-sided multiplier between 1.0x and 3.0x`
+    );
+  }
+  const doubleSidedMinor =
+    (unitBaseRetailMinor * BigInt(bps) + BPS_DENOMINATOR / 2n) / BPS_DENOMINATOR;
+  return doubleSidedMinor - unitBaseRetailMinor;
+}
+
 /**
  * Authoritative Item Quote (physical CatalogVariant or digital download) (T-200, INV-005, INV-006).
  */
@@ -431,7 +473,6 @@ export function calculateItemQuote(input: ItemQuoteInput): ItemQuote {
   const quantity = validateQuantity(input.quantity ?? 1);
   const qty = BigInt(quantity);
   const placement = parsePlacement(input.placement ?? "front");
-  const placementFeeMinor = PLACEMENT_FEE_MINOR[placement];
   const resolvedShippingMinor =
     input.shippingMinor !== undefined
       ? input.shippingMinor
@@ -450,6 +491,11 @@ export function calculateItemQuote(input: ItemQuoteInput): ItemQuote {
 
   const { unitFulfillmentCostMinor, unitBaseRetailMinor } = resolveVariantPricing(
     input.variant
+  );
+  const placementFeeMinor = resolveSideSurchargeMinor(
+    input.variant,
+    placement,
+    unitBaseRetailMinor
   );
 
   const unitArtworkMinor = resolveLicensePriceMinor(
