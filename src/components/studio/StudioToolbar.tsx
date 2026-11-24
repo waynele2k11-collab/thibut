@@ -35,39 +35,39 @@ export function StudioToolbar({
   onResetTransform,
 }: StudioToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-2 bg-surface-container-lowest/95 backdrop-blur-md border-b border-surface-variant shrink-0 z-10">
+    <div className="flex items-center justify-between gap-2 px-3 sm:px-5 py-2 bg-surface-container-lowest/95 backdrop-blur-md border-b border-surface-variant shrink-0 z-10 overflow-x-auto scrollbar-hide">
       <div
         role="group"
         aria-label="Preview surface"
-        className="inline-flex items-center bg-surface-container-low border border-surface-variant rounded-lg p-0.5"
+        className="inline-flex items-center bg-surface-container-low border border-surface-variant rounded-lg p-0.5 shrink-0"
       >
         <button
           type="button"
           aria-pressed={viewMode === "RAW_ART"}
           onClick={() => onChangeViewMode("RAW_ART")}
-          className={`min-h-9 px-3 py-1.5 rounded font-label-caps text-label-caps uppercase transition-colors motion-reduce:transition-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary ${
+          className={`min-h-9 px-2.5 sm:px-3 py-1.5 rounded font-label-caps text-[11px] sm:text-label-caps uppercase whitespace-nowrap transition-colors motion-reduce:transition-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary ${
             viewMode === "RAW_ART"
               ? "bg-surface-container-lowest text-primary border border-outline-variant"
               : "text-on-surface-variant hover:text-primary"
           }`}
         >
-          Washi Art
+          Washi
         </button>
         <button
           type="button"
           aria-pressed={viewMode === "MOCKUP"}
           onClick={() => onChangeViewMode("MOCKUP")}
-          className={`min-h-9 px-3 py-1.5 rounded font-label-caps text-label-caps uppercase transition-colors motion-reduce:transition-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary ${
+          className={`min-h-9 px-2.5 sm:px-3 py-1.5 rounded font-label-caps text-[11px] sm:text-label-caps uppercase whitespace-nowrap transition-colors motion-reduce:transition-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary ${
             viewMode === "MOCKUP"
               ? "bg-surface-container-lowest text-primary border border-outline-variant"
               : "text-on-surface-variant hover:text-primary"
           }`}
         >
-          On Product
+          Product
         </button>
       </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 shrink-0">
         <div
           role="group"
           aria-label="Calligraphy orientation"

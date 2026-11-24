@@ -49,8 +49,8 @@ export function GalleryFilters({
     const selectedProd = currentProductType ?? "ALL";
 
     return (
-      <div className="flex flex-col gap-4 mb-10">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex flex-col gap-3 mb-8 md:mb-10">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-margin-mobile px-margin-mobile pb-1 sm:flex-wrap sm:mx-0 sm:px-0 sm:pb-0">
           {CATEGORY_TABS.map((tab) => {
             const isActive = tab.id === selectedCat;
             return (
@@ -58,7 +58,7 @@ export function GalleryFilters({
                 key={tab.id}
                 type="button"
                 onClick={() => onCategoryChange(tab.id)}
-                className={`px-4 py-2 rounded-full font-label-caps text-label-caps uppercase transition-colors ${
+                className={`shrink-0 whitespace-nowrap min-h-10 px-4 py-2 rounded-full font-label-caps text-label-caps uppercase transition-colors ${
                   isActive
                     ? "bg-primary text-on-primary"
                     : "bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary"
@@ -70,7 +70,7 @@ export function GalleryFilters({
           })}
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-margin-mobile px-margin-mobile pb-1 sm:flex-wrap sm:mx-0 sm:px-0 sm:pb-0">
           {PRODUCT_TABS.map((tab) => {
             const isActive = tab.id === selectedProd;
             return (
@@ -78,7 +78,7 @@ export function GalleryFilters({
                 key={tab.id}
                 type="button"
                 onClick={() => onProductTypeChange(tab.id)}
-                className={`px-3 py-1.5 rounded font-label-caps text-label-caps uppercase transition-colors ${
+                className={`shrink-0 whitespace-nowrap min-h-9 px-3 py-1.5 rounded font-label-caps text-label-caps uppercase transition-colors ${
                   isActive
                     ? "bg-surface-container-highest border border-primary text-primary"
                     : "bg-surface-container-low border border-surface-variant text-on-surface-variant hover:text-primary"
@@ -105,7 +105,7 @@ export function GalleryFilters({
   };
 
   return (
-    <div className="flex items-center gap-2 flex-wrap mb-2">
+    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-margin-mobile px-margin-mobile pb-2 sm:flex-wrap sm:mx-0 sm:px-0 sm:pb-0 mb-2">
       {FILTERS.map((f) => {
         const isActive =
           f.id === resolvedFilter ||
@@ -115,7 +115,7 @@ export function GalleryFilters({
             key={f.id}
             type="button"
             onClick={() => setFilter(f.id)}
-            className={`px-4 py-2 rounded-full font-label-caps text-label-caps uppercase transition-colors ${
+            className={`shrink-0 whitespace-nowrap min-h-10 px-4 py-2 rounded-full font-label-caps text-label-caps uppercase transition-colors ${
               isActive
                 ? "bg-primary text-on-primary"
                 : "bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary"

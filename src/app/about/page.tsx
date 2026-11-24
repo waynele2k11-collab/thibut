@@ -167,10 +167,10 @@ export default function AboutPage() {
         </h2>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
           <Link
-            href="/create"
+            href="/custom"
             className="inline-flex items-center justify-center bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none"
           >
-            Create Your Thi Bút{" "}
+            Start a Custom Order{" "}
             <ArrowRight className="w-4 h-4 ml-2" aria-hidden="true" />
           </Link>
           <Link

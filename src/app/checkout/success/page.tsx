@@ -175,10 +175,10 @@ export default async function CheckoutSuccessPage({
               Return to Cart
             </Link>
             <Link
-              href="/create"
+              href="/custom"
               className="border border-outline-variant text-on-background px-6 py-3.5 rounded font-label-caps text-label-caps uppercase hover:bg-surface-container-low transition-colors"
             >
-              Open Studio
+              Custom Keepsakes
             </Link>
           </div>
         </main>

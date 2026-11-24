@@ -36,7 +36,7 @@ async function readClientCspViolations(
 }
 
 test.describe("Thi Bút E2E Hydration, CSP & Accessibility Smoke Suite (R-601)", () => {
-  for (const route of ["/", "/auth/login", "/create", "/gallery"]) {
+  for (const route of ["/", "/auth/login", "/custom", "/gallery"]) {
     test(`hydrates ${route} cleanly with zero CSP violations`, async ({
       page,
     }) => {
@@ -50,20 +50,28 @@ test.describe("Thi Bút E2E Hydration, CSP & Accessibility Smoke Suite (R-601)",
     });
   }
 
-  test("home hero input and tabs are interactive after hydration", async ({
+  test("paused Studio routes redirect to the custom keepsake page", async ({
+    page,
+  }) => {
+    await page.goto("/create");
+    await expect(page).toHaveURL(/\/custom$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: /crystal keepsakes/i })
+    ).toBeVisible();
+  });
+
+  test("gallery keepsake price options are interactive after hydration", async ({
     page,
   }) => {
     const runtimeErrors = await attachCspViolationCollector(page);
-    await page.goto("/");
+    await page.goto("/gallery");
 
-    const phraseInput = page.locator("#hero-create-phrase");
-    await expect(phraseInput).toBeVisible();
-    await phraseInput.fill("An Khang");
-    await expect(phraseInput).toHaveValue("An Khang");
+    const card = page.getByRole("article").first();
+    await expect(card.getByText("$109")).toBeVisible();
 
-    const poetryTab = page.getByRole("tab", { name: /poetry/i });
-    await poetryTab.click();
-    await expect(poetryTab).toHaveAttribute("aria-selected", "true");
+    await card.getByText("Double-Sided", { exact: true }).click();
+    await card.getByText("8 × 10 in", { exact: true }).click();
+    await expect(card.getByText("$358")).toBeVisible();
 
     const violations = await readClientCspViolations(page, runtimeErrors);
     expect(violations).toEqual([]);
@@ -108,6 +116,10 @@ test.describe("Thi Bút E2E Hydration, CSP & Accessibility Smoke Suite (R-601)",
     page,
     request,
   }) => {
+    test.fixme(
+      true,
+      "Studio is paused for the MVP: /create redirects to /custom. Re-enable with the Studio."
+    );
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     const downloadSecret = process.env.DOWNLOAD_TOKEN_SECRET;
     test.skip(

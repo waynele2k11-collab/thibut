@@ -53,15 +53,15 @@ export function StudioQuoteFooter({
 
   if (isAdmin) {
     return (
-      <div className="p-4 bg-surface-container-lowest border-t border-surface-variant shrink-0 flex items-center justify-between gap-3">
-        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-          Admin Calligraphy Studio
+      <div className="fixed lg:static bottom-0 left-0 right-0 px-4 py-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] lg:p-4 bg-surface-container-lowest/95 backdrop-blur-md border-t border-surface-variant shrink-0 z-30 flex items-center justify-between gap-3">
+        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant truncate">
+          Admin Studio
         </span>
         <button
           type="button"
           onClick={onSave}
           disabled={isSaving || isLocked}
-          className="min-h-11 px-5 py-2.5 rounded bg-primary text-on-primary hover:bg-secondary hover:text-on-secondary font-label-caps text-label-caps uppercase inline-flex items-center gap-2 transition-colors motion-reduce:transition-none cursor-pointer disabled:opacity-50"
+          className="min-h-11 px-4 sm:px-5 py-2.5 rounded-lg bg-primary text-on-primary hover:bg-secondary hover:text-on-secondary font-label-caps text-label-caps uppercase inline-flex items-center gap-2 transition-colors motion-reduce:transition-none cursor-pointer disabled:opacity-50 shrink-0"
         >
           {isSaving ? (
             <Loader2
@@ -78,7 +78,7 @@ export function StudioQuoteFooter({
   }
 
   return (
-    <div className="bg-surface-container-lowest border-t border-surface-variant px-4 sm:px-6 py-3.5 pb-[calc(env(safe-area-inset-bottom,0px)+14px)] lg:pb-4 shrink-0 z-30 space-y-3">
+    <div className="fixed lg:static bottom-0 left-0 right-0 bg-surface-container-lowest/95 backdrop-blur-md border-t border-surface-variant px-4 sm:px-6 py-2.5 pb-[calc(env(safe-area-inset-bottom,0px)+10px)] lg:py-4 shrink-0 z-30 space-y-2 lg:space-y-2.5">
       {cartConfirmation && (
         <div
           role="status"

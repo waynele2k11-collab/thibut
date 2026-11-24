@@ -12,6 +12,23 @@ const nextConfig: NextConfig = {
     "/api/!(print-master|download|inngest)": ["./assets/fonts/**/*"],
     "/api/*/**": ["./assets/fonts/**/*"],
   },
+  // MVP: the calligraphy Studio and its gallery product pages are paused.
+  // Temporary redirects keep every existing link working; remove to restore.
+  async redirects() {
+    return [
+      { source: "/create", destination: "/custom", permanent: false },
+      { source: "/create/:path*", destination: "/custom", permanent: false },
+      { source: "/gallery/:slug", destination: "/gallery", permanent: false },
+      // Pages that only describe or feed the paused Studio.
+      { source: "/how-it-works", destination: "/custom", permanent: false },
+      ...[
+        "/vietnamese-thu-phap",
+        "/japanese-shodo",
+        "/korean-seoye",
+        "/chinese-shufa",
+      ].map((source) => ({ source, destination: "/custom", permanent: false })),
+    ];
+  },
   async headers() {
     return [
       {

@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -428,4 +430,25 @@ test("UX-04, UX-05 & UX-06: Step panels and StudioQuoteFooter render all 3 Cultu
   assert.match(footerHtml, /Add to Cart — \$42\.98/);
   assert.match(footerHtml, /Checkout Now/);
   assert.match(footerHtml, /Keep Designing/);
+  assert.match(footerHtml, /fixed lg:static bottom-0/);
+
+  // Mobile UX guardrails: 16px (`text-base`) inputs to prevent iOS auto-zoom
+  assert.match(meaningHtml, /<input[^>]*text-base[^>]*id="studio-canvas-words"/);
+  assert.match(brushHtml, /<input[^>]*text-base[^>]*id="studio-seal-text"/);
+  assert.match(brushHtml, /<select[^>]*id="studio-seal-font"[^>]*text-base/);
+
+  // Mobile workspace uses natural full-page scrolling + sticky live preview ribbon + single-row toolbar
+  const workspaceSource = fs.readFileSync(
+    path.join(process.cwd(), "src/components/studio/StudioWorkspace.tsx"),
+    "utf8"
+  );
+  assert.match(workspaceSource, /lg:overflow-hidden/);
+  assert.match(workspaceSource, /aria-label="Live calligraphy preview"/);
+  assert.match(workspaceSource, /mobileCanvasExpanded/);
+
+  const toolbarSource = fs.readFileSync(
+    path.join(process.cwd(), "src/components/studio/StudioToolbar.tsx"),
+    "utf8"
+  );
+  assert.match(toolbarSource, /overflow-x-auto/);
 });

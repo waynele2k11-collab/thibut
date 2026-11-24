@@ -39,7 +39,7 @@ export function HeroCreateInput() {
     <div className="flex flex-col items-center w-full">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col sm:flex-row w-full max-w-xl mx-auto gap-3 mt-6 mb-4 relative z-30"
+        className="flex flex-col sm:flex-row w-full max-w-xl mx-auto gap-2.5 sm:gap-3 mt-4 sm:mt-6 mb-4 relative z-30"
       >
         <label htmlFor="hero-create-phrase" className="sr-only">
           Enter a name, word, or quote to personalize
@@ -51,11 +51,11 @@ export function HeroCreateInput() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={PLACEHOLDERS[placeholderIndex]}
-          className="grow px-5 py-4 rounded border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant font-body-md text-body-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary transition-colors motion-reduce:transition-none"
+          className="grow px-4 sm:px-5 py-3.5 sm:py-4 rounded border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant font-body-md text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary transition-colors motion-reduce:transition-none"
         />
         <button
           type="submit"
-          className="px-8 py-4 bg-primary text-on-primary hover:bg-secondary hover:text-on-secondary font-label-caps text-label-caps uppercase rounded transition-colors duration-300 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+          className="min-h-12 px-8 py-3.5 sm:py-4 bg-primary text-on-primary hover:bg-secondary hover:text-on-secondary font-label-caps text-label-caps uppercase rounded transition-colors duration-300 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
         >
           <span className="hidden sm:inline">Create</span>
           <span className="sm:hidden">Create Your Thi Bút</span>

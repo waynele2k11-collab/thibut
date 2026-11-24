@@ -285,7 +285,10 @@ export const MainStageCanvas = forwardRef<
 
     const applyResponsiveDimensions = () => {
       const rect = container.getBoundingClientRect();
-      const pad = rect.width < 640 ? 16 : 40;
+      if (rect.width < 40 || rect.height < 40) {
+        return;
+      }
+      const pad = rect.width < 640 ? 12 : 36;
       const availW = Math.max(MIN_DISPLAY_SIZE, rect.width - pad);
       const availH = Math.max(MIN_DISPLAY_SIZE, rect.height - pad);
       const displaySize = Math.round(

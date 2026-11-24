@@ -3,7 +3,7 @@ import Link from "next/link";
 export function Footer() {
   const links = [
     { label: "Cultural Guide", href: "/cultural-guide" },
-    { label: "How It Works", href: "/how-it-works" },
+    { label: "Custom Keepsakes", href: "/custom" },
     { label: "Licensing", href: "/licensing" },
     { label: "Artists", href: "/artists" },
     { label: "Legal", href: "/legal" },

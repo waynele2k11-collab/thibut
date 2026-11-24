@@ -23,10 +23,10 @@ export default function NotFound() {
             Explore Thi Bút
           </Link>
           <Link
-            href="/create"
+            href="/custom"
             className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 rounded border border-outline text-primary font-label-caps text-label-caps uppercase hover:bg-surface-container-high transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
           >
-            Create Artwork
+            Custom Keepsakes
             <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </Link>
         </div>

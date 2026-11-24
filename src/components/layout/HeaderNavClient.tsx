@@ -11,10 +11,9 @@ export interface NavLinkItem {
 }
 
 const DEFAULT_NAV_LINKS: readonly NavLinkItem[] = [
-  { href: "/", label: "Explore" },
-  { href: "/create", label: "Create" },
+  { href: "/", label: "Home" },
+  { href: "/custom", label: "Custom Keepsakes" },
   { href: "/gallery", label: "Gallery" },
-  { href: "/how-it-works", label: "How It Works" },
 ];
 
 export interface HeaderNavClientProps {

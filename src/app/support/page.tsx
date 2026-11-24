@@ -86,17 +86,17 @@ export default function SupportPage() {
                 <MessageSquare className="w-6 h-6" aria-hidden="true" />
               </div>
               <h2 className="font-headline-sm text-headline-sm text-primary mb-3">
-                Visit Help Center
+                How Custom Orders Work
               </h2>
               <p className="font-body-md text-sm text-on-surface-variant mb-8">
-                Browse our library of tutorials, calligraphy guides, print sizing charts, and FAQs.
+                See the six steps from sending your photos to approval and shipping, with sizes and prices.
               </p>
             </div>
             <Link
-              href="/how-it-works"
+              href="/custom"
               className="inline-flex items-center gap-2 font-label-caps text-label-caps uppercase text-primary hover:text-secondary transition-colors motion-reduce:transition-none"
             >
-              Visit Help Center{" "}
+              See the Process{" "}
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Link>
           </Card>

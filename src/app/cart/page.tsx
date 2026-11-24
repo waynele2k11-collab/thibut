@@ -194,14 +194,14 @@ export default async function CartPage() {
           Your cart is empty
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mb-8 text-center max-w-md">
-          You have not added any personalized calligraphy pieces yet. Craft an
-          original work in the Studio or explore curated editions.
+          Custom keepsakes are ordered by email, so nothing is added here.
+          See how a custom order works or browse the sample designs.
         </p>
         <Link
-          href="/create"
+          href="/custom"
           className="inline-flex items-center gap-2 bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors duration-300 motion-reduce:transition-none"
         >
-          Start Creating <ArrowRight className="w-4 h-4" aria-hidden="true" />
+          Start a Custom Order <ArrowRight className="w-4 h-4" aria-hidden="true" />
         </Link>
         <div className="mt-5 flex items-center gap-6">
           <Link
@@ -259,10 +259,10 @@ export default async function CartPage() {
             </p>
           </div>
           <Link
-            href="/create"
+            href="/custom"
             className="font-label-caps text-label-caps uppercase text-secondary hover:underline"
           >
-            + Create Another Piece
+            + Order a Custom Keepsake
           </Link>
         </header>
 

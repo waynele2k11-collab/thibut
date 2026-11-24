@@ -195,7 +195,7 @@ export function StepBrushPanel({
                 aria-checked={isSelected}
                 disabled={locked}
                 onClick={() => onSelectFontFamily(canonicalValue)}
-                className={`p-3 text-left rounded-lg border transition-colors motion-reduce:transition-none bg-surface-container-lowest cursor-pointer disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary ${
+                className={`min-w-0 p-3 text-left rounded-lg border transition-colors motion-reduce:transition-none bg-surface-container-lowest cursor-pointer disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary ${
                   isSelected
                     ? "border-2 border-primary"
                     : "border-surface-variant hover:border-outline"
@@ -446,7 +446,7 @@ export function StepBrushPanel({
                   maxLength={3}
                   value={sealText}
                   onChange={(e) => onChangeSealText(e.target.value)}
-                  className="h-10 px-2.5 py-2 text-sm bg-surface-container-lowest"
+                  className="h-11 px-2.5 py-2 text-base sm:text-sm bg-surface-container-lowest"
                 />
               </div>
               <div>
@@ -461,7 +461,7 @@ export function StepBrushPanel({
                   disabled={locked}
                   value={sealFontFamily}
                   onChange={(e) => onChangeSealFontFamily(e.target.value)}
-                  className="w-full h-10 px-2.5 py-2 rounded border border-outline-variant text-sm text-on-surface bg-surface-container-lowest cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary disabled:opacity-60"
+                  className="w-full h-11 px-2.5 py-2 rounded border border-outline-variant text-base sm:text-sm text-on-surface bg-surface-container-lowest cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary disabled:opacity-60"
                 >
                   {LICENSED_SEAL_FONTS.map((f) => (
                     <option key={f.name} value={f.name}>
@@ -472,7 +472,7 @@ export function StepBrushPanel({
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1 sm:mx-0 sm:px-0 sm:pb-0 sm:flex-wrap">
               {SEAL_STAMP_CHIPS.map((stamp) => (
                 <button
                   key={stamp.glyph}
@@ -480,7 +480,7 @@ export function StepBrushPanel({
                   disabled={locked}
                   lang={stamp.lang}
                   onClick={() => onChangeSealText(stamp.glyph)}
-                  className={`min-h-8 px-2.5 py-1 rounded border text-xs transition-colors motion-reduce:transition-none cursor-pointer ${
+                  className={`shrink-0 whitespace-nowrap min-h-9 px-2.5 py-1 rounded border text-xs transition-colors motion-reduce:transition-none cursor-pointer ${
                     sealText === stamp.glyph
                       ? "bg-secondary text-on-secondary border-secondary"
                       : "bg-surface-container-lowest text-on-surface-variant border-surface-variant hover:border-primary hover:text-primary"

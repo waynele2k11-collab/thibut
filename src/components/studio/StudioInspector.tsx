@@ -162,7 +162,7 @@ export function StudioInspector({
   onApplyInspiration,
 }: StudioInspectorProps) {
   return (
-    <div className="w-full h-full min-h-0 bg-surface-container-low lg:border-l border-surface-variant flex flex-col">
+    <div className="w-full lg:h-full lg:min-h-0 bg-surface-container-low lg:border-l border-surface-variant flex flex-col">
       <Tabs
         value={activeStep}
         onValueChange={(next) => {
@@ -170,15 +170,15 @@ export function StudioInspector({
             onChangeStep(next);
           }
         }}
-        className="flex-1 min-h-0 flex flex-col"
+        className="flex-1 lg:min-h-0 flex flex-col"
       >
         <div className="px-4 sm:px-6 pt-3 pb-3 bg-surface-container-lowest border-b border-surface-variant shrink-0 space-y-2.5">
-          <div className="hidden lg:flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2">
             <div>
-              <h1 className="font-headline-sm text-lg text-on-background leading-tight">
+              <h1 className="font-headline-sm text-base lg:text-lg text-on-background leading-tight">
                 Personalization Studio
               </h1>
-              <p className="font-body-md text-xs text-on-surface-variant">
+              <p className="hidden lg:block font-body-md text-xs text-on-surface-variant">
                 {locked
                   ? "Session locked after checkout."
                   : "Meaning before strokes — craft your custom piece."}
@@ -206,19 +206,19 @@ export function StudioInspector({
             aria-label="Personalization steps"
             className="w-full grid grid-cols-3"
           >
-            <TabsTrigger value="MEANING" className="min-h-10 px-2 text-[11px]">
+            <TabsTrigger value="MEANING" className="min-h-11 px-1.5 text-[11px]">
               1. Meaning
             </TabsTrigger>
-            <TabsTrigger value="BRUSH" className="min-h-10 px-2 text-[11px]">
+            <TabsTrigger value="BRUSH" className="min-h-11 px-1.5 text-[11px]">
               2. Brush
             </TabsTrigger>
-            <TabsTrigger value="PRODUCT" className="min-h-10 px-2 text-[11px]">
+            <TabsTrigger value="PRODUCT" className="min-h-11 px-1.5 text-[11px]">
               3. Product
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-5">
+        <div className="flex-1 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain px-4 sm:px-6 py-5 pb-36 lg:pb-6">
           <TabsContent value="MEANING" className="mt-0">
             <StepMeaningPanel
               locked={locked}

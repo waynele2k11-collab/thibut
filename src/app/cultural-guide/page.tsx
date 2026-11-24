@@ -111,16 +111,16 @@ export default function CulturalGuidePage() {
 
         <div className="text-center pt-10 border-t border-surface-variant max-w-xl mx-auto">
           <h3 className="font-headline-sm text-headline-sm text-primary mb-4">
-            Experience Your Words in Ink
+            Bring Your Words Into a Keepsake
           </h3>
           <p className="font-body-md text-body-md text-on-surface-variant mb-8">
-            Discover how your personal name or meaningful quote renders across calligraphy schools.
+            Our designers set your names, dates and chosen wording into a custom crystal keepsake.
           </p>
           <Link
-            href="/create"
+            href="/custom"
             className="inline-flex items-center gap-2 bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none"
           >
-            Create Your Thi Bút <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            Start a Custom Order <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </Link>
         </div>
       </div>

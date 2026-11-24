@@ -43,10 +43,10 @@ export function EmptyCheckoutView({
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
           <Link
-            href="/create"
+            href="/custom"
             className="bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none"
           >
-            Open Calligraphy Studio
+            Custom Keepsakes
           </Link>
           <Link
             href="/cart"

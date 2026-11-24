@@ -2,8 +2,15 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle2, Lock } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Lock,
+} from "lucide-react";
 import { ensureStudioSessionAction } from "@/app/actions/composition";
 import {
   generateInstantSvgString,
@@ -17,6 +24,7 @@ import type { DesignComposition } from "@/lib/print/types";
 import {
   DEFAULT_STUDIO_FONT_OPTIONS,
   isSameStudioFont,
+  resolveScriptLang,
   resolveTraditionFontPairing,
   type GalleryRemixContext,
   type StudioFontOption,
@@ -103,6 +111,7 @@ function StudioWorkspaceContainer({
 }) {
   const router = useRouter();
   const [state, setState] = useStudioStore();
+  const [mobileCanvasExpanded, setMobileCanvasExpanded] = useState(false);
   const canvasRef = useRef<MainStageCanvasRef>(null);
 
   const {
@@ -235,11 +244,15 @@ function StudioWorkspaceContainer({
           ? { viewMode: "MOCKUP" as const }
           : {}),
       }));
+      setMobileCanvasExpanded(nextStep === "PRODUCT");
+      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     },
     [products.length, setState]
   );
 
-  // Strictly memoized calligraphy SVG (TB-CALLI-005)
+  // Strictly memoized calligraphy SVG for Fabric stage (TB-CALLI-005)
   const artworkSvgString = useMemo(
     () =>
       generateInstantSvgString({
@@ -267,6 +280,34 @@ function StudioWorkspaceContainer({
     [artworkSvgString]
   );
 
+  // Live lightweight preview SVG for the compact mobile preview ribbon (reflects real ink + seal)
+  const mobilePreviewSvgUri = useMemo(() => {
+    const svg = generateInstantSvgString({
+      text: renderedText,
+      tradition: state.tradition,
+      fontFamily: state.fontFamily,
+      layout: state.layoutMode,
+      strokePreset: state.strokePreset,
+      variationType: state.variationType,
+      inkColor: state.inkColor,
+      hasSeal: state.hasSeal,
+      sealText: state.sealText,
+      sealFontFamily: state.sealFontFamily,
+    });
+    return `data:image/svg+xml;base64,${safeBase64Encode(svg)}`;
+  }, [
+    renderedText,
+    state.tradition,
+    state.fontFamily,
+    state.layoutMode,
+    state.strokePreset,
+    state.variationType,
+    state.inkColor,
+    state.hasSeal,
+    state.sealText,
+    state.sealFontFamily,
+  ]);
+
   const mockupImage =
     effectiveVariant?.mockupImageUrl ||
     selectedProduct?.imageUrl ||
@@ -276,15 +317,70 @@ function StudioWorkspaceContainer({
     ? `/api/uploads/background?assetId=${encodeURIComponent(state.backgroundAssetId)}`
     : undefined;
 
+  const showFullStageOnMobile = mobileCanvasExpanded;
+  const scriptLang = resolveScriptLang(state.tradition);
+
   return (
     <div
       className={
         isAdmin
-          ? "flex flex-col lg:grid lg:grid-cols-[1fr_430px] h-dvh w-full bg-background font-body-md text-on-background overflow-hidden"
-          : "flex flex-col lg:grid lg:grid-cols-[1fr_430px] h-[calc(100dvh-73px)] min-h-[560px] w-full bg-background font-body-md text-on-background overflow-hidden"
+          ? "flex flex-col lg:grid lg:grid-cols-[1fr_430px] min-h-dvh lg:h-dvh w-full bg-background font-body-md text-on-background lg:overflow-hidden"
+          : "flex flex-col lg:grid lg:grid-cols-[1fr_430px] min-h-[calc(100dvh-57px)] lg:h-[calc(100dvh-73px)] lg:min-h-[560px] w-full bg-background font-body-md text-on-background lg:overflow-hidden"
       }
     >
-      <div className="relative flex flex-col bg-background w-full overflow-hidden h-[38%] min-h-[225px] max-h-[340px] lg:max-h-none lg:h-full border-b lg:border-b-0 border-surface-variant shrink-0">
+      {/* Mobile Compact Live Preview Ribbon (Always accessible at top on mobile — prevents cramped scroll keyhole) */}
+      <div
+        role="region"
+        aria-label="Live calligraphy preview"
+        className="lg:hidden sticky top-[57px] z-20 bg-surface-container-lowest/95 backdrop-blur-md border-b border-surface-variant px-4 py-2 flex items-center justify-between gap-3"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-12 h-12 rounded-lg bg-background border border-surface-variant p-1 flex items-center justify-center shrink-0 overflow-hidden relative">
+            <Image
+              src={mobilePreviewSvgUri}
+              alt={renderedText}
+              width={48}
+              height={48}
+              unoptimized
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <div className="min-w-0">
+            <p
+              lang={scriptLang}
+              className="font-headline-sm text-base text-primary truncate leading-tight"
+            >
+              {culturalInsight.renderedText}
+            </p>
+            <p className="font-body-md text-xs text-on-surface-variant truncate mt-0.5">
+              {culturalInsight.romanization ||
+                culturalInsight.meaning ||
+                culturalInsight.typeLabel}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setMobileCanvasExpanded((prev) => !prev)}
+          aria-expanded={showFullStageOnMobile}
+          className="shrink-0 min-h-11 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-low text-on-background font-label-caps text-[10px] uppercase inline-flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+        >
+          <span>{showFullStageOnMobile ? "Hide Stage" : "Canvas"}</span>
+          {showFullStageOnMobile ? (
+            <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
+          ) : (
+            <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+          )}
+        </button>
+      </div>
+
+      {/* Main Interactive Stage (Always visible on Desktop; full unclipped square card on Mobile Step 3 or when expanded) */}
+      <div
+        className={`${
+          showFullStageOnMobile ? "flex" : "hidden lg:flex"
+        } relative flex-col bg-background w-full lg:h-full border-b lg:border-b-0 border-surface-variant shrink-0 lg:overflow-hidden`}
+      >
         <StudioToolbar
           isLocked={state.isLocked}
           viewMode={state.viewMode}
@@ -348,7 +444,7 @@ function StudioWorkspaceContainer({
           )}
         </div>
 
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="w-full aspect-square max-h-[380px] lg:max-h-none lg:aspect-auto lg:flex-1 lg:min-h-0 overflow-hidden">
           <LazyMainStageCanvas
             stageRef={canvasRef}
             viewMode={state.viewMode}
@@ -371,16 +467,19 @@ function StudioWorkspaceContainer({
           />
         </div>
 
-        <CulturalMeaningBar
-          insight={culturalInsight}
-          tradition={state.tradition}
-          isAnalyzing={isAnalyzing}
-          activeStep={state.activeStep}
-          onJumpToMeaning={() => handleStepChange("MEANING")}
-        />
+        <div className="hidden lg:block">
+          <CulturalMeaningBar
+            insight={culturalInsight}
+            tradition={state.tradition}
+            isAnalyzing={isAnalyzing}
+            activeStep={state.activeStep}
+            onJumpToMeaning={() => handleStepChange("MEANING")}
+          />
+        </div>
       </div>
 
-      <div className="flex-1 min-h-0 lg:h-full relative z-20 w-full">
+      {/* Unified Inspector + Sticky Quote Bar */}
+      <div className="flex-1 lg:min-h-0 lg:h-full relative z-10 w-full">
         <StudioInspector
           isAdmin={isAdmin}
           locked={state.isLocked}

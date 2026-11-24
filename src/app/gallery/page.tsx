@@ -1,128 +1,63 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Paintbrush } from "lucide-react";
-import prisma from "@/lib/prisma";
-import { GalleryCard, type GalleryCardItem } from "@/components/gallery/GalleryCard";
-import { GalleryFilters } from "@/components/gallery/GalleryFilters";
+import { ArrowRight } from "lucide-react";
+import { KeepsakeSampleCard } from "@/components/custom/KeepsakeSampleCard";
+import { KEEPSAKE_FROM_PRICE, KEEPSAKE_SAMPLES } from "@/lib/custom/keepsakes";
 
 export const metadata: Metadata = {
-  title: "Gallery — Vietnamese Calligraphy Art",
-  description:
-    "Browse the Thi Bút Gallery of personalized Vietnamese Thư Pháp brush calligraphy. Buy finished designs or use them as inspiration in the Studio.",
+  title: "Gallery — Custom Crystal Keepsakes",
+  description: `Sample Thi Bút crystal keepsakes for weddings and family, with prices by size. Each piece is designed from your own photos. From ${KEEPSAKE_FROM_PRICE}.`,
+  alternates: { canonical: "/gallery" },
 };
 
-const FILTER_TO_CATEGORY: Record<string, string> = {
-  names: "NAME",
-  quotes: "POETRY",
-  heritage: "HERITAGE",
-  abstract: "ABSTRACT",
-};
-
-export default async function GalleryPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ filter?: string }>;
-}) {
-  const { filter } = await searchParams;
-  const activeFilter = filter ?? "all";
-  const mappedCategory = FILTER_TO_CATEGORY[activeFilter];
-
-  const items = await prisma.galleryItem.findMany({
-    where: {
-      published: true,
-      ...(mappedCategory ? { category: mappedCategory } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const serializedItems: GalleryCardItem[] = items.map((item) => ({
-    id: item.id,
-    slug: item.slug,
-    title: item.title,
-    subtitle: item.subtitle,
-    description: item.description,
-    sourceText: item.sourceText,
-    sourceLanguage: item.sourceLanguage,
-    tradition: item.tradition,
-    artworkId: item.artworkId,
-    artworkPreviewUrl: item.artworkPreviewUrl,
-    productionArtworkUrl: item.productionArtworkUrl,
-    productType: item.productType,
-    productName: item.productName,
-    productImageUrl: item.productImageUrl,
-    listedPriceMinor: item.listedPriceMinor.toString(),
-    currency: item.currency,
-    requiresSize: item.requiresSize,
-    requiresColor: item.requiresColor,
-    defaultColor: item.defaultColor,
-    availableSizes: item.availableSizes,
-    availableColors: item.availableColors,
-    mockupTransform: item.mockupTransform,
-    category: item.category,
-    productCategory: item.productCategory,
-    published: item.published,
-    purchasable: item.purchasable,
-  }));
-
+// MVP: the gallery shows custom keepsake samples only. The calligraphy
+// product listings (GalleryCard / GalleryFilters, backed by the galleryItem
+// table) are paused, not deleted.
+export default function GalleryPage() {
   return (
-    <div className="w-full flex flex-col bg-background min-h-screen pb-24">
-      <section className="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pt-16 pb-10 flex flex-col items-center text-center gap-3">
+    <div className="w-full flex flex-col bg-background min-h-screen pb-16 md:pb-24">
+      <section className="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pt-8 md:pt-16 pb-8 md:pb-12 flex flex-col items-center text-center gap-3">
         <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-          Vietnamese <span lang="vi">Thư Pháp</span>
+          Custom Crystal Keepsakes
         </span>
         <h1 className="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-background">
           The Gallery
         </h1>
         <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
-          Every piece is a starting point.{" "}
-          <strong className="text-on-background">Personalize any design</strong>{" "}
-          in the Studio — or buy it as-is.
+          Sample designs to start from.{" "}
+          <strong className="text-on-background">
+            Yours is made from your own photos and words
+          </strong>
+          , and nothing is produced until you approve the proof.
         </p>
-
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-label-caps text-label-caps text-on-surface-variant mt-1">
-          <span>4.9 Rating</span>
-          <span className="opacity-30" aria-hidden="true">
-            &middot;
-          </span>
-          <span>Printed in USA</span>
-          <span className="opacity-30" aria-hidden="true">
-            &middot;
-          </span>
-          <span>300 DPI Master</span>
-        </div>
       </section>
 
       <section className="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-        <GalleryFilters activeFilter={activeFilter} />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-gutter">
+          {KEEPSAKE_SAMPLES.map((sample, index) => (
+            <KeepsakeSampleCard
+              key={sample.id}
+              sample={sample}
+              priority={index === 0}
+            />
+          ))}
+        </div>
 
-        {serializedItems.length === 0 ? (
-          <div className="w-full flex flex-col items-center justify-center py-24 gap-6 text-center">
-            <div className="w-20 h-20 rounded-lg bg-surface-container-low border border-surface-variant flex items-center justify-center">
-              <Paintbrush className="w-8 h-8 text-on-surface-variant" aria-hidden="true" />
-            </div>
-            <div>
-              <h2 className="font-headline-sm text-headline-sm text-on-background mb-2">
-                Gallery coming soon
-              </h2>
-              <p className="font-body-md text-body-md text-on-surface-variant max-w-sm">
-                Our artists are crafting the first pieces now. Be the first to
-                personalize your own design in the Studio.
-              </p>
-            </div>
-            <Link
-              href="/create"
-              className="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none"
-            >
-              Start in Studio <ArrowRight className="w-4 h-4" aria-hidden="true" />
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter mt-6">
-            {serializedItems.map((item) => (
-              <GalleryCard key={item.id} item={item} />
-            ))}
-          </div>
-        )}
+        <p className="font-body-md text-body-md text-on-surface-variant text-center mt-8 max-w-2xl mx-auto">
+          Prices include custom design, a digital proof and one revision round.
+          Shipping is quoted with your order. Samples are illustrations; your
+          finished piece uses your own photos.
+        </p>
+
+        <div className="flex justify-center mt-8">
+          <Link
+            href="/custom"
+            className="inline-flex items-center justify-center gap-2 min-h-12 border border-outline text-primary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-surface-container-high transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+          >
+            How a Custom Order Works
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
+          </Link>
+        </div>
       </section>
     </div>
   );

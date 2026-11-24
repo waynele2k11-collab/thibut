@@ -203,14 +203,14 @@ export default async function BuyerOrdersPage() {
               No orders in this collection yet
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-md">
-              Once you commission a physical calligraphy piece or a 300 DPI Digital Master, your fulfillment timeline and download links appear here.
+              Custom keepsake orders are handled by email for now, so they do not appear here yet. Earlier Studio orders and their download links are listed on this page.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <Link
-                href="/create"
+                href="/custom"
                 className="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3.5 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none"
               >
-                Open Personalization Studio
+                Start a Custom Order
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
               <Link

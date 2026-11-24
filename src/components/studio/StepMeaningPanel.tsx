@@ -256,7 +256,10 @@ export function StepMeaningPanel({
           }
         />
 
-        <div className="mt-2.5 flex flex-wrap gap-1.5" aria-label="Curated phrase prompts">
+        <div
+          className="mt-2.5 flex items-center gap-1.5 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1 sm:mx-0 sm:px-0 sm:pb-0 sm:flex-wrap"
+          aria-label="Curated phrase prompts"
+        >
           {INSPIRATION_CHIPS.map((chip) => (
             <button
               key={chip.label}
@@ -264,7 +267,7 @@ export function StepMeaningPanel({
               disabled={locked}
               lang={chip.lang}
               onClick={() => onApplyInspiration(chip)}
-              className="min-h-8 px-2.5 py-1 rounded border border-surface-variant bg-surface-container-lowest text-xs text-on-surface-variant hover:border-primary hover:text-primary transition-colors motion-reduce:transition-none cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+              className="shrink-0 whitespace-nowrap min-h-9 px-3 py-1.5 rounded-full sm:rounded border border-surface-variant bg-surface-container-lowest text-xs text-on-surface-variant hover:border-primary hover:text-primary transition-colors motion-reduce:transition-none cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
             >
               {chip.label}
             </button>
@@ -291,7 +294,7 @@ export function StepMeaningPanel({
                 aria-checked={selected}
                 disabled={locked}
                 onClick={() => onChangeTradition(card.value)}
-                className={`p-3 rounded-lg border text-left transition-colors motion-reduce:transition-none cursor-pointer disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary ${
+                className={`min-w-0 p-3 rounded-lg border text-left transition-colors motion-reduce:transition-none cursor-pointer disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary ${
                   selected
                     ? "bg-surface-container-lowest border-2 border-primary"
                     : "bg-surface-container-lowest border-surface-variant hover:border-outline"
@@ -352,13 +355,13 @@ export function StepMeaningPanel({
           }}
         >
           <TabsList aria-label="Cultural interpretation mode" className="w-full grid grid-cols-3">
-            <TabsTrigger value="KEEP_ORIGINAL" disabled={locked} className="px-2 min-h-10">
+            <TabsTrigger value="KEEP_ORIGINAL" disabled={locked} className="px-2 min-h-11">
               Exact
             </TabsTrigger>
-            <TabsTrigger value="MATCH_SOUND" disabled={locked} className="px-2 min-h-10">
+            <TabsTrigger value="MATCH_SOUND" disabled={locked} className="px-2 min-h-11">
               Phonetic
             </TabsTrigger>
-            <TabsTrigger value="TRANSLATE_MEANING" disabled={locked} className="px-2 min-h-10">
+            <TabsTrigger value="TRANSLATE_MEANING" disabled={locked} className="px-2 min-h-11">
               Meaning
             </TabsTrigger>
           </TabsList>

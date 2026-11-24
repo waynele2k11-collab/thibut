@@ -93,10 +93,18 @@ export function StepProductPanel({
             }}
           >
             <TabsList aria-label="Fulfillment format" className="w-full grid grid-cols-2">
-              <TabsTrigger value="PHYSICAL" disabled={locked} className="min-h-10 px-2">
+              <TabsTrigger
+                value="PHYSICAL"
+                disabled={locked}
+                className="min-h-11 px-1.5 sm:px-2 text-[11px] sm:text-label-caps leading-tight whitespace-nowrap"
+              >
                 Physical Medium
               </TabsTrigger>
-              <TabsTrigger value="DIGITAL" disabled={locked} className="min-h-10 px-2">
+              <TabsTrigger
+                value="DIGITAL"
+                disabled={locked}
+                className="min-h-11 px-1.5 sm:px-2 text-[11px] sm:text-label-caps leading-tight whitespace-nowrap"
+              >
                 Digital Master · {digitalPriceFormatted}
               </TabsTrigger>
             </TabsList>
@@ -188,7 +196,7 @@ export function StepProductPanel({
               )}
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-hide">
+            <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
               {products.slice(0, 5).map((product) => {
                 const isSelected = product.id === selectedProduct.id;
                 return (
