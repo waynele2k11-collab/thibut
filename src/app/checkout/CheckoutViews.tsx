@@ -263,6 +263,9 @@ export function OrderSummaryCard({
   allDigital: boolean;
   checkoutPayload: CheckoutRequestPayload | null;
 }) {
+  // Buy Now catalog items carry no artwork royalty or personalization fee.
+  const isCatalogOnly =
+    !allDigital && artworkTotalMinor === 0n && personalizationTotalMinor === 0n;
   return (
     <Card className="p-6 md:p-8 flex flex-col gap-5">
       <h2 className="font-headline-sm text-headline-sm text-on-background">
@@ -270,14 +273,16 @@ export function OrderSummaryCard({
       </h2>
 
       <div className="flex flex-col gap-3 border-b border-surface-variant pb-5">
-        <div className="flex justify-between items-center">
-          <span className="font-body-md text-body-md text-on-surface-variant">
-            Artwork License Royalty
-          </span>
-          <span className="font-body-md text-body-md text-on-background">
-            {formatUsdMinor(artworkTotalMinor)}
-          </span>
-        </div>
+        {!isCatalogOnly && (
+          <div className="flex justify-between items-center">
+            <span className="font-body-md text-body-md text-on-surface-variant">
+              Artwork License Royalty
+            </span>
+            <span className="font-body-md text-body-md text-on-background">
+              {formatUsdMinor(artworkTotalMinor)}
+            </span>
+          </div>
+        )}
 
         {personalizationTotalMinor > 0n && (
           <div className="flex justify-between items-center">
@@ -294,7 +299,9 @@ export function OrderSummaryCard({
           <span className="font-body-md text-body-md text-on-surface-variant">
             {allDigital
               ? "High-Res Digital Master (300 DPI)"
-              : "Merchandise & Print Production"}
+              : isCatalogOnly
+                ? "Made-to-order items"
+                : "Merchandise & Print Production"}
           </span>
           <span className="font-body-md text-body-md text-on-background">
             {formatUsdMinor(productTotalMinor)}
@@ -343,7 +350,9 @@ export function OrderSummaryCard({
       </div>
 
       <p className="font-label-caps text-[11px] text-on-surface-variant text-center leading-relaxed">
-        By completing this purchase, your personalization version and license terms are permanently frozen on your order record and cannot be altered after checkout.
+        {isCatalogOnly
+          ? "Each piece is made to order. Production begins after payment, and you will receive tracking details when it ships."
+          : "By completing this purchase, your personalization version and license terms are permanently frozen on your order record and cannot be altered after checkout."}
       </p>
     </Card>
   );

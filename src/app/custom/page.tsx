@@ -12,24 +12,29 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { orderMailto } from "@/lib/catalog/contact";
+import { RESIN_KEEPSAKE_PRODUCT_SLUG } from "@/lib/catalog/divisions";
 import {
-  KEEPSAKE_FROM_PRICE,
-  KEEPSAKE_SIZES,
-  formatKeepsakePrice,
-  keepsakeOrderMailto,
-  keepsakePriceCents,
-} from "@/lib/custom/keepsakes";
+  getCatalogDesign,
+  getKeepsakePriceTable,
+} from "@/lib/catalog/keepsakeCatalog";
 
 export const metadata: Metadata = {
-  title: "Custom Crystal Keepsakes — Your Photo, Our Design, Your Approval",
+  title: "Custom Design — Your Photo, Our Design, Your Approval",
   description:
-    "Send your photos and wording. A Thi Bút designer composes a personalized crystal-look keepsake, you approve the proof, then we produce and ship it. From $89.",
+    "Send your photos and wording. A ThiBút designer composes a personalized crystal-look resin keepsake, you approve the proof, then we produce and ship it.",
   alternates: { canonical: "/custom" },
 };
 
-const ORDER_EMAIL = keepsakeOrderMailto();
+const ORDER_SUBJECT = "Custom Design Order";
 
-const FORMATS = [
+const FORMATS: {
+  name: string;
+  price: string | null;
+  priceNote: string;
+  summary: string;
+  points: string[];
+}[] = [
   {
     name: "Single-Sided",
     price: "1×",
@@ -43,7 +48,7 @@ const FORMATS = [
   },
   {
     name: "Double-Sided",
-    price: "1.8×",
+    price: null,
     priceNote: "Of the single-sided price for the same size",
     summary: "Two custom designs, front and back.",
     points: [
@@ -52,7 +57,7 @@ const FORMATS = [
       "Digital proof of both sides before production",
     ],
   },
-] as const;
+];
 
 const OCCASIONS = ["Wedding", "Family", "Memorial", "Another occasion"] as const;
 
@@ -97,11 +102,25 @@ const STEPS = [
     title: "Production and shipping",
     icon: PackageCheck,
     description:
-      "Only approved artwork goes to printing and resin fabrication. Every piece is quality-checked before it ships.",
+      "Only approved artwork goes to film printing and resin casting. Every piece is quality-checked before it ships.",
   },
 ] as const;
 
-export default function CustomKeepsakePage() {
+export default async function CustomKeepsakePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ design?: string }>;
+}) {
+  const { design: designSlug } = await searchParams;
+  const [priceTable, inspiration] = await Promise.all([
+    getKeepsakePriceTable(RESIN_KEEPSAKE_PRODUCT_SLUG),
+    designSlug ? getCatalogDesign(designSlug) : Promise.resolve(null),
+  ]);
+  const orderEmail = orderMailto(
+    inspiration ? `${ORDER_SUBJECT} — based on ${inspiration.title}` : ORDER_SUBJECT
+  );
+  const fromLabel = priceTable?.sizes[0]?.singleLabel ?? null;
+
   return (
     <main className="min-h-screen bg-background text-on-background">
       <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-16 md:py-28">
@@ -110,20 +129,34 @@ export default function CustomKeepsakePage() {
             Made to Order
           </Badge>
           <h1 className="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-primary mb-5">
-            Personalized Crystal Keepsakes
+            Custom Design
           </h1>
           <p className="font-headline-sm text-headline-sm text-secondary italic mb-6">
             Your photo. Our design. Your approval.
           </p>
-          <p className="font-label-caps text-label-caps uppercase text-on-surface mb-6">
-            From {KEEPSAKE_FROM_PRICE}
-          </p>
+          {fromLabel && (
+            <p className="font-label-caps text-label-caps uppercase text-on-surface mb-6">
+              From {fromLabel}
+            </p>
+          )}
+          {inspiration && (
+            <p className="font-body-md text-body-md text-on-surface mb-6">
+              Starting from:{" "}
+              <Link
+                href={`/design/${inspiration.slug}`}
+                className="underline underline-offset-4 hover:text-secondary"
+              >
+                {inspiration.title}
+              </Link>
+            </p>
+          )}
           <p className="font-body-lg text-body-lg text-on-surface-variant mb-8">
-            Send us your photos and your words. A Thi Bút designer composes the
-            artwork by hand, and nothing is produced until you approve the proof.
+            Send us your photos and your words. A ThiBút designer composes the artwork
+            for a crystal-look resin keepsake, and nothing is produced until you approve
+            the proof.
           </p>
           <a
-            href={ORDER_EMAIL}
+            href={orderEmail}
             className="inline-flex items-center justify-center gap-2 min-h-12 w-full sm:w-auto bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
           >
             Start a Custom Order
@@ -131,7 +164,7 @@ export default function CustomKeepsakePage() {
           </a>
           <p className="mt-4">
             <Link
-              href="/gallery"
+              href="/personal"
               className="inline-flex items-center justify-center min-h-11 px-4 font-label-caps text-label-caps uppercase text-secondary hover:text-primary transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded"
             >
               See sample designs
@@ -162,7 +195,7 @@ export default function CustomKeepsakePage() {
                     </p>
                   </div>
                   <p className="font-display-lg-mobile text-display-lg-mobile text-secondary shrink-0">
-                    {format.price}
+                    {format.price ?? priceTable?.multiplierLabel ?? "—"}
                   </p>
                 </div>
                 <p className="font-label-caps text-label-caps uppercase text-on-surface-variant pb-4 mb-4 border-b border-surface-variant leading-normal">
@@ -198,6 +231,7 @@ export default function CustomKeepsakePage() {
           </div>
         </section>
 
+        {priceTable && (
         <section
           aria-labelledby="custom-pricing"
           className="max-w-3xl mx-auto mb-16 md:mb-20"
@@ -233,22 +267,22 @@ export default function CustomKeepsakePage() {
                 </tr>
               </thead>
               <tbody>
-                {KEEPSAKE_SIZES.map((size) => (
+                {priceTable.sizes.map((size) => (
                   <tr
-                    key={size.id}
+                    key={size.variantId}
                     className="border-b border-surface-variant last:border-b-0"
                   >
                     <th
                       scope="row"
                       className="px-4 md:px-8 py-5 font-body-md text-body-md text-on-surface font-normal whitespace-nowrap"
                     >
-                      {size.label}
+                      {size.size}
                     </th>
                     <td className="px-4 md:px-8 py-5 font-headline-sm text-headline-sm text-primary text-right">
-                      {formatKeepsakePrice(keepsakePriceCents(size, "single"))}
+                      {size.singleLabel}
                     </td>
                     <td className="px-4 md:px-8 py-5 font-headline-sm text-headline-sm text-primary text-right">
-                      {formatKeepsakePrice(keepsakePriceCents(size, "double"))}
+                      {size.doubleLabel}
                     </td>
                   </tr>
                 ))}
@@ -256,10 +290,11 @@ export default function CustomKeepsakePage() {
             </table>
           </Card>
           <p className="font-body-md text-body-md text-on-surface-variant text-center mt-4">
-            Prices include custom design, a digital proof and one revision
-            round. Shipping is quoted with your order.
+            Illustrative launch prices. Custom Design includes a digital proof and one
+            revision round; shipping is quoted with your order.
           </p>
         </section>
+        )}
 
         <section
           aria-labelledby="custom-steps"
@@ -308,7 +343,7 @@ export default function CustomKeepsakePage() {
           </p>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
             <a
-              href={ORDER_EMAIL}
+              href={orderEmail}
               className="inline-flex items-center justify-center gap-2 min-h-12 bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
             >
               Start a Custom Order

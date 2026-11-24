@@ -16,12 +16,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
-    {
-      url: `${baseUrl}/gallery`,
+    ...['personal', 'business', 'living'].map((division) => ({
+      url: `${baseUrl}/${division}`,
       lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
+      changeFrequency: 'weekly' as const,
+      priority: 0.9,
+    })),
+    ...['how-it-works', 'verse-library', 'business-partners'].map((page) => ({
+      url: `${baseUrl}/${page}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
     // Add dynamically generated product URLs or blog posts here in the future
   ];
 }

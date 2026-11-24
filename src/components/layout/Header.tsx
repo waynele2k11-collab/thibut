@@ -4,9 +4,12 @@ import { CartBadge } from "./CartBadge";
 import { HeaderNavClient, type NavLinkItem } from "./HeaderNavClient";
 
 const NAV_LINKS: readonly NavLinkItem[] = [
-  { href: "/", label: "Home" },
-  { href: "/custom", label: "Custom Keepsakes" },
-  { href: "/gallery", label: "Gallery" },
+  { href: "/personal", label: "Personal" },
+  { href: "/business", label: "Business" },
+  { href: "/living", label: "Living" },
+  { href: "/verse-library", label: "Verse Library" },
+  { href: "/how-it-works", label: "How It Works" },
+  { href: "/business-partners", label: "Business Partners" },
 ];
 
 export function Header() {
@@ -26,8 +29,8 @@ export function Header() {
             <>
               <div className="hidden md:flex items-center space-x-4">
                 <Link
-                  href="/gallery"
-                  aria-label="Search gallery"
+                  href="/personal"
+                  aria-label="Browse designs"
                   className="p-1.5 rounded text-primary hover:text-secondary transition-colors duration-300 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
                 >
                   <Search className="w-5 h-5" aria-hidden="true" />

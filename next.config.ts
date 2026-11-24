@@ -18,9 +18,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/create", destination: "/custom", permanent: false },
       { source: "/create/:path*", destination: "/custom", permanent: false },
-      { source: "/gallery/:slug", destination: "/gallery", permanent: false },
-      // Pages that only describe or feed the paused Studio.
-      { source: "/how-it-works", destination: "/custom", permanent: false },
+      { source: "/gallery", destination: "/personal", permanent: false },
+      { source: "/gallery/:slug", destination: "/personal", permanent: false },
+      // Pages that only feed the paused Studio.
       ...[
         "/vietnamese-thu-phap",
         "/japanese-shodo",

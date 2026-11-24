@@ -120,7 +120,7 @@ export default function LicensingPage() {
             Browse curated gallery pieces with transparent licensing and print-ready options.
           </p>
           <Link
-            href="/gallery"
+            href="/personal"
             className="inline-flex items-center gap-2 bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none"
           >
             Visit Art Gallery{" "}

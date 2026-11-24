@@ -174,7 +174,7 @@ export default function AboutPage() {
             <ArrowRight className="w-4 h-4 ml-2" aria-hidden="true" />
           </Link>
           <Link
-            href="/gallery"
+            href="/personal"
             className="inline-flex items-center justify-center text-on-surface font-label-caps text-label-caps uppercase hover:text-secondary transition-colors motion-reduce:transition-none"
           >
             Explore the Gallery{" "}

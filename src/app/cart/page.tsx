@@ -183,6 +183,10 @@ export default async function CartPage() {
   }
 
   const cartItems = activeCart?.items ?? [];
+  // The artwork / personalization / product breakdown only applies to Studio items.
+  const hasPersonalizedItems = cartItems.some(
+    (item) => item.personalizationVersionId !== null
+  );
 
   if (!activeCart || cartItems.length === 0) {
     return (
@@ -194,21 +198,21 @@ export default async function CartPage() {
           Your cart is empty
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mb-8 text-center max-w-md">
-          Custom keepsakes are ordered by email, so nothing is added here.
-          See how a custom order works or browse the sample designs.
+          Browse ready-made designs to buy now, or commission a custom design
+          from your own photos.
         </p>
         <Link
-          href="/custom"
+          href="/personal"
           className="inline-flex items-center gap-2 bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors duration-300 motion-reduce:transition-none"
         >
-          Start a Custom Order <ArrowRight className="w-4 h-4" aria-hidden="true" />
+          Browse Designs <ArrowRight className="w-4 h-4" aria-hidden="true" />
         </Link>
         <div className="mt-5 flex items-center gap-6">
           <Link
-            href="/gallery"
+            href="/custom"
             className="font-label-caps text-label-caps uppercase text-on-surface-variant hover:text-primary underline underline-offset-4"
           >
-            Browse Gallery
+            Custom Design
           </Link>
           <Link
             href="/orders"
@@ -259,10 +263,10 @@ export default async function CartPage() {
             </p>
           </div>
           <Link
-            href="/custom"
+            href="/personal"
             className="font-label-caps text-label-caps uppercase text-secondary hover:underline"
           >
-            + Order a Custom Keepsake
+            + Add Another Design
           </Link>
         </header>
 
@@ -329,8 +333,8 @@ export default async function CartPage() {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h2 className="font-headline-sm text-lg text-primary truncate">
+                    <div className="min-w-0">
+                      <h2 className="font-headline-sm text-lg text-primary break-words">
                         {itemTitle}
                       </h2>
                       <p className="font-body-md text-sm text-on-surface-variant mt-0.5">
@@ -416,30 +420,34 @@ export default async function CartPage() {
         </div>
 
         <section className="bg-surface-container-lowest border border-surface-variant rounded-lg p-6 flex flex-col gap-3 mb-6">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-on-surface-variant">
-              Product Blanks &amp; Placement
-            </span>
-            <span className="text-on-background">
-              {formatUsdMinor(productTotalMinor)}
-            </span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-on-surface-variant">
-              Calligraphy Personalization
-            </span>
-            <span className="text-on-background">
-              {formatUsdMinor(personalizationTotalMinor)}
-            </span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-on-surface-variant">
-              Artist &amp; Font License
-            </span>
-            <span className="text-on-background">
-              {formatUsdMinor(artworkTotalMinor)}
-            </span>
-          </div>
+          {hasPersonalizedItems && (
+            <>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-on-surface-variant">
+                Product Blanks &amp; Placement
+              </span>
+              <span className="text-on-background">
+                {formatUsdMinor(productTotalMinor)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-on-surface-variant">
+                Calligraphy Personalization
+              </span>
+              <span className="text-on-background">
+                {formatUsdMinor(personalizationTotalMinor)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-on-surface-variant">
+                Artist &amp; Font License
+              </span>
+              <span className="text-on-background">
+                {formatUsdMinor(artworkTotalMinor)}
+              </span>
+            </div>
+            </>
+          )}
           <div className="flex justify-between items-center text-sm pt-2 border-t border-surface-variant">
             <span className="text-on-surface-variant">Subtotal</span>
             <span className="font-medium text-primary">
@@ -475,7 +483,7 @@ export default async function CartPage() {
         <div className="flex items-center justify-center gap-2 text-on-surface-variant mt-4">
           <ShieldCheck className="w-4 h-4 text-primary" aria-hidden="true" />
           <span className="font-label-caps text-label-caps uppercase">
-            Encrypted Checkout · 300 DPI Archival Print Master
+            Encrypted Checkout · Made to Order
           </span>
         </div>
       </div>

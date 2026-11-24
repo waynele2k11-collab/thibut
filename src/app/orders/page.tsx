@@ -203,21 +203,21 @@ export default async function BuyerOrdersPage() {
               No orders in this collection yet
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-md">
-              Custom keepsake orders are handled by email for now, so they do not appear here yet. Earlier Studio orders and their download links are listed on this page.
+              Orders you place appear here with their production and shipping status. Custom Design orders are handled by email for now.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <Link
-                href="/custom"
+                href="/personal"
                 className="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3.5 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none"
               >
-                Start a Custom Order
+                Browse Designs
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
               <Link
-                href="/gallery"
+                href="/custom"
                 className="inline-flex items-center gap-2 border border-outline-variant text-on-background px-6 py-3.5 rounded font-label-caps text-label-caps uppercase hover:bg-surface-container-low transition-colors motion-reduce:transition-none"
               >
-                Explore Gallery
+                Custom Design
               </Link>
             </div>
           </Card>

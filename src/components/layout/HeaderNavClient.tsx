@@ -11,9 +11,12 @@ export interface NavLinkItem {
 }
 
 const DEFAULT_NAV_LINKS: readonly NavLinkItem[] = [
-  { href: "/", label: "Home" },
-  { href: "/custom", label: "Custom Keepsakes" },
-  { href: "/gallery", label: "Gallery" },
+  { href: "/personal", label: "Personal" },
+  { href: "/business", label: "Business" },
+  { href: "/living", label: "Living" },
+  { href: "/verse-library", label: "Verse Library" },
+  { href: "/how-it-works", label: "How It Works" },
+  { href: "/business-partners", label: "Business Partners" },
 ];
 
 export interface HeaderNavClientProps {
@@ -95,7 +98,7 @@ export function HeaderNavClient({
     <>
       <nav
         aria-label="Primary"
-        className="hidden md:flex space-x-8 items-center grow justify-center"
+        className="hidden xl:flex space-x-7 items-center grow justify-center whitespace-nowrap"
       >
         {links.map(({ href, label }) => {
           const active = isRouteActive(href);
@@ -121,7 +124,7 @@ export function HeaderNavClient({
         <button
           ref={toggleButtonRef}
           type="button"
-          className="md:hidden p-2 rounded text-primary hover:text-secondary hover:bg-surface-container-high transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+          className="xl:hidden p-2 rounded text-primary hover:text-secondary hover:bg-surface-container-high transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
           aria-controls={dialogId}
@@ -141,7 +144,7 @@ export function HeaderNavClient({
         aria-label="Site navigation"
         onClose={handleDialogClose}
         onClick={handleDialogClick}
-        className="md:hidden m-0 ml-auto h-dvh max-h-none w-72 max-w-[85vw] border-l border-surface-variant bg-background p-0 text-on-surface backdrop:bg-primary/40 backdrop:backdrop-blur-xs open:flex open:flex-col"
+        className="xl:hidden m-0 ml-auto h-dvh max-h-none w-72 max-w-[85vw] border-l border-surface-variant bg-background p-0 text-on-surface backdrop:bg-primary/40 backdrop:backdrop-blur-xs open:flex open:flex-col"
         {...dialogClosedByAttr}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-variant">

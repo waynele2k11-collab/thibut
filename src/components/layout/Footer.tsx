@@ -3,7 +3,13 @@ import Link from "next/link";
 export function Footer() {
   const links = [
     { label: "Cultural Guide", href: "/cultural-guide" },
-    { label: "Custom Keepsakes", href: "/custom" },
+    { label: "Personal", href: "/personal" },
+    { label: "Business", href: "/business" },
+    { label: "Living", href: "/living" },
+    { label: "Custom Design", href: "/custom" },
+    { label: "Verse Library", href: "/verse-library" },
+    { label: "How It Works", href: "/how-it-works" },
+    { label: "Business Partners", href: "/business-partners" },
     { label: "Licensing", href: "/licensing" },
     { label: "Artists", href: "/artists" },
     { label: "Legal", href: "/legal" },
