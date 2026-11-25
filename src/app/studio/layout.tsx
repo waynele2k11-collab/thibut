@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { studioBrushFontVariables } from "@/fonts/index";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import {
   DEVICE_TRUST_COOKIE,
   verifyDeviceTrustToken,
@@ -12,14 +12,12 @@ export default async function StudioLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  // The Creator Studio is paused (next.config.ts redirects /studio to /custom) and there are
+  // no creator accounts: getSessionUser() answers "guest", so this layout never renders.
+  const user = await getSessionUser();
 
-  if (error || !user) {
-    redirect("/auth/login?next=/studio");
+  if (!user) {
+    redirect("/custom");
   }
 
   const cookieStore = await cookies();
@@ -27,7 +25,7 @@ export default async function StudioLayout({
   const trustedDevice = await verifyDeviceTrustToken(rawDeviceToken, user.id);
 
   if (!trustedDevice) {
-    redirect("/auth/verify-device?callbackUrl=/studio");
+    redirect("/custom");
   }
 
   return <div className={studioBrushFontVariables}>{children}</div>;

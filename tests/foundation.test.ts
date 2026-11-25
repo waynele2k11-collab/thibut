@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  signAdminStepUpToken,
-  verifyAdminStepUpToken,
+  signAdminSessionToken,
+  verifyAdminSessionToken,
+  signAdminPendingToken,
+  verifyAdminPendingToken,
   signDeviceTrustToken,
   verifyDeviceTrustToken,
   signDownloadToken,
@@ -42,10 +44,30 @@ test("T-103/T-100: JWT helpers fail closed when secrets are missing and bind cla
   assert.deepEqual(claims, { orderItemId: "oi-123", orderId: "ord-456" });
 
   // Cross-purpose rejection: admin token cannot be used as download token
-  const adminToken = await signAdminStepUpToken("user-admin-1");
+  const adminToken = await signAdminSessionToken({
+    userId: "user-admin-1",
+    sessionId: "session-1",
+  });
   await assert.rejects(() => verifyDownloadToken(adminToken), TokenVerificationError);
-  assert.equal(await verifyAdminStepUpToken(adminToken, "user-admin-1"), true);
-  assert.equal(await verifyAdminStepUpToken(adminToken, "different-user"), false);
+  assert.deepEqual(await verifyAdminSessionToken(adminToken), {
+    userId: "user-admin-1",
+    sessionId: "session-1",
+  });
+
+  // The two admin tokens are not interchangeable: a pending (password-step) token is never a
+  // session, and a session token never opens the code step.
+  const pendingToken = await signAdminPendingToken({
+    userId: "user-admin-1",
+    challengeId: "challenge-1",
+  });
+  assert.equal(await verifyAdminSessionToken(pendingToken), null);
+  assert.equal(await verifyAdminPendingToken(adminToken), null);
+  assert.deepEqual(await verifyAdminPendingToken(pendingToken), {
+    userId: "user-admin-1",
+    challengeId: "challenge-1",
+  });
+  // Other purposes are refused too
+  assert.equal(await verifyAdminSessionToken(dlToken), null);
 
   const devToken = await signDeviceTrustToken({ userId: "u-1", deviceId: "dev-abc" });
   assert.deepEqual(await verifyDeviceTrustToken(devToken, "u-1"), {

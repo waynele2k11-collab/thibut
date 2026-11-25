@@ -6,7 +6,7 @@ Dated 2026-11-24. Branch `feat/keepsake-editor`, base `8e952b4`. Reviewed: the u
 
 ## 1. Scope
 
-- New: `src/lib/keepsake-editor/*` (13 files), `src/components/keepsake-editor/*` (10 files), `src/app/admin/keepsake-editor/page.tsx`, `src/app/admin/keepsake-editor/fonts/[id]/route.ts`, `tests/keepsake-editor.test.ts`.
+- New: `src/lib/keepsake-editor/*` (13 files), `src/components/keepsake-editor/*` (10 files), `src/app/adm/admin/(panel)/keepsake-editor/page.tsx`, `src/app/adm/admin/(panel)/keepsake-editor/fonts/[id]/route.ts`, `tests/keepsake-editor.test.ts`.
 - Changed: `next.config.ts`, `src/components/admin/AdminSidebar.tsx`, `src/lib/fonts/fontCatalog.ts`, `tests/next-tracks-features.test.ts`, `tests/qa-audit-verification.test.ts`.
 - Read first: `AGENTS.md`, `docs/KEEPSAKE_EDITOR_PLAN.md`, BRD sections 08, 10 (APR-009), 11, 12, and the Next 16.3.0 guides for `lazy-loading`, `route`, route segment config and `output` (file tracing).
 - Not reviewed: `.claude/settings.local.json` (untracked, not part of the feature; do not commit it).
@@ -128,7 +128,7 @@ Fix: get written confirmation from the designer (the file names fontchudep.com) 
 
 **Font route.** `assertAdminApi()` is the first statement and its failure returns before `params` is read. The id must match `^[a-z0-9-]{1,64}$` and is then compared for equality with the computed list; the file name comes from the catalogue through `path.basename`. Calling the resolver directly with `../../.env`, `..%2F..%2F.env`, `/etc/passwd`, `GreatVibes-Regular.ttf`, `great-vibes/`, an empty string, `__proto__`, `constructor`, `GREAT-VIBES`, a NUL-terminated id, `nanum-brush-script` and `vni-ong-do` returned nothing each time; `great-vibes` returned 457,588 bytes as `font/ttf`. `Cache-Control: private, max-age=3600` and `nosniff` are set. The signature (`params` as a promise) and `runtime`/`dynamic` exports match this version's docs; `dynamic` is only removed when Cache Components is on, and it is not. The proxy matcher skips paths ending `.ttf`/`.otf`; the route's URLs do not end that way, so the session proxy runs. Note: the older public `/api/fonts/[id]` route already serves enabled fonts with a public cache header, so these files are not secret.
 
-**File tracing.** Next normalises app routes to `/admin/keepsake-editor` and `/admin/keepsake-editor/fonts/[id]`. With picomatch, the two new include keys match exactly those two routes and no other; none of the three exclude keys matches them. Other routes are unaffected. Whether the fonts really land in the deployed function can only be seen on a preview deployment.
+**File tracing.** Next normalises app routes to `/adm/admin/keepsake-editor` and `/adm/admin/keepsake-editor/fonts/[id]`. With picomatch, the two new include keys match exactly those two routes and no other; none of the three exclude keys matches them. Other routes are unaffected. Whether the fonts really land in the deployed function can only be seen on a preview deployment.
 
 **Admin page.** `await requireAdmin()` is the first line, the same pattern as `admin/catalog/page.tsx`; `admin/layout.tsx` guards again (`admin/studio/page.tsx` relies on the layout alone). `robots: { index: false, follow: false }` is set on the page and the layout. `ssr: false` sits in a `"use client"` loader, as this version's lazy-loading guide requires.
 
@@ -152,7 +152,7 @@ An unassigned layer cannot happen: every block is created on a layer (text Front
 
 ## 6. Can photo data leave the browser?
 
-**No, by reading every file under `src/components/keepsake-editor` and `src/lib/keepsake-editor`.** The photo is read with `createImageBitmap(file)` into memory and drawn to canvases. There is no `fetch`, `XMLHttpRequest`, `sendBeacon`, WebSocket, form, server action, `postMessage`, `localStorage`, `sessionStorage`, IndexedDB, cookie write, `toDataURL` or `console` call in those files. The only request the editor makes is `FontFace` loading font files from `/admin/keepsake-editor/fonts/<id>`, a GET with no body. The only object URLs are for the admin's own downloads and are revoked after 10 seconds. The project file holds the image's file name and placement, never pixels. The root and admin layouts load no analytics or session-replay script that I could find.
+**No, by reading every file under `src/components/keepsake-editor` and `src/lib/keepsake-editor`.** The photo is read with `createImageBitmap(file)` into memory and drawn to canvases. There is no `fetch`, `XMLHttpRequest`, `sendBeacon`, WebSocket, form, server action, `postMessage`, `localStorage`, `sessionStorage`, IndexedDB, cookie write, `toDataURL` or `console` call in those files. The only request the editor makes is `FontFace` loading font files from `/adm/admin/keepsake-editor/fonts/<id>`, a GET with no body. The only object URLs are for the admin's own downloads and are revoked after 10 seconds. The project file holds the image's file name and placement, never pixels. The root and admin layouts load no analytics or session-replay script that I could find.
 
 Limits of this statement: it is a code reading, not a network capture (step 9 below). Exported PNGs do contain the photo, by design, and are then the admin's files to protect. The photo's file name is stored in the project file (KE-L15). Bitmaps stay in memory until the tab closes (KE-L3).
 
@@ -164,7 +164,7 @@ No browser was available. Unverified: that the fonts load through the route and 
 
 Use Chrome on the laptop that will do the real work. Keep the files.
 
-1. Open `/admin/keepsake-editor` signed in as admin. In a private window, signed out, open `/admin/keepsake-editor/fonts/great-vibes`: it must refuse.
+1. Open `/adm/admin/keepsake-editor` signed in as admin. In a private window, signed out, open `/adm/admin/keepsake-editor/fonts/great-vibes`: it must refuse.
 2. Choose 100 × 100 mm, margin 3. The panel must read "Film: 94 × 94 mm, 1110 × 1110 px at 300 pixels per inch".
 3. Add a hero word and a verse. Type "Nghĩa mẹ như nước trong nguồn chảy ra" and, on a second line, "Đ đ ư ơ ằ ẵ ữ ợ". Try all seven fonts. Zoom the browser in and look at every accent: none missing, none in a different typeface, none colliding.
 4. Type ♥ and an emoji: export must stop and name them. Delete them.

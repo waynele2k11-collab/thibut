@@ -18,7 +18,7 @@ import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { formatMinor } from "@/lib/money";
 import prisma from "@/lib/prisma";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   title: "Creator Studio Dashboard",
@@ -35,10 +35,7 @@ function statusToBadgeVariant(status: string): BadgeVariant {
 }
 
 export default async function CreatorStudioPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   const creatorProfile = user
     ? await prisma.creatorProfile.findUnique({

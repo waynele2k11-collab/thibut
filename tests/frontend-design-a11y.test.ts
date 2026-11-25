@@ -350,7 +350,7 @@ test("R-500 & R-503 & R-510: error, not-found, 5 loading boundaries, Server Head
     "src/app/gallery/[slug]/loading.tsx",
     "src/app/create/[sessionId]/loading.tsx",
     "src/app/checkout/loading.tsx",
-    "src/app/admin/loading.tsx",
+    "src/app/adm/admin/(panel)/loading.tsx",
   ];
 
   for (const rel of loadingFiles) {

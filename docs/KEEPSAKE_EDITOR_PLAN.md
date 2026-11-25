@@ -20,7 +20,7 @@ The editor is a production tool for one person, the admin. It turns a customer's
 
 ## 1. Assessment of what exists
 
-**`/admin/studio` today.** `src/app/admin/studio/page.tsx` renders `StudioWorkspace` with `isAdmin`. It is reachable: the pause redirects in `next.config.ts` cover `/create`, `/gallery` and the four tradition pages, not `/admin/studio`. `src/app/admin/layout.tsx` calls `requireAdmin()` for every admin page.
+**`/adm/admin/studio` today.** `src/app/adm/admin/(panel)/studio/page.tsx` renders `StudioWorkspace` with `isAdmin`. It is reachable: the pause redirects in `next.config.ts` cover `/create`, `/gallery` and the four tradition pages, not `/adm/admin/studio`. `src/app/adm/admin/(panel)/layout.tsx` calls `requireAdmin()` for every admin page.
 
 | Part | File | Use for this goal |
 | --- | --- | --- |
@@ -34,7 +34,7 @@ The editor is a production tool for one person, the admin. It turns a customer's
 | Workspace | `StudioWorkspace.tsx`, `StudioInspector.tsx`, `StudioQuoteFooter.tsx`, `Step*Panel.tsx` | **Not reused.** Tied to print-on-demand products, garment colours, a live price quote, AI meaning analysis and add-to-cart |
 | Print file | `src/lib/print-generator.tsx`, `src/lib/print/types.ts` | **Not reused.** Fixed at 4500 × 5400 px; text capped at 200 characters; images only by stored asset id; one composition, not layers; needs a personalization session |
 
-**Recommendation: build a new, small `/admin/keepsake-editor`.** It reuses the font catalogue, the font parser and the admin guard, and nothing else. A "keepsake mode" inside `StudioWorkspace` would mean bending a single-text, fixed-size, product-and-cart tool into a multi-block, multi-layer, any-size tool, with every change risking the paused Studio's tests (`studio-ux-redesign.test.ts`, `wysiwyg-regression.test.ts`, `print-master-fonts.test.ts`). The new editor is about ten files and touches three existing ones.
+**Recommendation: build a new, small `/adm/admin/keepsake-editor`.** It reuses the font catalogue, the font parser and the admin guard, and nothing else. A "keepsake mode" inside `StudioWorkspace` would mean bending a single-text, fixed-size, product-and-cart tool into a multi-block, multi-layer, any-size tool, with every change risking the paused Studio's tests (`studio-ux-redesign.test.ts`, `wysiwyg-regression.test.ts`, `print-master-fonts.test.ts`). The new editor is about ten files and touches three existing ones.
 
 ## 2. Scope
 
@@ -157,8 +157,8 @@ export function exportFileName(scene: Scene, layer: LayerId | "preview", index: 
 | File | Does |
 | --- | --- |
 | `src/lib/keepsake-editor/eligible-fonts.server.ts` | `getEligibleFonts(): Promise<{ id; name; family; covered }[]>`. Reads `INITIAL_FONT_CATALOG`, keeps entries whose file is on disk and that pass `isFontLicensedForPrint`, parses each with `FontRegistryService.parseOpenTypeFont`, keeps those where `coversVietnamese` is true |
-| `src/app/admin/keepsake-editor/page.tsx` | Server page. Calls `getEligibleFonts()` and renders the client editor through `next/dynamic` with `ssr: false` |
-| `src/app/admin/keepsake-editor/fonts/[id]/route.ts` | `GET`. Calls `assertAdminApi()` first. Serves the file only for an id returned by `getEligibleFonts()`. `Cache-Control: private, max-age=3600`. `runtime = "nodejs"` |
+| `src/app/adm/admin/(panel)/keepsake-editor/page.tsx` | Server page. Calls `getEligibleFonts()` and renders the client editor through `next/dynamic` with `ssr: false` |
+| `src/app/adm/admin/(panel)/keepsake-editor/fonts/[id]/route.ts` | `GET`. Calls `assertAdminApi()` first. Serves the file only for an id returned by `getEligibleFonts()`. `Cache-Control: private, max-age=3600`. `runtime = "nodejs"` |
 
 **New, client, under `src/components/keepsake-editor/`.**
 
@@ -177,7 +177,7 @@ export function exportFileName(scene: Scene, layer: LayerId | "preview", index: 
 | --- | --- |
 | `src/lib/fonts/fontCatalog.ts` | Add entries for Pinyon Script and Sedgwick Ave Display (SIL Open Font License; licence text is in each file's name table) |
 | `src/components/admin/AdminSidebar.tsx` | Add "Keepsake Editor" |
-| `next.config.ts` | Add `"/admin/keepsake-editor/fonts/[id]": ["./assets/fonts/**/*"]` and the page path to `outputFileTracingIncludes` |
+| `next.config.ts` | Add `"/adm/admin/keepsake-editor/fonts/[id]": ["./assets/fonts/**/*"]` and the page path to `outputFileTracingIncludes` |
 
 **Tests.** One file, `tests/keepsake-editor.test.ts`, which `npm test` picks up through `tests/**/*.test.ts`. It covers: `mmToPx` and `resolveSheet` (normal, reduced resolution, out of range); `cropMarks` stay in the border and are the same for every layer; `layoutText` keeps line breaks and alignment with a fake measure; `missingChars` names characters; every catalogue font file on disk is run through `coveredChars`, and the test pins which ones pass (expected: UTM Thư Pháp Thiên Ân, Great Vibes, Allura, Alex Brush, Arizonia, Pinyon Script, Sedgwick Ave Display); `faintOnClearFilm`; `withPngDpi` round-trip on a tiny PNG; `parseProjectFile` rejects hostile input; `reduce` limits; a source test that the font route calls `assertAdminApi` before anything else and that no file under `src/components/keepsake-editor` or `src/lib/keepsake-editor` contains `fetch(` except the font loader.
 
@@ -185,7 +185,7 @@ export function exportFileName(scene: Scene, layer: LayerId | "preview", index: 
 
 | Risk | Control |
 | --- | --- |
-| This Next.js version differs from training data | Read the guides in section 0. Copy patterns from pages written this month (`src/app/admin/catalog`) |
+| This Next.js version differs from training data | Read the guides in section 0. Copy patterns from pages written this month (`src/app/adm/admin/(panel)/catalog`) |
 | fabric 7 API | Not used |
 | A font fails to load and the browser draws a fallback | Export checks `document.fonts.check` for every used family and stops if any is missing |
 | Canvas text shaping differs slightly between browsers | Preview and export run in the same browser, so they match each other. The printed size is fixed by millimetres, not by the browser |

@@ -1,5 +1,6 @@
 "use server";
 
+import { adminPath } from "@/lib/admin-path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -34,7 +35,7 @@ const Uuid = z.string().uuid();
 
 export async function updateProductSettingsFormAction(formData: FormData) {
   await requireAdmin();
-  const path = "/admin/catalog";
+  const path = adminPath("/catalog");
   const productId = Uuid.safeParse(formData.get("productId"));
   const status = z.enum(PRODUCT_STATUSES).safeParse(formData.get("status"));
   const bps = parseMultiplierToBps(String(formData.get("multiplier") ?? ""));
@@ -65,7 +66,7 @@ export async function updateProductSettingsFormAction(formData: FormData) {
 
 export async function updateVariantFormAction(formData: FormData) {
   await requireAdmin();
-  const path = "/admin/catalog";
+  const path = adminPath("/catalog");
   const variantId = Uuid.safeParse(formData.get("variantId"));
   if (!variantId.success) finish(path, "error", "Invalid size.");
 
@@ -101,7 +102,7 @@ export async function updateVariantFormAction(formData: FormData) {
 
 export async function createCategoryFormAction(formData: FormData) {
   await requireAdmin();
-  const path = "/admin/catalog/categories";
+  const path = adminPath("/catalog/categories");
   const division = String(formData.get("division") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   if (!isDivisionSlug(division) || name.length < 2 || name.length > 80) {
@@ -133,7 +134,7 @@ export async function createCategoryFormAction(formData: FormData) {
 
 export async function updateCategoryFormAction(formData: FormData) {
   await requireAdmin();
-  const path = "/admin/catalog/categories";
+  const path = adminPath("/catalog/categories");
   const categoryId = Uuid.safeParse(formData.get("categoryId"));
   const name = String(formData.get("name") ?? "").trim();
   const sortOrder = z.coerce
@@ -167,7 +168,7 @@ export async function updateCategoryFormAction(formData: FormData) {
 
 export async function saveCatalogDesignFormAction(formData: FormData) {
   await requireAdmin();
-  const path = "/admin/catalog/designs";
+  const path = adminPath("/catalog/designs");
   const rawId = String(formData.get("designId") ?? "");
   const designId = rawId ? Uuid.safeParse(rawId) : null;
   const title = String(formData.get("title") ?? "").trim();
@@ -328,7 +329,7 @@ export async function saveCatalogDesignFormAction(formData: FormData) {
 
 export async function updateOrderFulfillmentFormAction(formData: FormData) {
   await requireAdmin();
-  const path = "/admin/orders";
+  const path = adminPath("/orders");
   const orderId = Uuid.safeParse(formData.get("orderId"));
   const status = z
     .enum(ADMIN_FULFILLMENT_STATUSES)

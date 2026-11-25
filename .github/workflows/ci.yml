@@ -42,8 +42,6 @@ jobs:
         env:
           NODE_ENV: production
           NEXT_PUBLIC_APP_URL: https://thibut.com
-          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-public-anon-key
         run: npm run build
 
   postgres-integration:
@@ -107,8 +105,6 @@ jobs:
       NODE_ENV: production
       DATABASE_URL: postgresql://postgres:postgres_ci_password@localhost:5432/thibut_e2e?schema=public
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-public-anon-key
       ADMIN_SESSION_SECRET: ci-admin-session-secret-minimum-32-chars!!
       DEVICE_TRUST_SECRET: ci-device-trust-secret-minimum-32-chars!!
       DOWNLOAD_TOKEN_SECRET: ci-download-token-secret-minimum-32-chars!!

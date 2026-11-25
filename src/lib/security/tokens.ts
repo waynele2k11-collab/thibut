@@ -25,7 +25,8 @@ function requireSecret(envName: string): Uint8Array {
       `Missing or weak required secret environment variable: ${envName}`
     );
   }
-  return new TextEncoder().encode(raw);
+  // Trimmed, like every length check and like src/lib/auth/secret-box.ts.
+  return new TextEncoder().encode(raw.trim());
 }
 
 let devAnonFallbackSecret: Uint8Array | null = null;
@@ -45,38 +46,115 @@ function getAnonSessionSecret(): Uint8Array {
   return devAnonFallbackSecret;
 }
 
-export const ADMIN_STEPUP_COOKIE = "tb_admin_stepup";
 export const DEVICE_TRUST_COOKIE = "tb_device_trust";
 export const ANON_SESSION_COOKIE = "tb_anon_session";
 
-export async function signAdminStepUpToken(
-  userId: string,
-  ttlSeconds = 60 * 60 * 8
+export const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 8;
+export const ADMIN_PENDING_TTL_SECONDS = 60 * 5;
+
+export interface AdminSessionClaims {
+  userId: string;
+  sessionId: string;
+}
+
+/**
+ * The admin session cookie value. It only names a database session row; the row decides
+ * whether the session is still valid (see src/lib/auth/admin-identity.ts).
+ */
+export async function signAdminSessionToken(
+  claims: AdminSessionClaims,
+  ttlSeconds = ADMIN_SESSION_TTL_SECONDS
 ): Promise<string> {
   const secret = requireSecret("ADMIN_SESSION_SECRET");
-  return new SignJWT({ purpose: "admin_stepup" })
+  return new SignJWT({ purpose: "admin_session", sid: claims.sessionId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuer(ISSUER)
-    .setSubject(userId)
+    .setSubject(claims.userId)
     .setIssuedAt()
     .setExpirationTime(`${ttlSeconds}s`)
     .sign(secret);
 }
 
-export async function verifyAdminStepUpToken(
-  token: string | undefined | null,
-  expectedUserId: string
-): Promise<boolean> {
-  if (!token) return false;
-  const secret = requireSecret("ADMIN_SESSION_SECRET");
+export async function verifyAdminSessionToken(
+  token: string | undefined | null
+): Promise<AdminSessionClaims | null> {
+  if (!token) return null;
+  let secret: Uint8Array;
+  try {
+    secret = requireSecret("ADMIN_SESSION_SECRET");
+  } catch {
+    return null;
+  }
   try {
     const { payload } = await jwtVerify(token, secret, {
       issuer: ISSUER,
       algorithms: ["HS256"],
     });
-    return payload.purpose === "admin_stepup" && payload.sub === expectedUserId;
+    if (
+      payload.purpose !== "admin_session" ||
+      typeof payload.sub !== "string" ||
+      !payload.sub ||
+      typeof payload.sid !== "string" ||
+      !payload.sid
+    ) {
+      return null;
+    }
+    return { userId: payload.sub, sessionId: payload.sid };
   } catch {
-    return false;
+    return null;
+  }
+}
+
+export interface AdminPendingClaims {
+  userId: string;
+  challengeId: string;
+}
+
+/**
+ * Binds the code step to a password step that just succeeded. Short-lived, and useless
+ * without the matching database challenge row.
+ */
+export async function signAdminPendingToken(
+  claims: AdminPendingClaims,
+  ttlSeconds = ADMIN_PENDING_TTL_SECONDS
+): Promise<string> {
+  const secret = requireSecret("ADMIN_SESSION_SECRET");
+  return new SignJWT({ purpose: "admin_pending", cid: claims.challengeId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuer(ISSUER)
+    .setSubject(claims.userId)
+    .setIssuedAt()
+    .setExpirationTime(`${ttlSeconds}s`)
+    .sign(secret);
+}
+
+export async function verifyAdminPendingToken(
+  token: string | undefined | null
+): Promise<AdminPendingClaims | null> {
+  if (!token) return null;
+  let secret: Uint8Array;
+  try {
+    secret = requireSecret("ADMIN_SESSION_SECRET");
+  } catch {
+    return null;
+  }
+  try {
+    const { payload } = await jwtVerify(token, secret, {
+      issuer: ISSUER,
+      algorithms: ["HS256"],
+    });
+    if (
+      payload.purpose !== "admin_pending" ||
+      typeof payload.sub !== "string" ||
+      !payload.sub ||
+      typeof payload.cid !== "string" ||
+      !payload.cid
+    ) {
+      return null;
+    }
+    return { userId: payload.sub, challengeId: payload.cid };
+  } catch {
+    return null;
   }
 }
 

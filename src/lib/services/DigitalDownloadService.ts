@@ -41,7 +41,6 @@ export class DigitalDownloadHttpError extends Error {
 const ALLOWED_BLOB_HOST_SUFFIXES = [
   ".public.blob.vercel-storage.com",
   ".blob.vercel-storage.com",
-  ".supabase.co",
 ];
 
 const ALLOWED_BLOB_HOSTS = new Set<string>(["storage.thibut.com"]);

@@ -24,6 +24,7 @@ import {
 } from "@/lib/fonts/fontCatalog";
 import { signDownloadToken, verifyDownloadToken } from "@/lib/security/tokens";
 import { stripe } from "@/lib/stripe";
+import { authSeamStubUrl, isAuthSeamSpecifier } from "./helpers/auth-seam-stub";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MODULE HOOKS FOR NEXT REQUEST-SCOPE HELPERS (next/headers, supabase/server)
@@ -136,10 +137,9 @@ if (typeof hooksApi.registerHooks === "function") {
           shortCircuit: true,
         };
       }
-      if (specifier === "@/utils/supabase/server") {
-        const src = `export const createClient = (...args) => globalThis.__tbQaAuditHooks.createSupabaseClient(...args);`;
+      if (isAuthSeamSpecifier(specifier)) {
         return {
-          url: `data:text/javascript,${encodeURIComponent(src)}`,
+          url: authSeamStubUrl("__tbQaAuditHooks"),
           format: "module",
           shortCircuit: true,
         };
@@ -1064,19 +1064,17 @@ test("QA Static Sweep: zero backdoors, banned literals, client secrets, or legac
       );
     }
 
-    // Legacy forgeable cookie may ONLY appear where step-up login deletes it
-    if (content.includes("admin_master_pwd_verified")) {
-      assert.equal(
-        rel,
-        path.join("src", "app", "admin-verify", "actions.ts"),
-        `Unexpected reference to admin_master_pwd_verified in ${rel}`
-      );
-      assert.equal(
-        content.includes('cookieStore.get("admin_master_pwd_verified")'),
-        false,
-        "admin_master_pwd_verified must NEVER be read for authorization"
-      );
-    }
+    // The legacy forgeable cookie and the plain-text master password are gone from src/
+    assert.equal(
+      content.includes("admin_master_pwd_verified"),
+      false,
+      `Unexpected reference to admin_master_pwd_verified in ${rel}`
+    );
+    assert.equal(
+      content.includes("ADMIN_MASTER_PASSWORD"),
+      false,
+      `Unexpected reference to ADMIN_MASTER_PASSWORD in ${rel}`
+    );
 
     // Client modules must never touch PRINTFUL_API_KEY
     const isClientModule =
@@ -1873,8 +1871,8 @@ test("QA Round-2 Regression Gate: fonts quarantine & tracing, zero mock/float/he
       "/api/inngest": ["./assets/fonts/**/*"],
       // Keepsake editor (docs/KEEPSAKE_EDITOR_PLAN.md): the admin page lists the eligible fonts
       // and the admin-only font route streams them.
-      "/admin/keepsake-editor": ["./assets/fonts/**/*"],
-      "/admin/keepsake-editor/fonts/*": ["./assets/fonts/**/*"],
+      "/adm/admin/keepsake-editor": ["./assets/fonts/**/*"],
+      "/adm/admin/keepsake-editor/fonts/*": ["./assets/fonts/**/*"],
     },
     "next.config.ts must trace ./assets/fonts/**/* strictly into /api/print-master, /api/download, /api/inngest and the admin keepsake editor (R-107)"
   );
@@ -1991,14 +1989,11 @@ test("QA Round-2 Regression Gate: fonts quarantine & tracing, zero mock/float/he
   const envExampleContent = fs.readFileSync(envExamplePath, "utf8");
   for (const requiredEnvKey of [
     "DATABASE_URL=",
-    "NEXT_PUBLIC_SUPABASE_URL=",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY=",
     "STRIPE_SECRET_KEY=",
     "STRIPE_WEBHOOK_SECRET=",
     "PRINTFUL_API_KEY=",
     "PRINTFUL_WEBHOOK_SECRET=",
     "ADMIN_SESSION_SECRET=",
-    "ADMIN_MASTER_PASSWORD=",
     "DEVICE_TRUST_SECRET=",
     "DOWNLOAD_TOKEN_SECRET=",
     "ANON_SESSION_SECRET=",
@@ -2085,7 +2080,7 @@ test("QA Round-2 Regression Gate: fonts quarantine & tracing, zero mock/float/he
   assert.equal(fs.existsSync(e2eSmokePath), true, "e2e/smoke.spec.ts must exist (R-601)");
   const e2eSmokeSrc = fs.readFileSync(e2eSmokePath, "utf8");
   assert.match(e2eSmokeSrc, /securitypolicyviolation/);
-  assert.match(e2eSmokeSrc, /\/auth\/login/);
+  assert.match(e2eSmokeSrc, /"\/adm\/admin\/login"/);
   assert.match(e2eSmokeSrc, /Escape/);
 
   const pgIntegrationPath = path.join(

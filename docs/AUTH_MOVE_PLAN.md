@@ -130,7 +130,7 @@ The work lands on its own branch. Until it is merged, restoring Supabase is: add
 | Someone keeps sign-in locked | Accepted: the store keeps selling; the founder waits out the window |
 | Email outage | Sign-in is blocked; recovery is fixing Resend. Stated in the runbook |
 | Unconfigured production | `env.ts` refuses to start without `ADMIN_*` and Resend |
-| A guard missed in the swap | Source test: every file under `src/app/admin` and every admin action calls `requireAdmin` or `assertAdminApi` first |
+| A guard missed in the swap | Source test: every file under `src/app/adm/admin/(panel)` and every admin action calls `requireAdmin` or `assertAdminApi` first |
 
 Reviewer checklist: all 26 guard callers still guarded; no route reachable through the removed `/studio` checks; `getSessionUser()` cannot return a user by accident; no secret, code or cookie in logs; the CSP still passes its tests; `npm test` and `npm run build` on the founder's Mac.
 
@@ -169,3 +169,97 @@ Not verifiable without a browser: cookies, redirects, the code email arriving, t
 | --- | --- | --- |
 | Option | B: admin-only sign-in in the repository, Supabase removed. The founder was asked twice for a go-ahead and did not answer; work starts on this recommendation on its own branch and can be redirected | CTO (assumption, founder told) |
 | Second step | An authenticator app (time-based codes, RFC 6238) instead of an emailed code, because no email key exists for this project yet and sign-in must not depend on one. Ten single-use recovery codes, stored hashed. Where this plan says "emailed code", read "authenticator code" | CTO (assumption, founder told) |
+
+## As built (AM-01 to AM-06, 2026-11-24)
+
+Reviewed: see "After the review" below. Nothing here has run in a browser or against a database.
+
+### Where it differs from the proposal above
+
+| Proposal | As built | Why |
+| --- | --- | --- |
+| `ADMIN_EMAIL` and `ADMIN_PASSWORD_HASH` settings | No new setting. The admin's email, password hash (scrypt) and authenticator secret live in the database (`AdminCredential`), written by `scripts/create-admin.ts` | No password material in a setting; nothing new to paste into Vercel |
+| Emailed code | Authenticator app (RFC 6238) and ten single-use recovery codes | Decision of 2026-11-24 |
+| Stateless 8-hour cookie; session table "not now" | Signed cookie that names an `AdminSession` row. Sign out, and "Sign out everywhere", revoke rows | Founder directive: revocable sessions |
+| Two tables | Five: `AdminCredential`, `AdminRecoveryCode`, `AdminSession`, `AdminSignInChallenge`, `AdminLoginAttempt` (migration `0004_admin_sign_in`, additive only) | Follows from the three rows above |
+| `getSessionUser()` replaces the customer callers and they stop having a signed-in path | `getSessionUser()` returns "guest" (null), and every caller keeps its signed-in branch behind it | The existing cart, checkout and studio tests keep running unchanged against that branch; it is the seam for customer accounts later |
+| `/orders` shows a "use the link in your email" notice | `/orders` unchanged for guests (it lists the orders of this browser's guest cookie); the "sign in to sync" link and the header account icon are removed | A guest still needs to see an order just placed |
+| `DEVICE_TRUST_SECRET` removed | Kept, with `signDeviceTrustToken` / `verifyDeviceTrustToken` | The paused Studio files still reference it; it is one of the five secrets already set in Vercel. Remove with the Studio |
+| `scripts/admin-hash-password.ts` | Not needed: `create-admin.ts` asks for the password and stores the hash itself | No hash to carry by hand |
+| `RESEND_API_KEY` required in production | Not added | Sign-in no longer sends email |
+
+Also done: every server page under `/adm/admin` now calls `requireAdmin()` itself (14 pages relied on the layout alone); the CSP and the stored-asset host allow-lists no longer name Supabase; `/studio` and `/studio/*` redirect to `/custom`; the two Supabase packages and the eight packages only they needed are removed from `package.json` and `package-lock.json`; CI no longer sets the Supabase settings.
+
+### How sign-in works
+
+1. `/adm/admin/login`: email and password. The try is written to `AdminLoginAttempt` first, then counted (five unsuccessful per address, twenty overall, sliding fifteen minutes), then checked. A refused try is removed again.
+2. On success a five-minute `AdminSignInChallenge` row is created and a signed, `SameSite=Strict` pending cookie names it.
+3. `/adm/admin/login/code`: a six-digit authenticator code (previous, current or next 30-second step; never one already used) or a recovery code. One conditional update takes a try (five per challenge) before the code is compared; another marks the step or recovery code used.
+4. The session cookie (`__Host-tb_admin` on HTTPS, `tb_admin` on http://localhost) is a signed token naming an `AdminSession` row, eight hours. The guard reads the row and the user's status and role on every call.
+5. Every failure, at either step, returns the same sentence. A code try without a valid pending cookie is refused before anything is counted.
+
+Without `ADMIN_SESSION_SECRET` (32 characters or more) admin does not exist: the sign-in pages and every admin page answer 404.
+
+### Founder set-up
+
+`ADMIN_SESSION_SECRET` must have the same value on your computer and in Vercel: it protects the authenticator secret the command stores. If the value in Vercel cannot be read back, make a new one (`openssl rand -hex 32`), save it in Vercel for Production and Preview, and put the same line in your local settings file.
+
+```
+cd ~/thibut
+npm install
+node --env-file=.env.neon node_modules/prisma/build/index.js migrate deploy
+node --env-file=.env.neon --import ./scripts/test-loader.mjs scripts/create-admin.ts
+```
+
+`.env.neon` must hold `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and `ADMIN_SESSION_SECRET`. The last command shows the database host and asks you to confirm it, asks for your email and a password (not shown), then prints the authenticator setup key and ten recovery codes once.
+
+Then sign in at `/adm/admin/login` (locally: `npm run dev`, then `http://localhost:3000/adm/admin/login`).
+
+- Lost phone: sign in with a recovery code, then run the last command again with `--reset-authenticator`.
+- Changing `ADMIN_SESSION_SECRET` signs everyone out and makes the stored authenticator secret unreadable: run `create-admin.ts` again afterwards.
+
+### After the review (2026-11-25)
+
+The independent review is `docs/AUTH_MOVE_REVIEW.md`: no Blocker, no High, three Medium, ten Low. What changed afterwards:
+
+| Finding | What was done |
+| --- | --- |
+| AM-M1 sign-out did not remove the `__Host-` cookies | Cookies are now removed by setting them again, empty and expired, with the attributes they were set with (`Secure`, `HttpOnly`, `SameSite=Strict`, `Path=/`), through one helper. The cookie store's own delete is not used anywhere. If ending the session in the database fails, the cookie is still removed and the sign-in page says so |
+| AM-M2 no way back in from a lockout | `scripts/create-admin.ts --clear-lockout` (below) |
+| AM-M3 unlimited code guesses with a stolen password | A second, slower limit: after 10 wrong authenticator codes in 24 hours (a code is only asked for after a correct password), authenticator codes are refused until the oldest of the ten is 24 hours old. A recovery code, or `--clear-lockout`, still gets in. Refused tries are kept on record but count toward no limit. After signing in, the admin landing page shows "N failed code attempts since your last sign-in" and when a recovery code was used (AM-L5) |
+| AM-L1 placeholder secret accepted | A signing secret that is still the placeholder from `.env.example` counts as not set: admin is a 404, the production start-up check fails, and `create-admin.ts` refuses |
+| AM-L2 replacing the admin without the current password | `create-admin.ts` asks for the current password before replacing an existing admin. `--forgot-password` skips that after you type a confirmation phrase |
+| AM-L3 cookie name and `Secure` follow `NODE_ENV` | Left as it is. `npm run start` on `http://localhost` therefore sets `__Host-`/`Secure` cookies, which Safari refuses there; use `npm run dev` locally, where plain cookie names are used |
+| AM-L4 sign-in tables never pruned | On each successful sign-in, three single `DELETE` statements remove tries and challenges created, and sessions expired, more than 30 days ago |
+| AM-L6 order summary shown for an order number alone | `/checkout/success` shows an order only with proof of ownership (the guest cookie that placed it, or the Stripe checkout session id); otherwise a plain "Thank you" with no order details |
+| AM-L8 | The six call sites are formatted normally again |
+| AM-L9 | Admin API routes answer 404, like the pages, when sign-in is not configured. The trimmed secret is used everywhere (length checks, token signing, key derivation) |
+| AM-L7, AM-L10 | Open |
+
+`AdminLoginAttempt` gained one column, `refused`. Migration `0004_admin_sign_in` was edited in place: it had not been applied to any database.
+
+**The admin address.** By founder decision the admin area is at `/adm/admin`, and sign-in is at `/adm/admin/login`. Where the proposal above says `/auth/login`, read `/adm/admin/login`. `/admin`, `/admin/...` and `/auth/login` are ordinary 404 pages with no redirect. The address is written once in code (`src/lib/admin-path.ts`), in the folder names under `src/app/adm/admin`, and in three lines of `next.config.ts`; a test keeps them in step. It is not listed in `robots.txt` (that file is public); admin pages are marked noindex. The guarded admin API stayed at `/api/admin/...`. The address is not a protection: the password, the authenticator code and the lockout are.
+
+**Commands** (each shows the database host and asks you to confirm it; none takes a password on the command line; all refuse to run on Vercel):
+
+```
+node --env-file=.env.neon --import ./scripts/test-loader.mjs scripts/create-admin.ts
+node --env-file=.env.neon --import ./scripts/test-loader.mjs scripts/create-admin.ts --reset-authenticator
+node --env-file=.env.neon --import ./scripts/test-loader.mjs scripts/create-admin.ts --clear-lockout
+node --env-file=.env.neon --import ./scripts/test-loader.mjs scripts/create-admin.ts --forgot-password
+```
+
+- No option: create the admin. If one exists, it asks for the current password, then replaces the password, authenticator and recovery codes and signs every session out.
+- `--reset-authenticator`: new authenticator key and recovery codes; the password is unchanged.
+- `--clear-lockout`: asks for the current password, then deletes the unsuccessful sign-in tries and nothing else. Use it when sign-in keeps failing with the right details (someone is holding the page locked, or ten wrong codes were entered in a day).
+- `--forgot-password`: replaces everything without the current password, after you type the phrase it shows.
+
+**Accepted and still open.** Anyone can keep the sign-in page locked by failing twenty times every fifteen minutes; `--clear-lockout` lets the founder back in but does not stop a determined repeat. No email is sent on a lockout or a sign-in (no email key exists for this project yet). An unauthenticated call to an admin server action is redirected to the sign-in address, which reveals it; the address is not a secret.
+
+### Files moved aside, not deleted
+
+Deleting was not permitted in the session that did this work. The old Supabase files were moved to `_to_delete/` at the repository root, each renamed with `.removed`, and that folder is ignored through `.git/info/exclude` (not `.gitignore`). Git sees the originals as deleted. Delete the folder by hand: `rm -rf _to_delete`.
+
+### Not verified
+
+`next build`; cookies, redirects and the two forms in a browser; the Prisma queries and the migration against Postgres (the store is typed by hand and pinned against the schema by a test); `scripts/create-admin.ts` beyond its refusals (its hidden prompt and its database writes); an authenticator app accepting the setup key (the codes match the RFC 6238 test vectors).

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import * as nodeModule from "node:module";
 import sharp from "sharp";
+import { authSeamStubUrl, isAuthSeamSpecifier } from "./helpers/auth-seam-stub";
 
 interface ResolveContext {
   conditions: string[];
@@ -1094,12 +1095,9 @@ globalThis.__tbWave2Hooks = {
         shortCircuit: true,
       };
     }
-    if (
-      specifier === "@/utils/supabase/server" ||
-      specifier.endsWith("/utils/supabase/server")
-    ) {
+    if (isAuthSeamSpecifier(specifier)) {
       return {
-        url: "data:text/javascript,export const createClient = () => globalThis.__tbWave2Hooks.createSupabaseClient();",
+        url: authSeamStubUrl("__tbWave2Hooks"),
         shortCircuit: true,
       };
     }

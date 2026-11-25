@@ -2,6 +2,7 @@
 
 // Keepsake editor: loads the eligible fonts with the FontFace API from the admin-only font route.
 // This is the only place the editor asks the server for anything, and it asks for font files only.
+import { adminPath } from "@/lib/admin-path";
 import { useEffect, useState } from "react";
 
 export type EditorFont = {
@@ -13,7 +14,7 @@ export type EditorFont = {
 };
 export type FontStatus = "loading" | "ready" | "error";
 
-export const FONT_ROUTE = "/admin/keepsake-editor/fonts";
+export const FONT_ROUTE = adminPath("/keepsake-editor/fonts");
 
 /** The CSS family the editor registers for a font id. Prefixed so it cannot clash with site fonts. */
 export function editorFontFamily(fontId: string): string {

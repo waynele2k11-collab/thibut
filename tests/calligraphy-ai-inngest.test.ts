@@ -4,6 +4,7 @@ import fs from "node:fs";
 import * as nodeModule from "node:module";
 import path from "node:path";
 import test from "node:test";
+import { authSeamStubUrl, isAuthSeamSpecifier } from "./helpers/auth-seam-stub";
 
 interface ResolveContext {
   conditions: string[];
@@ -812,12 +813,9 @@ globalThis.__tbWave2TestHooks = {
         shortCircuit: true,
       };
     }
-    if (
-      specifier === "@/utils/supabase/server" ||
-      specifier.endsWith("/utils/supabase/server")
-    ) {
+    if (isAuthSeamSpecifier(specifier)) {
       return {
-        url: "data:text/javascript,export const createClient = () => globalThis.__tbWave2TestHooks.createSupabaseClient();",
+        url: authSeamStubUrl("__tbWave2TestHooks"),
         shortCircuit: true,
       };
     }
@@ -838,8 +836,6 @@ globalThis.__tbWave2TestHooks = {
 });
 
 process.env.ANON_SESSION_SECRET = "wave2-test-anon-session-secret-32chars!";
-process.env.NEXT_PUBLIC_SUPABASE_URL = "https://mock.supabase.co";
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "mock-anon-key";
 delete process.env.GEMINI_API_KEY;
 delete process.env.OPENAI_API_KEY;
 delete process.env.FAL_KEY;

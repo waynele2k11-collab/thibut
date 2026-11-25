@@ -14,8 +14,8 @@ Read under `node_modules/next/dist/docs/01-app/`: `02-guides/forms.md`, `02-guid
 
 1. The customer opens `/custom/request`, fills in the form, attaches photos and submits.
 2. The site saves the request, stores the photos privately, emails the customer a private link and emails the founder.
-3. The founder opens `/admin/requests`, reads the brief, downloads the photos and marks the request **In progress**.
-4. The founder composes the proof in `/admin/keepsake-editor` (or elsewhere), downloads the preview and uploads it to the request as proof version 1. He sets the price.
+3. The founder opens `/adm/admin/requests`, reads the brief, downloads the photos and marks the request **In progress**.
+4. The founder composes the proof in `/adm/admin/keepsake-editor` (or elsewhere), downloads the preview and uploads it to the request as proof version 1. He sets the price.
 5. He clicks **Send to customer**. The status becomes **Proof ready** and the customer is emailed.
 6. The customer opens the private link, sees the proof and the price, and either **approves** or **asks for changes** with a comment.
 7. Changes: status **Changes requested**; the founder uploads version 2 and sends again. One round is included (BRD section 09); later rounds are the founder's call.
@@ -107,7 +107,7 @@ After submitting: a page that says the request was received, shows the private l
 
 The link is the customer's key. Anyone holding it can approve and reach checkout, so checkout shows the order summary again, and the email warns not to forward the link.
 
-## 5. Admin panel (`/admin/requests`)
+## 5. Admin panel (`/adm/admin/requests`)
 
 | Screen | Content |
 | --- | --- |

@@ -17,7 +17,7 @@ import {
   verifyAnonSessionToken,
 } from "@/lib/security/tokens";
 import { stripe } from "@/lib/stripe";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   title: "Order Confirmation",
@@ -45,10 +45,9 @@ export default async function CheckoutSuccessPage({
   );
   let userId: string | null = null;
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (!error && data?.user?.id) {
-      userId = data.user.id;
+    const sessionUser = await getSessionUser();
+    if (sessionUser?.id) {
+      userId = sessionUser.id;
     }
   } catch {
     userId = null;
@@ -79,6 +78,50 @@ export default async function CheckoutSuccessPage({
           },
         })
       : null;
+
+  // Proof that this visitor may see the order: the signed-in buyer, the signed guest cookie
+  // that placed it, or the Stripe checkout session id (known only to the payer). An order
+  // number on its own proves nothing, so it shows nothing.
+  const ownsOrder = Boolean(
+    dbOrder &&
+      ((userId && dbOrder.buyerId === userId) ||
+        (!dbOrder.buyerId && anonId && dbOrder.anonymousSessionId === anonId) ||
+        (cleanSessionId && dbOrder.stripeCheckoutSessionId === cleanSessionId))
+  );
+
+  if (dbOrder && !ownsOrder) {
+    return (
+      <div className="bg-background text-on-background min-h-screen flex flex-col font-body-md antialiased items-center justify-center">
+        <main className="max-w-lg w-full px-margin-mobile py-16 flex flex-col items-center text-center gap-6">
+          <div className="w-16 h-16 bg-surface-container-low border border-surface-variant rounded-lg flex items-center justify-center">
+            <CheckCircle2 className="w-8 h-8 text-on-surface-variant" aria-hidden="true" />
+          </div>
+          <h1 className="font-display-lg-mobile md:font-headline-md text-display-lg-mobile md:text-headline-md text-on-background">
+            Thank You
+          </h1>
+          <p className="font-body-md text-body-md text-on-surface-variant">
+            If you have just completed a payment, your confirmation email has the
+            details of your order. To see an order on this page, open it in the
+            browser you ordered with.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <Link
+              href="/orders"
+              className="border border-outline-variant text-on-background px-6 py-3.5 rounded font-label-caps text-label-caps uppercase hover:bg-surface-container-high transition-colors motion-reduce:transition-none"
+            >
+              My Orders
+            </Link>
+            <Link
+              href="/"
+              className="bg-primary text-on-primary px-6 py-3.5 rounded font-label-caps text-label-caps uppercase hover:bg-surface-tint transition-colors motion-reduce:transition-none inline-flex items-center gap-2"
+            >
+              Return Home <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   let stripePaymentStatus: string | null = null;
   const stripeSecret = process.env.STRIPE_SECRET_KEY?.trim();
@@ -187,12 +230,6 @@ export default async function CheckoutSuccessPage({
   }
 
   if (isConfirmedPaid) {
-    const ownsOrder = Boolean(
-      (userId && dbOrder.buyerId === userId) ||
-        (!dbOrder.buyerId && anonId && dbOrder.anonymousSessionId === anonId) ||
-        (cleanSessionId && dbOrder.stripeCheckoutSessionId === cleanSessionId)
-    );
-
     const digitalDownloads: Array<{
       itemId: string;
       title: string;

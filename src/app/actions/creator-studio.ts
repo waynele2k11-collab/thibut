@@ -18,7 +18,7 @@ import {
 } from "@/lib/security/tokens";
 import { stripe } from "@/lib/stripe";
 import { DEFAULT_INK_HEX } from "@/lib/studio/inkPalette";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 
 const OnboardCreatorSchema = z
   .object({
@@ -81,13 +81,9 @@ async function requireTrustedCreatorCaller(): Promise<
     }
 > {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
+    const user = await getSessionUser();
 
-    if (error || !user?.id) {
+    if (!user?.id) {
       return { authorized: false, error: "Authentication required" };
     }
 

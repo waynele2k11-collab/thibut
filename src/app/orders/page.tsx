@@ -22,7 +22,7 @@ import {
   verifyAnonSessionToken,
 } from "@/lib/security/tokens";
 import { DEFAULT_INK_HEX } from "@/lib/studio/inkPalette";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   title: "My Orders & Digital Masters",
@@ -86,11 +86,10 @@ export default async function BuyerOrdersPage() {
   let userId: string | null = null;
   let userEmail: string | null = null;
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (!error && data?.user?.id) {
-      userId = data.user.id;
-      userEmail = data.user.email ?? null;
+    const sessionUser = await getSessionUser();
+    if (sessionUser?.id) {
+      userId = sessionUser.id;
+      userEmail = sessionUser.email ?? null;
     }
   } catch {
     userId = null;
@@ -181,14 +180,6 @@ export default async function BuyerOrdersPage() {
               Track custom print production and download 4500 × 5400 px (300 DPI) archival masters.
             </p>
           </div>
-          {!userId && (
-            <Link
-              href="/auth/login?next=/orders"
-              className="font-label-caps text-label-caps uppercase text-secondary hover:underline"
-            >
-              Sign in to sync across devices →
-            </Link>
-          )}
         </header>
 
         {enrichedOrders.length === 0 ? (

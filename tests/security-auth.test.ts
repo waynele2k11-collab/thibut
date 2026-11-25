@@ -1,9 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import * as nodeModule from "node:module";
 import sharp from "sharp";
+import { authSeamStubUrl, isAuthSeamSpecifier } from "./helpers/auth-seam-stub";
 
 interface ResolveContext {
   conditions: string[];
@@ -400,12 +402,9 @@ globalThis.__tbSecTestHooks = {
         shortCircuit: true,
       };
     }
-    if (
-      specifier === "@/utils/supabase/server" ||
-      specifier.endsWith("/utils/supabase/server")
-    ) {
+    if (isAuthSeamSpecifier(specifier)) {
       return {
-        url: "data:text/javascript,export const createClient = () => globalThis.__tbSecTestHooks.createSupabaseClient();",
+        url: authSeamStubUrl("__tbSecTestHooks"),
         shortCircuit: true,
       };
     }
@@ -422,11 +421,9 @@ globalThis.__tbSecTestHooks = {
 const { safeRedirectPath } = await import("@/lib/security/redirect");
 const { resetRateLimitStore } = await import("@/lib/security/rate-limit");
 const {
-  ADMIN_STEPUP_COOKIE,
   ANON_SESSION_COOKIE,
-  DEVICE_TRUST_COOKIE,
-  signAdminStepUpToken,
   signAnonSessionToken,
+  signDeviceTrustToken,
   verifyDeviceTrustToken,
 } = await import("@/lib/security/tokens");
 const {
@@ -438,10 +435,8 @@ const {
 const { POST: uploadBackgroundPost, GET: uploadBackgroundGet } = await import(
   "@/app/api/uploads/background/route"
 );
-const { GET: authCallbackGet } = await import("@/app/api/auth/callback/route");
-const { GET: authConfirmGet } = await import("@/app/api/auth/confirm/route");
 const { createPreset, deletePreset } = await import(
-  "@/app/admin/background-presets/actions"
+  "@/app/adm/admin/(panel)/background-presets/actions"
 );
 const { createGalleryItem, getGalleryItemById } = await import(
   "@/app/actions/gallery"
@@ -455,9 +450,8 @@ const { BenchmarkRequestSchema } = await import(
 const { POST: adminGalleryCreatePost } = await import(
   "@/app/api/admin/gallery/create/route"
 );
-const { verifyMasterPassword } = await import("@/app/admin-verify/actions");
-const { verifyDevicePin } = await import("@/app/auth/verify-device/actions");
-const { buildCspHeader } = await import("@/utils/supabase/middleware");
+const { buildCspHeader } = await import("@/lib/security/headers");
+const { ADMIN_BASE_PATH, ADMIN_SIGN_IN_PATH } = await import("@/lib/admin-path");
 
 test("T-104: safeRedirectPath and auth callback/confirm routes block open redirects", async () => {
   resetHarness();
@@ -471,51 +465,42 @@ test("T-104: safeRedirectPath and auth callback/confirm routes block open redire
   assert.equal(safeRedirectPath("http://user:pass@evil.com"), "/studio");
   assert.equal(safeRedirectPath("/valid\r\nSet-Cookie: hacked=1"), "/studio");
 
-  // /api/auth/callback neutralizes open redirect targets while preserving origin
+  // The admin sign-in pages pass the admin address as the fallback: a hostile `next` lands there.
   for (const maliciousNext of [
     "https://evil.com",
     "//evil.com/steal",
     "@evil.com",
     "/\\evil.com",
   ]) {
-    const req = new Request(
-      `http://localhost:3000/api/auth/callback?code=oauth-123&next=${encodeURIComponent(
-        maliciousNext
-      )}`
-    );
-    const res = await authCallbackGet(req);
-    assert.equal(res.status, 307);
-    assert.equal(res.headers.get("location"), "http://localhost:3000/studio");
+    assert.equal(safeRedirectPath(maliciousNext, ADMIN_BASE_PATH), ADMIN_BASE_PATH);
   }
-
-  // Safe relative path on /api/auth/callback succeeds
-  const validCallbackRes = await authCallbackGet(
-    new Request("http://localhost:3000/api/auth/callback?code=oauth-123&next=/orders/abc")
-  );
   assert.equal(
-    validCallbackRes.headers.get("location"),
-    "http://localhost:3000/orders/abc"
+    safeRedirectPath(`${ADMIN_BASE_PATH}/orders?status=PAID`, ADMIN_BASE_PATH),
+    `${ADMIN_BASE_PATH}/orders?status=PAID`
   );
+  assert.equal(safeRedirectPath(undefined, ADMIN_BASE_PATH), ADMIN_BASE_PATH);
 
-  // /api/auth/confirm also blocks open redirect on callbackUrl
-  harness.supabaseUser = { id: "user-confirm-1", email: "creator@thibut.com" };
-  const confirmEvilRes = await authConfirmGet(
-    new Request(
-      "http://localhost:3000/api/auth/confirm?callbackUrl=https%3A%2F%2Fevil.com"
-    )
-  );
-  assert.equal(
-    confirmEvilRes.headers.get("location"),
-    "http://localhost:3000/studio"
-  );
+  // The Supabase sign-in routes that used to take a redirect target are gone.
+  for (const removed of [
+    "src/app/api/auth/callback/route.ts",
+    "src/app/api/auth/confirm/route.ts",
+    "src/app/api/auth/device-check/route.ts",
+    "src/app/auth/verify-device/actions.ts",
+    "src/app/auth/update-password/page.tsx",
+    "src/app/admin-verify/actions.ts",
+  ]) {
+    assert.equal(
+      existsSync(path.join(process.cwd(), removed)),
+      false,
+      `${removed} must not exist after the sign-in move`
+    );
+  }
 });
 
 test("T-106 & INV-014: magic-byte sniffing, sharp re-encoding, and private upload route reject HTML/SVG disguised as PNG", async () => {
   resetHarness();
   resetRateLimitStore();
   process.env.ANON_SESSION_SECRET = "test-anon-session-secret-minimum-32!!";
-  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
 
   // 1. HTML disguised with .png extension and image/png MIME
   const htmlBytes = Buffer.from(
@@ -661,10 +646,9 @@ test("T-106 & INV-014: magic-byte sniffing, sharp re-encoding, and private uploa
 test("T-100 & T-101: unauthenticated and non-admin callers are rejected on admin actions & routes, and benchmark samplesPerCase is capped at 10", async () => {
   resetHarness();
   resetRateLimitStore();
-  process.env.ADMIN_MASTER_PASSWORD = "correct-horse-battery-staple";
   process.env.ADMIN_SESSION_SECRET = "test-admin-session-secret-32-chars!!";
 
-  // 1. Unauthenticated createPreset & deletePreset reject with redirect to /auth/login
+  // 1. Unauthenticated createPreset & deletePreset reject with redirect to the admin sign-in
   await assert.rejects(
     () =>
       createPreset({
@@ -680,14 +664,14 @@ test("T-100 & T-101: unauthenticated and non-admin callers are rejected on admin
         sortOrder: 0,
       }),
     (err: unknown) =>
-      err instanceof RedirectSignal && err.destination === "/auth/login"
+      err instanceof RedirectSignal && err.destination === ADMIN_SIGN_IN_PATH
   );
   assert.equal(harness.presetCreatedCount, 0);
 
   await assert.rejects(
     () => deletePreset("preset-1"),
     (err: unknown) =>
-      err instanceof RedirectSignal && err.destination === "/auth/login"
+      err instanceof RedirectSignal && err.destination === ADMIN_SIGN_IN_PATH
   );
 
   // 2. Unauthenticated createGalleryItem rejects before touching DB
@@ -698,7 +682,7 @@ test("T-100 & T-101: unauthenticated and non-admin callers are rejected on admin
   await assert.rejects(
     () => resPromise,
     (err: unknown) =>
-      err instanceof RedirectSignal && err.destination === "/auth/login"
+      err instanceof RedirectSignal && err.destination === ADMIN_SIGN_IN_PATH
   );
   assert.equal(harness.galleryCreatedCount, 0);
 
@@ -747,8 +731,8 @@ test("T-100 & T-101: unauthenticated and non-admin callers are rejected on admin
   });
   assert.equal(await getGalleryItemById("draft-1"), null);
 
-  // 6. Authenticated ADMIN with valid signed step-up token:
-  //    - verifyMasterPassword sets signed ADMIN_STEPUP_COOKIE and deletes legacy cookie
+  // 6. Authenticated ADMIN (ACTIVE user with the DB ADMIN role):
+  //    - the legacy forgeable cookie is never what grants access
   //    - benchmark route rejects samplesPerCase > 10 with 400
   harness.supabaseUser = { id: "u-admin", email: "admin@thibut.com" };
   harness.usersById.set("u-admin", {
@@ -757,17 +741,7 @@ test("T-100 & T-101: unauthenticated and non-admin callers are rejected on admin
     status: "ACTIVE",
     roles: [{ role: { code: "ADMIN" } }],
   });
-
-  const wrongPwdRes = await verifyMasterPassword("wrong-password");
-  assert.deepEqual(wrongPwdRes, {
-    success: false,
-    error: "Invalid credentials",
-  });
-
-  const stepUpRes = await verifyMasterPassword("correct-horse-battery-staple");
-  assert.equal(stepUpRes.success, true);
-  assert.ok(harness.cookies.get(ADMIN_STEPUP_COOKIE)?.value);
-  assert.ok(harness.deletedCookies.includes("admin_master_pwd_verified"));
+  harness.cookies.delete("admin_master_pwd_verified");
 
   // Benchmark schema strictly caps samplesPerCase at 1..10 (default 3)
   assert.equal(BenchmarkRequestSchema.parse({}).samplesPerCase, 3);
@@ -780,13 +754,7 @@ test("T-100 & T-101: unauthenticated and non-admin callers are rejected on admin
     false
   );
 
-  // Ensure valid step-up cookie is present and test 400 response when samplesPerCase > 10
-  const adminToken = await signAdminStepUpToken("u-admin");
-  harness.cookies.set(ADMIN_STEPUP_COOKIE, {
-    name: ADMIN_STEPUP_COOKIE,
-    value: adminToken,
-  });
-
+  // Signed in as the admin: the route is reached and rejects samplesPerCase > 10 with 400
   const cappedBenchRes = await benchmarkPost(
     new Request("http://localhost:3000/api/admin/calligraphy/benchmark", {
       method: "POST",
@@ -801,85 +769,47 @@ test("T-100 & T-101: unauthenticated and non-admin callers are rejected on admin
   assert.equal(adminDraftView?.id, "draft-1");
 });
 
-test("T-103 & T-108: device PIN invalidates after 5 failed attempts, issues signed device_trust JWT, and CSP header embeds nonce", async () => {
+test("T-103 & T-108: device trust tokens are signed and bound to one user, an inactive admin is refused, and the CSP header embeds the nonce", async () => {
   resetHarness();
   resetRateLimitStore();
   process.env.DEVICE_TRUST_SECRET = "test-device-trust-secret-32-chars!!!";
-
-  harness.supabaseUser = { id: "u-creator-1", email: "artist@thibut.com" };
-  harness.usersById.set("u-creator-1", {
-    id: "u-creator-1",
-    email: "artist@thibut.com",
-    status: "ACTIVE",
-    roles: [{ role: { code: "CREATOR" } }],
-  });
-
-  harness.deviceVerifications.set("dv-test-1", {
-    id: "dv-test-1",
-    userId: "u-creator-1",
-    code: "482910",
-    deviceId: null,
-    attempts: 0,
-    expiresAt: new Date(Date.now() + 15 * 60_000),
-    verified: false,
-    createdAt: new Date(),
-  });
-
-  // Attempts 1..4 increment counter
-  for (let i = 1; i <= 4; i++) {
-    const failRes = await verifyDevicePin("000000");
-    assert.equal(failRes.success, false);
-    assert.equal(harness.deviceVerifications.get("dv-test-1")?.attempts, i);
-  }
-
-  // Attempt 5 invalidates/deletes the verification record
-  const fifthFail = await verifyDevicePin("000000");
-  assert.equal(fifthFail.success, false);
-  assert.match(fifthFail.error ?? "", /Too many failed attempts/i);
-  assert.equal(harness.deviceVerifications.has("dv-test-1"), false);
-
-  // Subsequent attempt with the previously valid PIN now fails because verification was deleted
-  const afterLockout = await verifyDevicePin("482910");
-  assert.equal(afterLockout.success, false);
-
-  // Issue a fresh PIN and verify signed device trust token binding
-  harness.deviceVerifications.set("dv-test-2", {
-    id: "dv-test-2",
-    userId: "u-creator-1",
-    code: "739184",
-    deviceId: null,
-    attempts: 0,
-    expiresAt: new Date(Date.now() + 15 * 60_000),
-    verified: false,
-    createdAt: new Date(),
-  });
-
-  const validRes = await verifyDevicePin("739184");
-  assert.equal(validRes.success, true);
-
-  const issuedCookie = harness.cookies.get(DEVICE_TRUST_COOKIE);
-  assert.ok(issuedCookie?.value);
+  process.env.ADMIN_SESSION_SECRET = "test-admin-session-secret-32-chars!!";
 
   // Forged legacy string "verified" is rejected
   assert.equal(await verifyDeviceTrustToken("verified", "u-creator-1"), null);
-  // Signed token verifies for u-creator-1, but fails for any other user ID
-  const verifiedClaims = await verifyDeviceTrustToken(
-    issuedCookie.value,
-    "u-creator-1"
-  );
+  // A signed token verifies for u-creator-1, but fails for any other user ID
+  const deviceToken = await signDeviceTrustToken({
+    userId: "u-creator-1",
+    deviceId: "device-1",
+  });
+  const verifiedClaims = await verifyDeviceTrustToken(deviceToken, "u-creator-1");
   assert.equal(verifiedClaims?.userId, "u-creator-1");
-  assert.ok(verifiedClaims?.deviceId);
-  assert.equal(
-    await verifyDeviceTrustToken(issuedCookie.value, "u-other-user"),
-    null
+  assert.equal(verifiedClaims?.deviceId, "device-1");
+  assert.equal(await verifyDeviceTrustToken(deviceToken, "u-other-user"), null);
+
+  // An admin whose user row is no longer ACTIVE is treated as signed out (401), at once
+  harness.supabaseUser = { id: "u-admin-off", email: "former-admin@thibut.com" };
+  harness.usersById.set("u-admin-off", {
+    id: "u-admin-off",
+    email: "former-admin@thibut.com",
+    status: "SUSPENDED",
+    roles: [{ role: { code: "ADMIN" } }],
+  });
+  const suspendedRes = await benchmarkPost(
+    new Request("http://localhost:3000/api/admin/calligraphy/benchmark", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ samplesPerCase: 3 }),
+    })
   );
+  assert.equal(suspendedRes.status, 401);
 
   // Verify CSP header directives
   const csp = buildCspHeader("testNonceBase64==", false);
   assert.ok(csp.includes("'nonce-testNonceBase64=='"));
   assert.ok(csp.includes("style-src 'self' 'unsafe-inline'"));
   assert.ok(csp.includes("https://files.cdn.printful.com"));
-  assert.ok(csp.includes("https://*.supabase.co"));
+  assert.equal(csp.includes("supabase"), false, "the CSP must no longer allow Supabase hosts");
   assert.ok(csp.includes("https://api.stripe.com"));
   assert.ok(csp.includes("frame-ancestors 'self'"));
 });

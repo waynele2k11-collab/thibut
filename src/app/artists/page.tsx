@@ -81,7 +81,7 @@ export default function ArtistsPage() {
             Are you a calligrapher, typographer, or visual artist? Partner with Thi Bút to publish personalizable collections.
           </p>
           <Link
-            href="/auth/login"
+            href="/support"
             className="inline-flex items-center gap-2 bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps uppercase hover:bg-secondary hover:text-on-secondary transition-colors motion-reduce:transition-none"
           >
             Apply as an Artist <ArrowRight className="w-4 h-4" aria-hidden="true" />

@@ -22,7 +22,7 @@ import {
   verifyAnonSessionToken,
 } from "@/lib/security/tokens";
 import { PolicyGuard } from "@/lib/services/PolicyGuard";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 
@@ -65,12 +65,10 @@ export interface EnsureStudioSessionResult {
 
 async function resolveAuthenticatedUserId(): Promise<string | null> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data?.user?.id) {
+    const authUser = await getSessionUser();
+    if (!authUser?.id) {
       return null;
     }
-    const authUser = data.user;
     await prisma.user.upsert({
       where: { id: authUser.id },
       create: {

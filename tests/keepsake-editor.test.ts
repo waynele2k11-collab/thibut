@@ -808,7 +808,7 @@ function code(rel: string): string {
 const EDITOR_FILES = [...listFiles("src/components/keepsake-editor"), ...listFiles("src/lib/keepsake-editor")];
 
 test("the font route checks the admin before anything else and never builds a path from the request", () => {
-  const src = code("src/app/admin/keepsake-editor/fonts/[id]/route.ts");
+  const src = code("src/app/adm/admin/(panel)/keepsake-editor/fonts/[id]/route.ts");
   const body = src.slice(src.indexOf("export async function GET"));
   const guard = body.indexOf("await assertAdminApi()");
   assert.ok(guard > 0, "calls assertAdminApi");
@@ -826,15 +826,15 @@ test("the font route checks the admin before anything else and never builds a pa
 });
 
 test("the page is admin-only and loads the editor in the browser only", () => {
-  const page = code("src/app/admin/keepsake-editor/page.tsx");
+  const page = code("src/app/adm/admin/(panel)/keepsake-editor/page.tsx");
   assert.ok(page.indexOf("await requireAdmin()") > 0);
   assert.ok(page.indexOf("await requireAdmin()") < page.indexOf("getEligibleFonts()"));
   const loader = code("src/components/keepsake-editor/KeepsakeEditorLoader.tsx");
   assert.match(loader, /"use client"/);
   assert.match(loader, /ssr: false/);
-  assert.match(read("src/components/admin/AdminSidebar.tsx"), /\/admin\/keepsake-editor/);
+  assert.match(read("src/components/admin/AdminSidebar.tsx"), /adminPath\("\/keepsake-editor"\)/);
   const config = read("next.config.ts");
-  assert.match(config, /"\/admin\/keepsake-editor\/fonts\/\*": \["\.\/assets\/fonts\/\*\*\/\*"\]/);
+  assert.match(config, /"\/adm\/admin\/keepsake-editor\/fonts\/\*": \["\.\/assets\/fonts\/\*\*\/\*"\]/);
 });
 
 test("nothing in the editor sends data anywhere: no fetch, upload, storage or server action", () => {
@@ -861,7 +861,7 @@ test("nothing in the editor sends data anywhere: no fetch, upload, storage or se
   // The one request the editor makes is for font files, through FontFace, from the admin route.
   const urlUsers = EDITOR_FILES.filter((file) => /url\(|https?:\/\//.test(code(file)));
   assert.deepEqual(urlUsers, ["src/components/keepsake-editor/use-fonts.ts"]);
-  assert.match(code("src/components/keepsake-editor/use-fonts.ts"), /FONT_ROUTE = "\/admin\/keepsake-editor\/fonts"/);
+  assert.match(code("src/components/keepsake-editor/use-fonts.ts"), /FONT_ROUTE = adminPath\("\/keepsake-editor\/fonts"\)/);
   // Images are read from the file input into memory.
   assert.match(code("src/components/keepsake-editor/KeepsakeEditor.tsx"), /createImageBitmap\(file, \{ imageOrientation: "from-image" \}\)/);
 });
@@ -875,7 +875,7 @@ test("the pure modules import no React, DOM or server code", () => {
 });
 
 test("wording: the product is never called glass or crystal, and the preview band is fixed", () => {
-  const files = [...EDITOR_FILES, "src/app/admin/keepsake-editor/page.tsx"];
+  const files = [...EDITOR_FILES, "src/app/adm/admin/(panel)/keepsake-editor/page.tsx"];
   for (const file of files) {
     assert.equal(/\b(glass|crystal)\b/i.test(read(file)), false, file);
   }
@@ -1183,7 +1183,7 @@ test("source rules for the review fixes", () => {
   assert.match(exporter, /sheetLabel\(job\.scene, layer, index, total, sheet, job\.code\)/);
 
   // KE-L11: a guard failure that is not about sign-in is a server error, with no detail.
-  const route = code("src/app/admin/keepsake-editor/fonts/[id]/route.ts");
+  const route = code("src/app/adm/admin/(panel)/keepsake-editor/fonts/[id]/route.ts");
   assert.match(route, /if \(error instanceof AdminAuthError\) \{/);
   assert.match(route, /\{ error: "Server error" \}, \{ status: 500 \}/);
   assert.equal(/: 401;/.test(route), false);

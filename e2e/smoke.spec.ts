@@ -38,7 +38,7 @@ async function readClientCspViolations(
 test.describe("Thi Bút E2E Hydration, CSP & Accessibility Smoke Suite (R-601)", () => {
   for (const route of [
     "/",
-    "/auth/login",
+    "/adm/admin/login",
     "/custom",
     "/personal",
     "/business",

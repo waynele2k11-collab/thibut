@@ -203,11 +203,10 @@ export async function resolveCallerIdentity(): Promise<CallerIdentity> {
 
   let userId: string | null = null;
   try {
-    const { createClient } = await import("@/utils/supabase/server");
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (!error && data?.user?.id) {
-      userId = data.user.id;
+    const { getSessionUser } = await import("@/lib/auth/session");
+    const sessionUser = await getSessionUser();
+    if (sessionUser?.id) {
+      userId = sessionUser.id;
     }
   } catch {
     userId = null;

@@ -15,7 +15,7 @@ import {
   getCookieValue,
 } from "@/lib/services/personalization/sessionAuth";
 import { assertAdminApi } from "@/utils/admin/auth";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 
 const AssetIdQuerySchema = z.string().trim().min(1).max(128);
 
@@ -30,19 +30,9 @@ export class BackgroundUploadHttpError extends Error {
 }
 
 async function resolveUploadDbUserId(): Promise<string | null> {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
-    return null;
-  }
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-    if (error || !user) {
+    const user = await getSessionUser();
+    if (!user) {
       return null;
     }
 

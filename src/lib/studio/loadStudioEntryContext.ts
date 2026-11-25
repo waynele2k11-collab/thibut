@@ -9,7 +9,7 @@ import {
   ANON_SESSION_COOKIE,
   verifyAnonSessionToken,
 } from "@/lib/security/tokens";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import type { GalleryRemixContext, StudioFontOption } from "./fontPairing";
 
 const ValidUuidSchema = z
@@ -136,10 +136,9 @@ export async function resolveStudioCallerIdentity(): Promise<{
 
   let userId: string | null = null;
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (!error && data?.user?.id) {
-      userId = data.user.id;
+    const sessionUser = await getSessionUser();
+    if (sessionUser?.id) {
+      userId = sessionUser.id;
     }
   } catch {
     userId = null;

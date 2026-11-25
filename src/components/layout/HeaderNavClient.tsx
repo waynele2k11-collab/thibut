@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, User, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 export interface NavLinkItem {
   href: string;
@@ -193,14 +193,6 @@ export function HeaderNavClient({
               className="flex items-center gap-3 py-3 px-4 rounded-lg font-label-caps text-label-caps uppercase text-on-surface hover:bg-surface-container-high transition-colors motion-reduce:transition-none"
             >
               Orders &amp; Downloads
-            </Link>
-            <Link
-              href="/auth/login"
-              onClick={closeDrawer}
-              className="flex items-center gap-3 py-3 px-4 rounded-lg font-label-caps text-label-caps uppercase text-on-surface hover:bg-surface-container-high transition-colors motion-reduce:transition-none"
-            >
-              <User className="w-4 h-4" aria-hidden="true" />
-              My Account
             </Link>
           </div>
         </div>

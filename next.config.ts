@@ -8,8 +8,10 @@ const nextConfig: NextConfig = {
     "/api/inngest": ["./assets/fonts/**/*"],
     // Keepsake editor: the page reads the fonts to list the eligible ones, and the admin-only
     // font route streams them. Keys are route globs, so the dynamic segment is written as "*".
-    "/admin/keepsake-editor": ["./assets/fonts/**/*"],
-    "/admin/keepsake-editor/fonts/*": ["./assets/fonts/**/*"],
+    // The admin address is written out here because this file cannot rely on importing from
+    // src/. It must match ADMIN_BASE_PATH in src/lib/admin-path.ts; a test checks that.
+    "/adm/admin/keepsake-editor": ["./assets/fonts/**/*"],
+    "/adm/admin/keepsake-editor/fonts/*": ["./assets/fonts/**/*"],
   },
   outputFileTracingExcludes: {
     "/checkout": ["./assets/fonts/**/*"],
@@ -24,6 +26,9 @@ const nextConfig: NextConfig = {
       { source: "/create/:path*", destination: "/custom", permanent: false },
       { source: "/gallery", destination: "/personal", permanent: false },
       { source: "/gallery/:slug", destination: "/personal", permanent: false },
+      // The Creator Studio is paused and there are no creator accounts.
+      { source: "/studio", destination: "/custom", permanent: false },
+      { source: "/studio/:path*", destination: "/custom", permanent: false },
       // Pages that only feed the paused Studio.
       ...[
         "/vietnamese-thu-phap",
@@ -35,6 +40,12 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // Admin pages must never be indexed. (They are not listed in robots.txt on purpose:
+      // that file is public.) Must match ADMIN_BASE_PATH in src/lib/admin-path.ts.
+      {
+        source: "/adm/admin/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
       {
         source: "/:path*",
         headers: [

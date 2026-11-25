@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { isPlaceholderSecret } from "@/lib/security/placeholder";
 
 export class EnvValidationError extends Error {
   public readonly issues: readonly string[];
@@ -19,15 +20,12 @@ const BaseEnvSchema = z.object({
     .default("development"),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
   DATABASE_URL: z.string().optional(),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_TAX_ENABLED: z.enum(["true", "false"]).optional(),
   PRINTFUL_API_KEY: z.string().optional(),
   PRINTFUL_WEBHOOK_SECRET: z.string().optional(),
   ADMIN_SESSION_SECRET: z.string().optional(),
-  ADMIN_MASTER_PASSWORD: z.string().optional(),
   DEVICE_TRUST_SECRET: z.string().optional(),
   DOWNLOAD_TOKEN_SECRET: z.string().optional(),
   ANON_SESSION_SECRET: z.string().optional(),
@@ -57,8 +55,6 @@ const MIN_SECRET_LENGTH_KEYS = [
 const REQUIRED_PRODUCTION_KEYS = [
   "DATABASE_URL",
   "NEXT_PUBLIC_APP_URL",
-  "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET",
   "PRINTFUL_API_KEY",
@@ -102,8 +98,8 @@ export function validateServerEnv(
     const issues: string[] = [];
 
     // A Vercel preview deployment is for testing before every outside service is set up.
-    // It still needs its database and its signing secrets; the outside services (sign-in
-    // provider, payments, fulfilment, jobs, file storage) are checked on the live site only.
+    // It still needs its database and its signing secrets; the outside services (payments,
+    // fulfilment, jobs, file storage) are checked on the live site only.
     const isPreviewDeployment =
       rawEnv.VERCEL_ENV === "preview" && !options.forceProduction;
     const requiredKeys: readonly string[] = isPreviewDeployment
@@ -122,6 +118,10 @@ export function validateServerEnv(
       if (!val || val.length < 32) {
         issues.push(
           `${secretKey} must be at least 32 characters in production`
+        );
+      } else if (isPlaceholderSecret(val)) {
+        issues.push(
+          `${secretKey} is still the placeholder from .env.example; set a random value`
         );
       }
     }

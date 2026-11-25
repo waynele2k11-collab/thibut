@@ -312,6 +312,10 @@ model User {
   orders   Order[]
   aiUsage  AIUsageEntry[]
   deviceVerifications DeviceVerification[]
+  adminCredential     AdminCredential?
+  adminRecoveryCodes  AdminRecoveryCode[]
+  adminSessions       AdminSession[]
+  adminChallenges     AdminSignInChallenge[]
 
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -1551,4 +1555,74 @@ model DeviceVerification {
   createdAt DateTime @default(now())
 
   @@index([userId, code])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN SIGN-IN (docs/AUTH_MOVE_PLAN.md, option B)
+// One operator account: password (scrypt), authenticator app, recovery codes.
+// ═══════════════════════════════════════════════════════════════
+
+model AdminCredential {
+  userId           String   @id
+  user             User     @relation(fields: [userId], references: [id])
+  /// scrypt:N:r:p:salt:hash. Never a plain-text password.
+  passwordHash     String
+  /// Authenticator secret, AES-256-GCM sealed with a key derived from ADMIN_SESSION_SECRET.
+  totpSecretSealed String
+  /// The newest time step a code was accepted for. A code is never accepted twice.
+  totpLastStep     Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model AdminRecoveryCode {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  /// Keyed hash (HMAC-SHA256). The code itself is shown once and never stored.
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, codeHash])
+}
+
+model AdminSession {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+/// Ties the code step to a password step that just succeeded, and caps the tries.
+model AdminSignInChallenge {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  tries      Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
+
+/// One row per sign-in try, written before the try is checked. Holds no password and no code.
+model AdminLoginAttempt {
+  id          String   @id @default(uuid())
+  /// PASSWORD, CODE (authenticator) or RECOVERY
+  kind        String
+  /// Keyed hash of the caller's address; the address itself is not stored.
+  addressHash String
+  succeeded   Boolean  @default(false)
+  /// Refused by the slow limit on wrong authenticator codes. Kept for the record, not counted.
+  refused     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([addressHash, createdAt])
 }

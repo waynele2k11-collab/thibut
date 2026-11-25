@@ -21,7 +21,7 @@ import {
   ANON_SESSION_COOKIE,
   verifyAnonSessionToken,
 } from "@/lib/security/tokens";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import type { CheckoutRequestPayload } from "./CheckoutButton";
 
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
@@ -99,10 +99,9 @@ async function resolveCaller(): Promise<{
 
   let userId: string | null = null;
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (!error && data?.user?.id) {
-      userId = data.user.id;
+    const sessionUser = await getSessionUser();
+    if (sessionUser?.id) {
+      userId = sessionUser.id;
     }
   } catch {
     userId = null;

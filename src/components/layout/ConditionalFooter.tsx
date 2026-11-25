@@ -1,5 +1,6 @@
 "use client";
 
+import { adminPath } from "@/lib/admin-path";
 import { usePathname } from "next/navigation";
 
 export function ConditionalFooter({
@@ -11,7 +12,7 @@ export function ConditionalFooter({
   const isDedicatedStudioRoute =
     pathname === "/create" ||
     pathname.startsWith("/create/") ||
-    pathname.startsWith("/admin/studio");
+    pathname.startsWith(adminPath("/studio"));
 
   if (isDedicatedStudioRoute) {
     return null;

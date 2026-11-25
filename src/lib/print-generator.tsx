@@ -143,7 +143,6 @@ const SAFE_HEIGHT = PRINT_MASTER_HEIGHT - SAFE_PAD_Y * 2; // 4752px
 const DEFAULT_ALLOWED_ASSET_HOST_SUFFIXES = [
   ".public.blob.vercel-storage.com",
   ".blob.vercel-storage.com",
-  ".supabase.co",
 ];
 
 const DEFAULT_ALLOWED_ASSET_HOSTS = new Set<string>([

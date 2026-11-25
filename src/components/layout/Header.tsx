@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ScrollText, Search, User } from "lucide-react";
+import { ScrollText, Search } from "lucide-react";
 import { CartBadge } from "./CartBadge";
 import { HeaderNavClient, type NavLinkItem } from "./HeaderNavClient";
 
@@ -44,13 +44,6 @@ export function Header() {
                   <ScrollText className="w-5 h-5" aria-hidden="true" />
                 </Link>
                 <CartBadge className="p-1.5" />
-                <Link
-                  href="/auth/login"
-                  aria-label="Account"
-                  className="p-1.5 rounded text-primary hover:text-secondary transition-colors duration-300 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-                >
-                  <User className="w-5 h-5" aria-hidden="true" />
-                </Link>
               </div>
               <CartBadge className="md:hidden p-2" />
             </>

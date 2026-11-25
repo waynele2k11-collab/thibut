@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import * as nodeModule from "node:module";
+import { authSeamStubUrl, isAuthSeamSpecifier } from "./helpers/auth-seam-stub";
 
 interface ResolveContext {
   conditions: string[];
@@ -325,12 +326,9 @@ globalThis.__tbRuntimeTestHooks = {
         shortCircuit: true,
       };
     }
-    if (
-      specifier === "@/utils/supabase/server" ||
-      specifier.endsWith("/utils/supabase/server")
-    ) {
+    if (isAuthSeamSpecifier(specifier)) {
       return {
-        url: "data:text/javascript,export const createClient = () => globalThis.__tbRuntimeTestHooks.createSupabaseClient();",
+        url: authSeamStubUrl("__tbRuntimeTestHooks"),
         shortCircuit: true,
       };
     }
@@ -359,12 +357,9 @@ const {
   CSP_REPORT_TO_HEADER_VALUE,
   applySecurityHeaders,
   buildCspHeader,
-} = await import("@/utils/supabase/middleware");
+} = await import("@/lib/security/headers");
 const { POST: cspReportPost } = await import("@/app/api/csp-report/route");
 const { ensureStudioSessionAction } = await import("@/app/actions/composition");
-const { POST: deviceCheckPost } = await import(
-  "@/app/api/auth/device-check/route"
-);
 const analyzeRoute = await import("@/app/api/personalization/analyze/route");
 const generateRoute = await import("@/app/api/personalization/generate/route");
 const detectLanguageRoute = await import(
@@ -377,8 +372,6 @@ function buildValidProductionEnv(): Record<string, string> {
     NODE_ENV: "production",
     NEXT_PUBLIC_APP_URL: "https://thibut.com",
     DATABASE_URL: "postgresql://user:pass@db.example.com:5432/thibut",
-    NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co",
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.anon",
     STRIPE_SECRET_KEY: "sk_live_real_secret_key_for_thibut_platform",
     STRIPE_WEBHOOK_SECRET: "whsec_real_stripe_webhook_secret_123456",
     PRINTFUL_API_KEY: "pf_live_api_key_1234567890",
@@ -485,7 +478,11 @@ test("R-100, R-101 & R-302: dynamic nonce layout, self-hosted DESIGN.md fonts, s
   );
   assert.ok(imgTokens.includes("https://files.cdn.printful.com"));
   assert.ok(imgTokens.includes("https://*.public.blob.vercel-storage.com"));
-  assert.ok(imgTokens.includes("https://*.supabase.co"));
+  assert.equal(
+    csp.includes("supabase"),
+    false,
+    "No CSP directive may allow Supabase hosts after the sign-in move"
+  );
 
   // 2. Verify applySecurityHeaders attaches Report-To JSON header
   const dummyRes = applySecurityHeaders(NextResponse.next(), csp);
@@ -790,36 +787,32 @@ test("R-300: distributed rate limiter enforces a single global limit across inde
   // Verify blocked attempt rolled back via ZREM so cardinality stays at 3 (not 4)
   assert.equal(redisSortedSets.get("tb:rl:paid-ai:buyer-1")?.size, 3);
 
-  // 3. Verify /api/auth/device-check uses distributed store and blocks 4th PIN request with 429
+  // 3. The shared store set for tests is the one enforceDistributedRateLimit uses by default:
+  //    three tries pass and the fourth is refused with 429 (the admin sign-in brake relies on this)
   const sharedMap = new Map<string, number[]>();
   setDistributedRateLimitStoreForTests(
     createSharedMemoryRateLimitStore(sharedMap)
   );
-  state.supabaseUser = { id: "u-pin-test", email: "creator@thibut.com" };
-  state.users.set("u-pin-test", {
-    id: "u-pin-test",
-    email: "creator@thibut.com",
-    phoneNumber: null,
-    status: "ACTIVE",
-  });
-
   for (let i = 0; i < 3; i++) {
-    const okPinRes = await deviceCheckPost(
-      new Request("https://thibut.com/api/auth/device-check", {
-        method: "POST",
-        headers: { "x-vercel-forwarded-for": "198.51.100.77" },
-      })
-    );
-    assert.equal(okPinRes.status, 200);
+    const okRes = await enforceDistributedRateLimit({
+      bucket: "admin-sign-in-password",
+      key: "198.51.100.77",
+      limit: 3,
+      windowMs: 15 * 60_000,
+    });
+    assert.equal(okRes.allowed, true);
   }
-
-  const fourthPinRes = await deviceCheckPost(
-    new Request("https://thibut.com/api/auth/device-check", {
-      method: "POST",
-      headers: { "x-vercel-forwarded-for": "198.51.100.77" },
-    })
+  await assert.rejects(
+    () =>
+      enforceDistributedRateLimit({
+        bucket: "admin-sign-in-password",
+        key: "198.51.100.77",
+        limit: 3,
+        windowMs: 15 * 60_000,
+      }),
+    (err: unknown) => err instanceof RateLimitError && err.status === 429
   );
-  assert.equal(fourthPinRes.status, 429);
+  assert.equal(sharedMap.size, 1);
   resetRateLimitStore();
 });
 

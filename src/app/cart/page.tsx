@@ -25,7 +25,7 @@ import {
   verifyAnonSessionToken,
 } from "@/lib/security/tokens";
 import { DEFAULT_INK_HEX } from "@/lib/studio/inkPalette";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import {
   removeFromCartFormAction,
   updateCartItemQuantityFormAction,
@@ -97,10 +97,9 @@ async function resolveCallerIds(): Promise<{
 
   let userId: string | null = null;
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (!error && data?.user?.id) {
-      userId = data.user.id;
+    const sessionUser = await getSessionUser();
+    if (sessionUser?.id) {
+      userId = sessionUser.id;
     }
   } catch {
     userId = null;

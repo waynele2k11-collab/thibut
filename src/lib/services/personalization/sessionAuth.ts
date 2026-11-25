@@ -7,7 +7,7 @@ import {
   signAnonSessionToken,
   verifyAnonSessionToken,
 } from "@/lib/security/tokens";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 
 export const ANON_COOKIE_TTL_SECONDS = 60 * 60 * 24 * 30;
 
@@ -54,19 +54,9 @@ export async function getCookieValue(
 }
 
 export async function resolveAuthenticatedDbUserId(): Promise<string | null> {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
-    return null;
-  }
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-    if (error || !user) {
+    const user = await getSessionUser();
+    if (!user) {
       return null;
     }
 

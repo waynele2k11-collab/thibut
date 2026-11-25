@@ -1,5 +1,6 @@
 "use server";
 
+import { adminPath } from "@/lib/admin-path";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
@@ -147,7 +148,7 @@ export async function importPrintfulProductAction(
     await syncService.importCatalogProduct(parsedId.data, category, slug);
 
     try {
-      revalidatePath("/admin/products");
+      revalidatePath(adminPath("/products"));
       revalidatePath("/create");
     } catch (revalidateErr: unknown) {
       console.warn("[printful-admin] revalidatePath skipped:", revalidateErr);
@@ -181,7 +182,7 @@ export async function toggleProductStatusAction(
     });
 
     try {
-      revalidatePath("/admin/products");
+      revalidatePath(adminPath("/products"));
       revalidatePath("/create");
     } catch (revalidateErr: unknown) {
       console.warn("[printful-admin] revalidatePath skipped:", revalidateErr);

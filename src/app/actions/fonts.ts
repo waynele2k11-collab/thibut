@@ -1,5 +1,6 @@
 "use server";
 
+import { adminPath } from "@/lib/admin-path";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/utils/admin/auth";
@@ -32,7 +33,7 @@ export async function toggleFontStatus(
       parsed.data.enabled
     );
 
-    revalidatePath("/admin/fonts");
+    revalidatePath(adminPath("/fonts"));
     revalidatePath("/create");
 
     return { success: true };

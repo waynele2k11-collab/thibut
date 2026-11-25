@@ -7,6 +7,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { PNG } from "pngjs";
 import sharp from "sharp";
+import { authSeamStubUrl, isAuthSeamSpecifier } from "./helpers/auth-seam-stub";
 
 interface ResolveContext {
   conditions: string[];
@@ -275,12 +276,9 @@ if (typeof hooksApi.registerHooks === "function") {
           shortCircuit: true,
         };
       }
-      if (
-        specifier === "@/utils/supabase/server" ||
-        specifier.endsWith("/utils/supabase/server")
-      ) {
+      if (isAuthSeamSpecifier(specifier)) {
         return {
-          url: "data:text/javascript,export const createClient = (...args) => globalThis.__tbPrintTestHooks.createSupabaseClient(...args);",
+          url: authSeamStubUrl("__tbPrintTestHooks"),
           format: "module",
           shortCircuit: true,
         };
@@ -781,8 +779,8 @@ test("R-107: public/fonts is removed, assets/fonts holds only licensed fonts, ne
       "/api/print-master": ["./assets/fonts/**/*"],
       "/api/download": ["./assets/fonts/**/*"],
       "/api/inngest": ["./assets/fonts/**/*"],
-      "/admin/keepsake-editor": ["./assets/fonts/**/*"],
-      "/admin/keepsake-editor/fonts/*": ["./assets/fonts/**/*"],
+      "/adm/admin/keepsake-editor": ["./assets/fonts/**/*"],
+      "/adm/admin/keepsake-editor/fonts/*": ["./assets/fonts/**/*"],
     });
 
     // 4. ClientCalligraphyRenderer sealFontUrl uses /api/fonts/* and never /fonts/*.ttf
