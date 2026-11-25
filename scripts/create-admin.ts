@@ -267,10 +267,11 @@ async function printQrCode(otpAuthUri: string): Promise<boolean> {
       default?: { generate: (text: string, options: { small: boolean }, done: (qr: string) => void) => void };
       generate?: (text: string, options: { small: boolean }, done: (qr: string) => void) => void;
     };
-    const generate = loaded.generate ?? loaded.default?.generate;
-    if (typeof generate !== "function") return false;
+    // Called as a method: the package reads its error-correction level from `this`.
+    const qrcode = typeof loaded.generate === "function" ? loaded : loaded.default;
+    if (!qrcode || typeof qrcode.generate !== "function") return false;
     await new Promise<void>((resolve) => {
-      generate(otpAuthUri, { small: true }, (qr) => {
+      qrcode.generate!(otpAuthUri, { small: true }, (qr) => {
         console.log("\nScan this with your authenticator app (Add account, then Scan a QR code):\n");
         console.log(qr);
         resolve();
