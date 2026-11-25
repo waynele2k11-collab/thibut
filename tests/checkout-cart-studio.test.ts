@@ -143,6 +143,8 @@ interface MockCatalogProductRow {
   name: string;
   status: string;
   defaultMarkupMinor: bigint;
+  /** Only "IN_HOUSE" products can be put in a cart or checked out (BRD v1.0 §10). */
+  fulfillmentMode: string;
 }
 
 interface MockProviderVariantRow {
@@ -372,6 +374,7 @@ function seedCatalog(): {
     name: "Premium Heavyweight Tee",
     status: "ACTIVE",
     defaultMarkupMinor: 0n,
+    fulfillmentMode: "IN_HOUSE",
   });
 
   state.variants.set(activeVariantId, {
@@ -414,6 +417,7 @@ function hydrateVariant(row: MockCatalogVariantRow | undefined) {
     name: "Unknown Product",
     status: "INACTIVE",
     defaultMarkupMinor: 0n,
+    fulfillmentMode: "IN_HOUSE",
   };
   const providerVariants = Array.from(state.providerVariants.values()).filter(
     (pv) => pv.catalogVariantId === row.id
@@ -1759,6 +1763,75 @@ test("T-204: Cart actions isolate anonymous visitors, reject raster designDataUr
   assert.equal(cartOrder.shippingMinor, 799n);
   assert.equal(cartOrder.totalMinor, 8395n);
   assert.equal(state.carts.get(addARes.cartId!)?.status, "CHECKOUT");
+});
+
+test("AC-M1: a physical item whose product is not made in-house cannot be added to a cart or checked out", async () => {
+  resetState();
+  state.cookies.clear();
+  const { productId, activeVariantId } = seedCatalog();
+  process.env.ANON_SESSION_SECRET = "wave2-anon-secret-minimum-32-chars!!";
+  process.env.STRIPE_SECRET_KEY = "sk_test_real_wave2_secret";
+  process.env.NEXT_PUBLIC_APP_URL = "https://thibut.com";
+  const product = state.products.get(productId)!;
+  const cartPayload = {
+    variantId: activeVariantId,
+    composition: sampleComposition("Bình An"),
+    text: "Bình An",
+    fontFamily: "UTM Thư Pháp Thiên Ân",
+    tradition: "VIETNAMESE_THU_PHAP",
+    placement: "front",
+    quantity: 1,
+  };
+
+  // 1. Add to cart is refused for every mode that is not exactly "IN_HOUSE".
+  for (const mode of ["PRINTFUL", "in_house", ""]) {
+    product.fulfillmentMode = mode;
+    const refused = await addToCartAction(cartPayload);
+    assert.equal(refused.success, false, `mode "${mode}" must be refused`);
+    assert.equal(refused.error, "This item is not available right now");
+  }
+  assert.equal(state.cartItems.size, 0);
+
+  // 2. An in-house product is added exactly as before.
+  product.fulfillmentMode = "IN_HOUSE";
+  const added = await addToCartAction(cartPayload);
+  assert.equal(added.success, true);
+  assert.ok(added.cartId);
+
+  // 3. The product stops being in-house while it sits in the cart: checkout refuses it
+  //    before any order row is written and before Stripe is called.
+  product.fulfillmentMode = "PRINTFUL";
+  const refusedCheckout = await checkoutPost(
+    new Request("https://thibut.com/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cartId: added.cartId }),
+    })
+  );
+  assert.equal(refusedCheckout.status, 409);
+  assert.deepEqual(await refusedCheckout.json(), {
+    error: "One item in your cart is not available right now",
+  });
+  assert.equal(state.orders.size, 0);
+  assert.equal(state.stripeCalls.length, 0);
+
+  // 4. In-house again: checkout works and the price is the one the existing tests pin
+  //    (499n + 300n + 2999n = 3798n, plus US flat shipping 599n).
+  product.fulfillmentMode = "IN_HOUSE";
+  const acceptedCheckout = await checkoutPost(
+    new Request("https://thibut.com/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cartId: added.cartId }),
+    })
+  );
+  assert.equal(acceptedCheckout.status, 200);
+  const accepted = (await acceptedCheckout.json()) as { orderId: string };
+  const order = state.orders.get(accepted.orderId)!;
+  assert.equal(order.subtotalMinor, 3798n);
+  assert.equal(order.shippingMinor, 599n);
+  assert.equal(order.totalMinor, 4397n);
+  assert.equal(state.stripeCalls.length, 1);
 });
 
 test("T-404 & T-411: ClientCalligraphyRenderer is 100% deterministic, escapes XML/XSS payloads, and defaults seal font to Ma Shan Zheng", () => {

@@ -3,6 +3,10 @@ import crypto from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import type Stripe from "stripe";
 import { z } from "zod";
+import {
+  ITEM_UNAVAILABLE_MESSAGE,
+  hasPhysicalItemNotMadeInHouse,
+} from "@/lib/catalog/fulfilmentMode";
 import { DEFAULT_CALLIGRAPHY_FONT_FAMILY } from "@/lib/fonts/fontCatalog";
 import {
   calculateFlatShippingMinor,
@@ -178,6 +182,18 @@ function withInFlightDedup(
   });
   inFlightCheckouts.set(dedupKey, promise);
   return promise;
+}
+
+/**
+ * A physical item whose product is not made in-house cannot be bought: after payment the
+ * fulfilment job could only fail the order. Validation only; it changes no price or total.
+ */
+export function assertPhysicalItemsMadeInHouse(
+  variants: Parameters<typeof hasPhysicalItemNotMadeInHouse>[0]
+): void {
+  if (hasPhysicalItemNotMadeInHouse(variants)) {
+    throw new CheckoutHttpError(409, ITEM_UNAVAILABLE_MESSAGE);
+  }
 }
 
 export function assertStripeConfigured(): void {
@@ -873,6 +889,9 @@ async function executeCartCheckout(
     }
   }
 
+  // Refuse before any money moves: a physical item must be made in-house (BRD v1.0 §10).
+  assertPhysicalItemsMadeInHouse(cart.items.map((item) => item.catalogVariant));
+
   const reusable = await tryFindReusableCartOrder({
     cartId: cart.id,
     userId: userId ?? cart.userId ?? null,
@@ -1210,6 +1229,8 @@ async function executeDirectCheckout(
   if (!input.isDigital && !variant) {
     throw new CheckoutHttpError(400, "Unknown catalog variant");
   }
+  // Refuse before any money moves. A digital purchase has no variant and is not affected.
+  assertPhysicalItemsMadeInHouse([variant]);
 
   const licenseOffer = input.licenseOfferId
     ? await prisma.licenseOffer.findUnique({
@@ -1624,6 +1645,9 @@ async function executeGalleryCheckout(
       },
     });
   }
+
+  // Refuse before any money moves. An item with no catalog variant is not a physical product.
+  assertPhysicalItemsMadeInHouse([resolvedVariant]);
 
   const shippingCountry = resolveRequestedShippingCountry(input.shippingCountry);
   const quote = calculateGalleryItemQuote(galleryItem, resolvedVariant, {

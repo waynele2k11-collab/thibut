@@ -30,6 +30,9 @@ import {
   PolicyGuard,
 } from "@/lib/services/PolicyGuard";
 import { getSessionUser } from "@/lib/auth/session";
+import { isInHouseProduct } from "@/lib/catalog/fulfilmentMode";
+
+const ITEM_NOT_AVAILABLE_TO_ADD_MESSAGE = "This item is not available right now";
 
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 const CART_ID_COOKIE = "tb_cart_id";
@@ -414,6 +417,10 @@ export async function addCatalogItemToCartAction(
     if (!variant || !variant.active || variant.product.status !== "ACTIVE") {
       return { success: false, error: "Selected size is unavailable" };
     }
+    // Only products made in-house can be sold (BRD v1.0 §10). Checkout refuses them too.
+    if (!isInHouseProduct(variant.product)) {
+      return { success: false, error: ITEM_NOT_AVAILABLE_TO_ADD_MESSAGE };
+    }
     if (
       !design ||
       design.status !== "PUBLISHED" ||
@@ -581,6 +588,10 @@ export async function addToCartAction(
         success: false,
         error: "Selected product variant is unavailable",
       };
+    }
+    // Only products made in-house can be sold (BRD v1.0 §10). Checkout refuses them too.
+    if (!isInHouseProduct(variant.product)) {
+      return { success: false, error: ITEM_NOT_AVAILABLE_TO_ADD_MESSAGE };
     }
 
     const licenseOffer = input.licenseOfferId
