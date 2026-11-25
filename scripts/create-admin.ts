@@ -255,6 +255,33 @@ async function checkCode(prisma: PrismaClient, email: string, masterSecret: stri
   }
 }
 
+/**
+ * Draws the set-up address as a QR code in this terminal window, when the optional
+ * `qrcode-terminal` package is installed. The code is drawn locally: the secret never
+ * leaves this computer. Returns false when the package is missing.
+ */
+async function printQrCode(otpAuthUri: string): Promise<boolean> {
+  try {
+    const moduleName = "qrcode-terminal";
+    const loaded = (await import(moduleName)) as {
+      default?: { generate: (text: string, options: { small: boolean }, done: (qr: string) => void) => void };
+      generate?: (text: string, options: { small: boolean }, done: (qr: string) => void) => void;
+    };
+    const generate = loaded.generate ?? loaded.default?.generate;
+    if (typeof generate !== "function") return false;
+    await new Promise<void>((resolve) => {
+      generate(otpAuthUri, { small: true }, (qr) => {
+        console.log("\nScan this with your authenticator app (Add account, then Scan a QR code):\n");
+        console.log(qr);
+        resolve();
+      });
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function printSecrets(result: Extract<AdminEnrolmentResult, { ok: true }>): void {
   const lines = [
     "",
@@ -395,6 +422,11 @@ async function main(): Promise<void> {
           : "The admin was created."
     );
     printSecrets(result);
+    if (!(await printQrCode(result.otpAuthUri))) {
+      console.log(
+        "No QR code was drawn because the optional qrcode-terminal package is not installed. Run `npm install`, or type the setup key above by hand. Never paste the key into a website that makes QR codes."
+      );
+    }
   } finally {
     await prisma.$disconnect();
   }
