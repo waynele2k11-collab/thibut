@@ -66,6 +66,9 @@ const REQUIRED_PRODUCTION_KEYS = [
   "INNGEST_SIGNING_KEY",
 ] as const;
 
+/** What a Vercel preview deployment must have. See `validateServerEnv`. */
+const PREVIEW_REQUIRED_KEYS = ["DATABASE_URL"] as const;
+
 export interface ValidateEnvOptions {
   /** Force strict production validation even during build or test runs. */
   forceProduction?: boolean;
@@ -98,7 +101,16 @@ export function validateServerEnv(
   if (enforceProdRules) {
     const issues: string[] = [];
 
-    for (const key of REQUIRED_PRODUCTION_KEYS) {
+    // A Vercel preview deployment is for testing before every outside service is set up.
+    // It still needs its database and its signing secrets; the outside services (sign-in
+    // provider, payments, fulfilment, jobs, file storage) are checked on the live site only.
+    const isPreviewDeployment =
+      rawEnv.VERCEL_ENV === "preview" && !options.forceProduction;
+    const requiredKeys: readonly string[] = isPreviewDeployment
+      ? PREVIEW_REQUIRED_KEYS
+      : REQUIRED_PRODUCTION_KEYS;
+
+    for (const key of requiredKeys) {
       const val = rawEnv[key]?.trim();
       if (!val) {
         issues.push(`${key} is required in production`);
@@ -117,7 +129,7 @@ export function validateServerEnv(
     const blobToken =
       rawEnv.BLOB_READ_WRITE_TOKEN?.trim() ||
       rawEnv.VERCEL_BLOB_READ_WRITE_TOKEN?.trim();
-    if (!blobToken) {
+    if (!blobToken && !isPreviewDeployment) {
       issues.push(
         "BLOB_READ_WRITE_TOKEN (or VERCEL_BLOB_READ_WRITE_TOKEN) is required in production"
       );
