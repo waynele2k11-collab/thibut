@@ -162,3 +162,10 @@ Not verifiable without a browser: cookies, redirects, the code email arriving, t
 | Option A, B or C | B |
 | Second step: emailed code or an authenticator app | Emailed code (same as Scyssor; Resend is needed for customer emails anyway). An authenticator app needs no email service and is the fallback if Resend is delayed |
 | Session table for true sign-out | Not now; 8-hour sessions and secret rotation are enough for one admin |
+
+## Decisions after the proposal (2026-11-24)
+
+| Decision | Detail | By |
+| --- | --- | --- |
+| Option | B: admin-only sign-in in the repository, Supabase removed. The founder was asked twice for a go-ahead and did not answer; work starts on this recommendation on its own branch and can be redirected | CTO (assumption, founder told) |
+| Second step | An authenticator app (time-based codes, RFC 6238) instead of an emailed code, because no email key exists for this project yet and sign-in must not depend on one. Ten single-use recovery codes, stored hashed. Where this plan says "emailed code", read "authenticator code" | CTO (assumption, founder told) |

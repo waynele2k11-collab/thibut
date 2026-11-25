@@ -322,3 +322,13 @@ Without Resend the customer never gets the link by email. The confirmation page 
 Transitions for every pair and actor; quote arithmetic including the 1.6× side rule; token hash, expiry and rotation; form limits and NFC; upload refusals (wrong type, too large, too many, storage missing); guards on every admin page, action and route (source test); customer actions refused with a wrong, expired or rotated token; approval records version, time and email; price-integrity; idempotent checkout.
 
 Cannot be verified here: anything in a browser, real Blob uploads and downloads, real emails, Stripe, `next build`, and the migration against Postgres.
+
+## Founder decisions after the proposal (2026-11-24)
+
+| Decision | Detail | By |
+| --- | --- | --- |
+| Payment order | The customer pays after approving the design. Nothing physical is made before payment | Founder |
+| Design deposit | An admin setting, not a code constant: on or off, and the percentage. Default: off, 10%. The founder asked for "a setting to turn on/off and change the %" | Founder |
+| Deposit rules | Percentage of the chosen size's price including the side or tier uplift; whole percent from 1 to 50; credited toward the order; not refundable once a design has been sent, fully refundable if no design is delivered. The rate and the amount are copied onto the request when it is submitted, so a later change to the setting never alters an existing request. Deposit and balance are computed on the server. The form shows the deposit and the rule before the customer submits | CTO, from the founder's "10%" |
+| Where the setting lives | A single-row settings table edited on an admin page, with every change written to the activity log. It is built with the checkout phase (Phase 2), because a deposit needs Stripe. While Stripe is not configured the switch cannot be turned on | CTO |
+| Customer view | Private link by email, no account. The founder was asked and did not answer | CTO (assumption, founder told) |
