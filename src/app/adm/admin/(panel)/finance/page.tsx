@@ -1,5 +1,4 @@
 import type { LedgerAccountType } from "@prisma/client";
-import { format } from "date-fns";
 import prisma from "@/lib/prisma";
 import { MetricCard } from "@/components/admin/MetricCard";
 import { formatUsdMinor } from "@/lib/pricing/quote";
@@ -25,7 +24,9 @@ function formatSignedLedgerBalance(balanceMinor: bigint): string {
 export default async function AdminFinancePage() {
   await requireAdmin();
 
-  const [accounts, postingGroups, recentEarnings] = await Promise.all([
+  // The ledger only. Creator earnings rows are still written for every paid order (payment
+  // settlement needs them) but are no longer listed here: no outside creators exist.
+  const [accounts, postingGroups] = await Promise.all([
     prisma.ledgerAccount.findMany({
       orderBy: { code: "asc" },
     }),
@@ -33,18 +34,6 @@ export default async function AdminFinancePage() {
       by: ["accountId"],
       _sum: {
         amountMinor: true,
-      },
-    }),
-    prisma.creatorEarning.findMany({
-      take: 20,
-      orderBy: { createdAt: "desc" },
-      include: {
-        creator: true,
-        orderItem: {
-          include: {
-            order: true,
-          },
-        },
       },
     }),
   ]);
@@ -78,7 +67,7 @@ export default async function AdminFinancePage() {
             Finance Ledger
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Platform revenue, creator payouts, and double-entry ledger accounts.
+            Revenue and double-entry ledger accounts.
           </p>
         </div>
       </div>
@@ -89,7 +78,7 @@ export default async function AdminFinancePage() {
           value={formatUsdMinor(totalPlatformRevenueMinor)}
         />
         <MetricCard
-          title="Pending Creator Payouts"
+          title="Creator Payable (Ledger)"
           value={formatUsdMinor(totalCreatorPendingMinor)}
         />
         <MetricCard
@@ -98,7 +87,7 @@ export default async function AdminFinancePage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+      <div className="grid grid-cols-1 gap-gutter">
         <div className="bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden">
           <div className="p-6 border-b border-surface-variant">
             <h2 className="font-label-caps text-label-caps uppercase text-on-surface-variant">
@@ -158,55 +147,6 @@ export default async function AdminFinancePage() {
                 )}
               </tbody>
             </table>
-          </div>
-        </div>
-
-        <div className="bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden">
-          <div className="p-6 border-b border-surface-variant">
-            <h2 className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-              Recent Creator Earnings
-            </h2>
-          </div>
-          <div className="p-6 space-y-4">
-            {recentEarnings.map((earning) => (
-              <div
-                key={earning.id}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-4 bg-background border border-surface-variant rounded-lg"
-              >
-                <div>
-                  <p className="font-body-md text-body-md text-on-background">
-                    {earning.creator.displayName}
-                  </p>
-                  <p className="font-label-caps text-label-caps text-on-surface-variant mt-1">
-                    Order {earning.orderItem.order.orderNumber} ·{" "}
-                    {format(new Date(earning.createdAt), "MMM d")}
-                  </p>
-                </div>
-                <div className="sm:text-right">
-                  <p className="font-body-md text-body-md text-on-background">
-                    {earning.status === "REVERSED"
-                      ? `-${formatUsdMinor(earning.netCreatorMinor)}`
-                      : `+${formatUsdMinor(earning.netCreatorMinor)}`}
-                  </p>
-                  <span
-                    className={`inline-flex px-2 py-1 mt-1 font-label-caps text-label-caps uppercase rounded ${
-                      earning.status === "TRANSFERRED"
-                        ? "bg-primary text-on-primary"
-                        : earning.status === "HELD" || earning.status === "REVERSED"
-                          ? "bg-error-container text-on-error-container"
-                          : "bg-surface-container-high text-on-surface"
-                    }`}
-                  >
-                    {earning.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-            {recentEarnings.length === 0 && (
-              <p className="font-body-md text-body-md text-center text-on-surface-variant py-4">
-                No recent earnings found.
-              </p>
-            )}
           </div>
         </div>
       </div>

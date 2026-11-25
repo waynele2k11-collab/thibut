@@ -4,38 +4,32 @@ import { adminPath } from "@/lib/admin-path";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BookOpen,
+  Brush,
   CreditCard,
-  Image as ImageIcon,
+  Landmark,
   Layers,
   LayoutDashboard,
   LogOut,
   Palette,
   Store,
   Type,
-  Users,
-  UserSquare2,
 } from "lucide-react";
 import { signOutAction, signOutEverywhereAction } from "@/app/adm/admin/(sign-in)/login/actions";
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  // The eight sections the keepsake business uses (docs/ADMIN_CLEANUP_PLAN.md, AC-02).
+  // Sellers, Art, Gallery, Presets, Knowledge and Users are not listed: their pages still
+  // exist behind the admin sign-in and open when their address is typed.
   const navItems = [
     { name: "Dashboard", href: adminPath(), icon: LayoutDashboard },
-    { name: "Fonts", href: adminPath("/fonts"), icon: Type },
-    { name: "Users", href: adminPath("/users"), icon: Users },
-    { name: "Sellers", href: adminPath("/sellers"), icon: UserSquare2 },
-    { name: "Art", href: adminPath("/art"), icon: Palette },
-    { name: "Presets", href: adminPath("/background-presets"), icon: ImageIcon },
-    { name: "Calligraphy", href: adminPath("/ai/calligraphy"), icon: Palette },
-    { name: "Knowledge", href: adminPath("/knowledge"), icon: BookOpen },
-    { name: "Admin Studio", href: adminPath("/studio"), icon: Palette },
-    { name: "Keepsake Editor", href: adminPath("/keepsake-editor"), icon: Layers },
-    { name: "Catalog", href: adminPath("/catalog"), icon: Store },
-    { name: "Gallery", href: adminPath("/gallery"), icon: Store },
-    { name: "Products", href: adminPath("/products"), icon: Store },
     { name: "Orders", href: adminPath("/orders"), icon: CreditCard },
-    { name: "Finance", href: adminPath("/finance"), icon: CreditCard },
+    { name: "Catalog", href: adminPath("/catalog"), icon: Store },
+    { name: "Keepsake Editor", href: adminPath("/keepsake-editor"), icon: Layers },
+    { name: "Fonts", href: adminPath("/fonts"), icon: Type },
+    { name: "Calligraphy", href: adminPath("/ai/calligraphy"), icon: Brush },
+    { name: "Admin Studio", href: adminPath("/studio"), icon: Palette },
+    { name: "Finance", href: adminPath("/finance"), icon: Landmark },
   ];
 
   return (

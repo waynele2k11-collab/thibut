@@ -13,6 +13,11 @@ import {
   slugify,
 } from "@/lib/catalog/adminInput";
 import { PLATFORM_CREATOR_SLUG, isDivisionSlug } from "@/lib/catalog/divisions";
+import {
+  FAILED_ORDER_CONFIRM_ERROR,
+  FAILED_ORDER_CONFIRM_FIELD,
+  mayMoveOrder,
+} from "@/lib/catalog/orderAttention";
 import { sendOrderShippedEmail } from "@/lib/email";
 import { parseDecimalDollarsToMinor } from "@/lib/money";
 import prisma from "@/lib/prisma";
@@ -354,9 +359,19 @@ export async function updateOrderFulfillmentFormAction(formData: FormData) {
   if (order.paymentStatus !== "SUCCEEDED") {
     finish(path, "error", "Only paid orders can move through fulfilment.");
   }
-  // Printful-fulfilled orders are driven by the provider webhook, not by hand.
+  // An order that carries an outside provider's order id predates in-house production. It is
+  // kept for the record and is not moved by hand here.
   if (order.externalFulfillmentId) {
-    finish(path, "error", "This order is fulfilled by Printful and updates automatically.");
+    finish(
+      path,
+      "error",
+      "This order was handled by an outside provider (legacy) and cannot be updated here."
+    );
+  }
+
+  // A FAILED order holds an item that is not made in-house. It moves only on purpose.
+  if (!mayMoveOrder(order.fulfillmentStatus, formData.get(FAILED_ORDER_CONFIRM_FIELD))) {
+    finish(path, "error", FAILED_ORDER_CONFIRM_ERROR);
   }
 
   const wasShipped =

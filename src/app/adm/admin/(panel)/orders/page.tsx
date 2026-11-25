@@ -8,17 +8,31 @@ import {
   ADMIN_FIELD,
   AdminNotice,
 } from "@/components/admin/AdminNotice";
+import Link from "next/link";
+import { adminPath } from "@/lib/admin-path";
 import { ADMIN_FULFILLMENT_STATUSES } from "@/lib/catalog/adminInput";
+import {
+  FAILED_ORDER_CONFIRM_FIELD,
+  FAILED_ORDER_CONFIRM_LABEL,
+  FAILED_ORDER_CONFIRM_VALUE,
+  FAILED_ORDER_REASON,
+  ORDERS_ATTENTION_FILTER,
+  PAID_ORDERS_NEEDING_ATTENTION_WHERE,
+  orderNeedsAttention,
+} from "@/lib/catalog/orderAttention";
 
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ notice?: string; error?: string }>;
+  searchParams: Promise<{ notice?: string; error?: string; filter?: string }>;
 }) {
   await requireAdmin();
-  const { notice, error } = await searchParams;
+  const { notice, error, filter } = await searchParams;
+  // `?filter=attention`: only paid orders that failed and are not being made.
+  const attentionOnly = filter === ORDERS_ATTENTION_FILTER;
 
   const orders = await prisma.order.findMany({
+    ...(attentionOnly ? { where: PAID_ORDERS_NEEDING_ATTENTION_WHERE } : {}),
     orderBy: { createdAt: "desc" },
     include: {
       buyer: true,
@@ -44,6 +58,24 @@ export default async function AdminOrdersPage({
       </div>
 
       <AdminNotice notice={notice} error={error} />
+
+      {attentionOnly && (
+        <div
+          role="status"
+          className="flex flex-col gap-2 p-4 bg-error-container border border-error/30 rounded-lg sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="font-body-md text-sm text-on-error-container">
+            Showing {orders.length} paid{" "}
+            {orders.length === 1 ? "order that needs" : "orders that need"} attention.
+          </p>
+          <Link
+            href={adminPath("/orders")}
+            className="font-label-caps text-label-caps uppercase text-on-error-container hover:underline"
+          >
+            Show all orders
+          </Link>
+        </div>
+      )}
 
       <div className="bg-surface-container-lowest border border-surface-variant rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
@@ -80,6 +112,7 @@ export default async function AdminOrdersPage({
                   order.buyer?.email ??
                   order.buyerEmail ??
                   "Guest";
+                const needsAttention = orderNeedsAttention(order);
 
                 return (
                   <tr
@@ -132,6 +165,11 @@ export default async function AdminOrdersPage({
                       >
                         {order.fulfillmentStatus}
                       </span>
+                      {needsAttention && (
+                        <p className="mt-2 max-w-xs font-body-md text-xs text-on-error-container">
+                          {FAILED_ORDER_REASON}
+                        </p>
+                      )}
                     </td>
                     <td className="px-6 py-4 font-body-md text-body-md text-on-surface-variant">
                       {format(new Date(order.createdAt), "MMM d, yyyy")}
@@ -185,13 +223,27 @@ export default async function AdminOrdersPage({
                             defaultValue={order.trackingNumber ?? ""}
                             className={ADMIN_FIELD}
                           />
+                          {needsAttention && (
+                            <label className="flex items-start gap-2 font-body-md text-xs text-on-surface">
+                              <input
+                                type="checkbox"
+                                name={FAILED_ORDER_CONFIRM_FIELD}
+                                value={FAILED_ORDER_CONFIRM_VALUE}
+                                required
+                                className="mt-0.5"
+                              />
+                              <span>{FAILED_ORDER_CONFIRM_LABEL}</span>
+                            </label>
+                          )}
                           <button type="submit" className={ADMIN_BUTTON}>
                             Update
                           </button>
                         </form>
                       ) : (
                         <span className="font-body-md text-body-md text-on-surface-variant">
-                          {order.externalFulfillmentId ? "Printful" : "—"}
+                          {order.externalFulfillmentId
+                            ? "Handled by an outside provider (legacy)"
+                            : "—"}
                         </span>
                       )}
                     </td>
