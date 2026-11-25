@@ -23,8 +23,6 @@ const BaseEnvSchema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_TAX_ENABLED: z.enum(["true", "false"]).optional(),
-  PRINTFUL_API_KEY: z.string().optional(),
-  PRINTFUL_WEBHOOK_SECRET: z.string().optional(),
   ADMIN_SESSION_SECRET: z.string().optional(),
   DEVICE_TRUST_SECRET: z.string().optional(),
   DOWNLOAD_TOKEN_SECRET: z.string().optional(),
@@ -57,8 +55,6 @@ const REQUIRED_PRODUCTION_KEYS = [
   "NEXT_PUBLIC_APP_URL",
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET",
-  "PRINTFUL_API_KEY",
-  "PRINTFUL_WEBHOOK_SECRET",
   "INNGEST_SIGNING_KEY",
 ] as const;
 

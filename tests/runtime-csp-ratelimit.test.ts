@@ -374,8 +374,6 @@ function buildValidProductionEnv(): Record<string, string> {
     DATABASE_URL: "postgresql://user:pass@db.example.com:5432/thibut",
     STRIPE_SECRET_KEY: "sk_live_real_secret_key_for_thibut_platform",
     STRIPE_WEBHOOK_SECRET: "whsec_real_stripe_webhook_secret_123456",
-    PRINTFUL_API_KEY: "pf_live_api_key_1234567890",
-    PRINTFUL_WEBHOOK_SECRET: "pf_whsec_live_secret_1234567890",
     INNGEST_SIGNING_KEY: "signkey-prod-0123456789abcdef0123456789abcdef",
     BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_live_token_123456789",
     ADMIN_SESSION_SECRET: "a".repeat(32),
@@ -438,6 +436,38 @@ test("R-002, R-303 & R-400: validateServerEnv enforces INNGEST_SIGNING_KEY and >
   });
   assert.equal(validProd.NODE_ENV, "production");
   assert.ok(validProd.INNGEST_SIGNING_KEY);
+
+  // 5b. The live site starts without any print-on-demand provider setting: the fixture above
+  //     names none, and each service the business still uses stays required.
+  const fixtureKeys = Object.keys(buildValidProductionEnv());
+  assert.equal(
+    fixtureKeys.some((key) => key.startsWith("PRINTFUL")),
+    false,
+    "the valid production fixture must not carry provider settings"
+  );
+  for (const stillRequired of [
+    "DATABASE_URL",
+    "NEXT_PUBLIC_APP_URL",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "INNGEST_SIGNING_KEY",
+    "BLOB_READ_WRITE_TOKEN",
+    "ADMIN_SESSION_SECRET",
+    "ANON_SESSION_SECRET",
+    "DOWNLOAD_TOKEN_SECRET",
+    "FULFILLMENT_SECRET_KEY",
+    "DEVICE_TRUST_SECRET",
+  ]) {
+    const withoutOne = buildValidProductionEnv();
+    delete withoutOne[stillRequired];
+    assert.throws(
+      () => validateServerEnv(withoutOne, { forceProduction: true }),
+      (err: unknown) =>
+        err instanceof EnvValidationError &&
+        err.issues.some((msg) => msg.includes(stillRequired)),
+      `${stillRequired} must stay required on the live site`
+    );
+  }
 
   // 6. Heavy personalization & Inngest routes configure runtime = "nodejs" and maxDuration = 60
   for (const mod of [
