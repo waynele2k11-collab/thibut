@@ -5,6 +5,7 @@
  *   node --env-file=<settings file> --import ./scripts/test-loader.mjs scripts/create-admin.ts --reset-authenticator
  *   node --env-file=<settings file> --import ./scripts/test-loader.mjs scripts/create-admin.ts --clear-lockout
  *   node --env-file=<settings file> --import ./scripts/test-loader.mjs scripts/create-admin.ts --forgot-password
+ *   node --env-file=<settings file> --import ./scripts/test-loader.mjs scripts/create-admin.ts --check-code
  *
  * No option: create the admin, or (after the CURRENT password is checked) replace the password,
  * authenticator and recovery codes. --reset-authenticator: new authenticator and recovery codes,
@@ -38,13 +39,15 @@ import {
   type AdminEnrolmentStore,
 } from "../src/lib/auth/admin-enrolment";
 import { PASSWORD_MIN_LENGTH } from "../src/lib/auth/password";
-import { ADMIN_SECRET_MIN_LENGTH } from "../src/lib/auth/secret-box";
+import { ADMIN_SECRET_MIN_LENGTH, deriveAdminKey, openSecret } from "../src/lib/auth/secret-box";
+import { hotp, normalizeTotpInput, timeStepAt, TOTP_STEP_SECONDS } from "../src/lib/auth/totp";
 import { isPlaceholderSecret } from "../src/lib/security/placeholder";
 
 const RESET_FLAG = "--reset-authenticator";
 const CLEAR_LOCKOUT_FLAG = "--clear-lockout";
 const FORGOT_PASSWORD_FLAG = "--forgot-password";
-const KNOWN_FLAGS = [RESET_FLAG, CLEAR_LOCKOUT_FLAG, FORGOT_PASSWORD_FLAG];
+const CHECK_CODE_FLAG = "--check-code";
+const KNOWN_FLAGS = [RESET_FLAG, CLEAR_LOCKOUT_FLAG, FORGOT_PASSWORD_FLAG, CHECK_CODE_FLAG];
 const FORGOT_PASSWORD_PHRASE = "replace the admin";
 
 const FAILURE_TEXT: Record<AdminEnrolmentFailure, string> = {
@@ -204,6 +207,54 @@ function describeDatabase(url: string): { host: string; database: string } | nul
   }
 }
 
+/**
+ * --check-code: says why an authenticator code is refused. Reads only; changes nothing and
+ * signs nobody in. Never prints the secret or a valid code.
+ */
+async function checkCode(prisma: PrismaClient, email: string, masterSecret: string): Promise<void> {
+  const credential = await prisma.adminCredential.findFirst({
+    where: { user: { email: { equals: email.trim(), mode: "insensitive" } } },
+    select: { totpSecretSealed: true },
+  });
+  if (!credential) {
+    fail("No admin with that email has been set up in this database.");
+  }
+  const secret = openSecret(
+    credential.totpSecretSealed,
+    deriveAdminKey(masterSecret, "totp-secret")
+  );
+  if (!secret) {
+    fail(
+      "CAUSE FOUND: the ADMIN_SESSION_SECRET in this settings file is not the one that was in use when the admin was created, so the authenticator secret cannot be read. Run this command again with --reset-authenticator, using the same settings file the website uses, and set the authenticator app up again with the new key."
+    );
+  }
+  console.log("The authenticator secret can be read with this settings file. Good.");
+  const typed = await askVisible("Type the six-digit code your app shows right now: ");
+  const code = normalizeTotpInput(typed);
+  if (!code) fail("That is not a six-digit code.");
+  const current = timeStepAt(Date.now());
+  const window = 40; // 20 minutes either side
+  let offset: number | null = null;
+  for (let delta = -window; delta <= window; delta++) {
+    if (current + delta >= 0 && hotp(secret, current + delta) === code) {
+      if (offset === null || Math.abs(delta) < Math.abs(offset)) offset = delta;
+    }
+  }
+  if (offset === null) {
+    console.log(
+      "RESULT: that code does not belong to this admin's authenticator key at any time within 20 minutes of now. The key in your app is not the one stored here: it was mistyped, or it is from an earlier set-up. Delete the Thi Bút entry in the app, run this command with --reset-authenticator, and enter the new key."
+    );
+  } else if (Math.abs(offset) <= 1) {
+    console.log(
+      "RESULT: the code is correct for this key and this computer's clock. If the website still refuses it, the website is running with a different ADMIN_SESSION_SECRET or a different database than this settings file, or the five-minute step or its five tries ran out: choose Start again and type a fresh code."
+    );
+  } else {
+    console.log(
+      `RESULT: the code belongs to this key but for a time about ${Math.abs(offset) * TOTP_STEP_SECONDS} seconds ${offset < 0 ? "behind" : "ahead of"} this computer's clock. Set the phone and this computer to automatic time, then try again.`
+    );
+  }
+}
+
 function printSecrets(result: Extract<AdminEnrolmentResult, { ok: true }>): void {
   const lines = [
     "",
@@ -246,6 +297,7 @@ async function main(): Promise<void> {
   const resetOnly = args.includes(RESET_FLAG);
   const clearLockoutOnly = args.includes(CLEAR_LOCKOUT_FLAG);
   const forgotPassword = args.includes(FORGOT_PASSWORD_FLAG);
+  const checkCodeOnly = args.includes(CHECK_CODE_FLAG);
 
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     fail("Run this in a terminal window: it asks for a password that must not be shown.");
@@ -284,6 +336,11 @@ async function main(): Promise<void> {
   try {
     const deps = { store: prismaEnrolmentStore(prisma), now: () => new Date(), masterSecret };
     const email = await askVisible("Admin email: ");
+
+    if (checkCodeOnly) {
+      await checkCode(prisma, email, masterSecret);
+      return;
+    }
 
     if (clearLockoutOnly) {
       const password = await askHidden("Current admin password (not shown): ");
