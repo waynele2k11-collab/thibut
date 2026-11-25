@@ -1076,15 +1076,17 @@ test("QA Static Sweep: zero backdoors, banned literals, client secrets, or legac
       `Unexpected reference to ADMIN_MASTER_PASSWORD in ${rel}`
     );
 
-    // Client modules must never touch PRINTFUL_API_KEY
-    const isClientModule =
-      /^\s*["']use client["']/.test(content) ||
-      rel.startsWith(path.join("src", "components") + path.sep);
-    if (isClientModule) {
+    // No module, client or server, reads an outside fulfilment provider's settings: every
+    // product is made in-house (docs/ADMIN_CLEANUP_PLAN.md, AC-03).
+    for (const providerSetting of [
+      "PRINTFUL_API_KEY",
+      "PRINTFUL_ACCESS_TOKEN",
+      "PRINTFUL_WEBHOOK_SECRET",
+    ]) {
       assert.equal(
-        content.includes("PRINTFUL_API_KEY"),
+        content.includes(providerSetting),
         false,
-        `Client module ${rel} must never reference PRINTFUL_API_KEY`
+        `Module ${rel} must not reference ${providerSetting}`
       );
     }
 
@@ -1163,8 +1165,7 @@ test("QA Static Sweep: zero backdoors, banned literals, client secrets, or legac
   for (const serverModuleRel of [
     "src/lib/stripe.ts",
     "src/lib/prisma.ts",
-    "src/lib/fulfillment/PrintfulProvider.ts",
-    "src/lib/fulfillment/getActiveProducts.ts",
+    "src/lib/studio/getActiveProducts.ts",
     "src/lib/ai/visual-provider.ts",
     "src/lib/ai/cultural-provider.ts",
     "src/lib/ai/InterpretationEngine.ts",
@@ -1991,8 +1992,6 @@ test("QA Round-2 Regression Gate: fonts quarantine & tracing, zero mock/float/he
     "DATABASE_URL=",
     "STRIPE_SECRET_KEY=",
     "STRIPE_WEBHOOK_SECRET=",
-    "PRINTFUL_API_KEY=",
-    "PRINTFUL_WEBHOOK_SECRET=",
     "ADMIN_SESSION_SECRET=",
     "DEVICE_TRUST_SECRET=",
     "DOWNLOAD_TOKEN_SECRET=",
@@ -2010,6 +2009,13 @@ test("QA Round-2 Regression Gate: fonts quarantine & tracing, zero mock/float/he
       `.env.example must document ${requiredEnvKey} (R-002)`
     );
   }
+  // No outside fulfilment provider: its settings are not documented, and CI does not set them.
+  assert.equal(/PRINTFUL/i.test(envExampleContent), false, ".env.example must not name a provider");
+  assert.equal(
+    /PRINTFUL/i.test(fs.readFileSync(path.join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8")),
+    false,
+    "CI must not set provider settings"
+  );
 
   const pkgJson = JSON.parse(
     fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8")

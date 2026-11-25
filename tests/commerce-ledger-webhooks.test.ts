@@ -27,11 +27,7 @@ import {
   postOrderRefundLedger,
   postOrderSaleLedger,
 } from "@/lib/services/LedgerService";
-import {
-  SecurityConfigError,
-  computeHmacSha256Hex,
-  verifyDownloadToken,
-} from "@/lib/security/tokens";
+import { SecurityConfigError, verifyDownloadToken } from "@/lib/security/tokens";
 import { sendDigitalDownloadEmail } from "@/lib/email";
 import { stripe } from "@/lib/stripe";
 
@@ -284,6 +280,7 @@ function createInMemoryCommerceDb() {
         category: string;
         status: string;
         defaultMarkupMinor?: bigint;
+        fulfillmentMode?: string;
       }
     >(),
     catalogVariants: new Map<string, MockCatalogVariantRow>(),
@@ -381,11 +378,6 @@ function createInMemoryCommerceDb() {
   const txModels = {
     state,
     reset,
-    fulfillmentProviderRecord: {
-      async upsert() {
-        return { id: "prov-printful", code: "PRINTFUL", name: "Printful" };
-      },
-    },
     catalogProduct: {
       async upsert({
         where,
@@ -394,7 +386,13 @@ function createInMemoryCommerceDb() {
       }: {
         where: { slug: string };
         update: { name?: string; category?: string };
-        create: { slug: string; name: string; category: string; status: string };
+        create: {
+          slug: string;
+          name: string;
+          category: string;
+          status: string;
+          fulfillmentMode?: string;
+        };
       }) {
         const existing = state.catalogProducts.get(where.slug);
         if (existing) {
@@ -1988,252 +1986,61 @@ test("T-202/INV-007: Stripe webhook handles idempotency, FAILED retry, amount mi
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 5. PRINTFUL WEBHOOK ROUTE & PROVIDER TESTS (T-107)
+// 5. NO OUTSIDE FULFILMENT PROVIDER (replaces T-107 and T-206)
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("T-107: Printful webhook enforces HMAC/token auth (401), collision-free deduplication (200), and ignores unknown events", async () => {
-  sharedMockDb.reset();
+test("no outside fulfilment provider is left: Stripe is the only webhook, and the provider client, catalog sync and print-on-demand catalog are gone", () => {
+  const root = process.cwd();
+  const exists = (rel: string) => fs.existsSync(path.join(root, rel));
 
-  process.env.PRINTFUL_WEBHOOK_SECRET =
-    "printful-webhook-secret-key-minimum-32-chars!!";
+  // The only inbound webhook is Stripe's.
+  const webhookRoutes = fs
+    .readdirSync(path.join(root, "src", "app", "api", "webhooks"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((name) =>
+      fs.readdirSync(path.join(root, "src", "app", "api", "webhooks", name), {
+        recursive: true,
+      }).some((file) => String(file).endsWith("route.ts"))
+    );
+  assert.deepEqual(webhookRoutes, ["stripe"]);
 
-  sharedMockDb.state.orders.set("ord-pf-1", {
-    id: "ord-pf-1",
-    orderNumber: "TB-PF-1",
-    buyerId: null,
-    buyerEmail: "guest@thibut.com",
-    shippingAddressJson: null,
-    currency: "USD",
-    status: "PAID",
-    paymentStatus: "SUCCEEDED",
-    fulfillmentStatus: "IN_PRODUCTION",
-    subtotalMinor: 3398n,
-    discountMinor: 0n,
-    shippingMinor: 0n,
-    taxMinor: 0n,
-    totalMinor: 3398n,
-    placedAt: new Date(),
-  });
+  for (const gone of [
+    "src/app/api/webhooks/fulfillment/printful/route.ts",
+    "src/lib/fulfillment/PrintfulProvider.ts",
+    "src/lib/fulfillment/types.ts",
+    "src/lib/services/CatalogSyncService.ts",
+    "src/app/actions/printful-admin.ts",
+    "src/app/adm/admin/(panel)/products/page.tsx",
+    "src/config/catalog.ts",
+    "src/app/actions/catalog.ts",
+    "scripts/seed-catalog.ts",
+    "scripts/import-catalog.ts",
+  ]) {
+    assert.equal(exists(gone), false, `${gone} must be removed`);
+  }
 
-  const { POST: printfulWebhookPost } = await import(
-    "@/app/api/webhooks/fulfillment/printful/route"
+  // The Studio's product list was moved, not deleted, and prices from the catalog only.
+  assert.equal(exists("src/lib/studio/getActiveProducts.ts"), true);
+  const studioProducts = fs.readFileSync(
+    path.join(root, "src", "lib", "studio", "getActiveProducts.ts"),
+    "utf8"
   );
-  const { PrintfulProvider } = await import(
-    "@/lib/fulfillment/PrintfulProvider"
-  );
+  assert.equal(studioProducts.includes("providerVariants"), false);
+  assert.match(studioProducts, /const candidateMinor = v\.baseRetailMinor;/);
 
-  const signBody = (raw: string) =>
-    computeHmacSha256Hex(raw, process.env.PRINTFUL_WEBHOOK_SECRET as string);
+  // The webhook lease only knows Stripe. Old rows keep whatever provider text they hold.
+  const lease = fs.readFileSync(
+    path.join(root, "src", "lib", "services", "stripe", "webhookLease.ts"),
+    "utf8"
+  );
+  assert.match(lease, /provider: "STRIPE";/);
+  assert.equal(/printful/i.test(lease), false);
 
-  // 1) Missing signature -> 401
-  const noSigRes = await printfulWebhookPost(
-    new Request("http://localhost:3000/api/webhooks/fulfillment/printful", {
-      method: "POST",
-      body: JSON.stringify({ type: "package_shipped", created: 1700000001 }),
-    })
-  );
-  assert.equal(noSigRes.status, 401);
-
-  // 2) Invalid signature -> 401
-  const badSigRes = await printfulWebhookPost(
-    new Request("http://localhost:3000/api/webhooks/fulfillment/printful", {
-      method: "POST",
-      headers: {
-        "x-pf-webhook-signature": "0".repeat(64),
-      },
-      body: JSON.stringify({ type: "package_shipped", created: 1700000001 }),
-    })
-  );
-  assert.equal(badSigRes.status, 401);
-
-  // 3) Unknown event -> 200 ignored, NEVER marks order FAILED!
-  const unknownBody = JSON.stringify({
-    type: "stock_updated",
-    created: 1700000010,
-    data: { order: { external_id: "TB-PF-1" } },
-  });
-  const unknownRes = await printfulWebhookPost(
-    new Request("http://localhost:3000/api/webhooks/fulfillment/printful", {
-      method: "POST",
-      headers: {
-        "x-pf-webhook-signature": signBody(unknownBody),
-      },
-      body: unknownBody,
-    })
-  );
-  assert.equal(unknownRes.status, 200);
-  const unknownJson = (await unknownRes.json()) as {
-    received: boolean;
-    ignored?: boolean;
-  };
-  assert.equal(unknownJson.ignored, true);
-  assert.equal(
-    sharedMockDb.state.orders.get("ord-pf-1")?.fulfillmentStatus,
-    "IN_PRODUCTION"
-  );
-  assert.equal(
-    sharedMockDb.state.webhookEvents.get(
-      "PRINTFUL::stock_updated:1700000010:TB-PF-1"
-    )?.status,
-    "IGNORED"
-  );
-
-  // 4) Valid package_shipped -> updates order to SHIPPED & records collision-free externalEventId
-  const shippedBody = JSON.stringify({
-    type: "package_shipped",
-    created: 1700000020,
-    data: { order: { id: 777, external_id: "TB-PF-1" } },
-  });
-  const shippedRes = await printfulWebhookPost(
-    new Request("http://localhost:3000/api/webhooks/fulfillment/printful", {
-      method: "POST",
-      headers: {
-        "x-pf-webhook-signature": signBody(shippedBody),
-      },
-      body: shippedBody,
-    })
-  );
-  assert.equal(shippedRes.status, 200);
-  assert.equal(
-    sharedMockDb.state.orders.get("ord-pf-1")?.fulfillmentStatus,
-    "SHIPPED"
-  );
-  assert.equal(
-    sharedMockDb.state.webhookEvents.get(
-      "PRINTFUL::package_shipped:1700000020:TB-PF-1"
-    )?.status,
-    "PROCESSED"
-  );
-
-  // 5) Duplicate delivery of same Printful event -> 200 { received: true, duplicate: true }
-  const duplicateRes = await printfulWebhookPost(
-    new Request("http://localhost:3000/api/webhooks/fulfillment/printful", {
-      method: "POST",
-      headers: {
-        "x-pf-webhook-signature": signBody(shippedBody),
-      },
-      body: shippedBody,
-    })
-  );
-  assert.equal(duplicateRes.status, 200);
-  const dupJson = (await duplicateRes.json()) as {
-    received: boolean;
-    duplicate?: boolean;
-  };
-  assert.equal(dupJson.duplicate, true);
-
-  // 6) Constant-time token header auth also works when valid and fails closed when wrong
-  const failedOrderBody = JSON.stringify({
-    type: "order_failed",
-    created: 1700000030,
-    data: { order: { external_id: "TB-PF-1" } },
-  });
-  const badTokenRes = await printfulWebhookPost(
-    new Request("http://localhost:3000/api/webhooks/fulfillment/printful", {
-      method: "POST",
-      headers: { "x-webhook-secret": "wrong-secret" },
-      body: failedOrderBody,
-    })
-  );
-  assert.equal(badTokenRes.status, 401);
-
-  const goodTokenRes = await printfulWebhookPost(
-    new Request("http://localhost:3000/api/webhooks/fulfillment/printful", {
-      method: "POST",
-      headers: {
-        "x-webhook-secret": process.env.PRINTFUL_WEBHOOK_SECRET as string,
-      },
-      body: failedOrderBody,
-    })
-  );
-  assert.equal(goodTokenRes.status, 200);
-  assert.equal(
-    sharedMockDb.state.orders.get("ord-pf-1")?.fulfillmentStatus,
-    "FAILED"
-  );
-
-  // 7) Missing `created` falls back to SHA-256 of payload (never `payload.type` alone)
-  const provider = new PrintfulProvider();
-  const rawNoCreated = JSON.stringify({
-    type: "package_shipped",
-    data: { order: { external_id: "TB-PF-2" } },
-  });
-  const parsedNoCreated = await provider.parseWebhook(
-    JSON.parse(rawNoCreated),
-    rawNoCreated
-  );
-  assert.notEqual(parsedNoCreated.externalEventId, "package_shipped");
-  assert.match(
-    parsedNoCreated.externalEventId,
-    /^package_shipped:sha256:[0-9a-f]{64}$/
-  );
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 6. CATALOG SYNC SERVICE TESTS (T-206)
-// ─────────────────────────────────────────────────────────────────────────────
-
-test("T-206: CatalogSyncService uses BigInt math, wraps imports in $transaction, and refreshes baseRetailMinor on re-import", async () => {
-  sharedMockDb.reset();
-
-  const { CatalogSyncService } = await import(
-    "@/lib/services/CatalogSyncService"
-  );
-  let currentVariantPrice = "12.95";
-
-  const fakeProvider = {
-    async getCatalogProductDetails(productId: string | number) {
-      return {
-        result: {
-          product: {
-            id: Number(productId),
-            title: "Bella + Canvas 3001",
-            image: "https://cdn.printful.com/product-71.jpg",
-          },
-          variants: [
-            {
-              id: 4012,
-              name: "Bella + Canvas 3001 - Black / L",
-              color: "Black",
-              color_code: "#111111",
-              size: "L",
-              price: currentVariantPrice,
-              in_stock: true,
-              image: "https://cdn.printful.com/variant-4012.jpg",
-            },
-          ],
-        },
-      };
-    },
-  };
-
-  const syncService = new CatalogSyncService(
-    fakeProvider as unknown as ConstructorParameters<typeof CatalogSyncService>[0]
-  );
-
-  // Initial import at $12.95 cost -> 1295n * 2n = 2590n -> roundUpTo99Minor = 2599n
-  await syncService.importCatalogProduct(71, "apparel", "product-71");
-  assert.equal(sharedMockDb.state.txCount, 1);
-  assert.equal(
-    sharedMockDb.state.catalogVariants.get("TB-CAT-4012")?.baseRetailMinor,
-    2599n
-  );
-
-  // Re-import after Printful price increase ($15.20 -> 1520n * 2n = 3040n -> 3099n) refreshes baseRetailMinor!
-  currentVariantPrice = "15.20";
-  await syncService.importCatalogProduct(71, "apparel", "product-71");
-  assert.equal(sharedMockDb.state.txCount, 2);
-  assert.equal(
-    sharedMockDb.state.catalogVariants.get("TB-CAT-4012")?.baseRetailMinor,
-    3099n
-  );
-
-  // Zero-price variants are rejected with PricingValidationError (no hardcoded 2500 fallback)
-  currentVariantPrice = "0.00";
-  await assert.rejects(
-    () => syncService.importCatalogProduct(71, "apparel", "product-71"),
-    PricingValidationError
-  );
+  // No source file names the provider's settings.
+  const packageJson = fs.readFileSync(path.join(root, "package.json"), "utf8");
+  assert.equal(packageJson.includes("seed-catalog"), false);
+  assert.ok(packageJson.includes('"db:seed:keepsakes"'));
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2721,12 +2528,10 @@ test("R-103: Dispute created -> funds_withdrawn -> closed (won) releases DISPUTE
   }
 });
 
-test("R-104: Stale PROCESSING WebhookEvent (>5 min) is atomically reclaimed and processed to PROCESSED on both Stripe and Printful", async () => {
+test("R-104: Stale PROCESSING WebhookEvent (>5 min) is atomically reclaimed and processed to PROCESSED", async () => {
   sharedMockDb.reset();
   const stripeSecret = "whsec_r104_lease_secret";
   process.env.STRIPE_WEBHOOK_SECRET = stripeSecret;
-  process.env.PRINTFUL_WEBHOOK_SECRET =
-    "printful-r104-secret-key-minimum-32-chars!!";
   process.env.DOWNLOAD_TOKEN_SECRET = "test-download-secret-32-chars-minimum!!";
 
   const { inngest } = await import("@/lib/inngest");
@@ -2736,9 +2541,6 @@ test("R-104: Stale PROCESSING WebhookEvent (>5 min) is atomically reclaimed and 
   try {
     const { POST: stripeWebhookPost } = await import(
       "@/app/api/webhooks/stripe/route"
-    );
-    const { POST: printfulWebhookPost } = await import(
-      "@/app/api/webhooks/fulfillment/printful/route"
     );
 
     const { settlementEvent } = seedSettledDigitalOrderForTests(
@@ -2794,66 +2596,6 @@ test("R-104: Stale PROCESSING WebhookEvent (>5 min) is atomically reclaimed and 
     assert.equal(seededRow.status, "PROCESSED");
     assert.equal(seededRow.attempts, 6);
     assert.equal(sharedMockDb.state.orders.get("ord-r104")?.status, "PAID");
-
-    // 3. Printful stale PROCESSING row (10 minutes old) is also reclaimed and processed to PROCESSED
-    sharedMockDb.state.orders.set("ord-pf-r104", {
-      id: "ord-pf-r104",
-      orderNumber: "TB-PF-R104",
-      buyerId: null,
-      buyerEmail: null,
-      shippingAddressJson: null,
-      currency: "USD",
-      status: "PAID",
-      paymentStatus: "SUCCEEDED",
-      fulfillmentStatus: "IN_PRODUCTION",
-      subtotalMinor: 3398n,
-      discountMinor: 0n,
-      shippingMinor: 0n,
-      taxMinor: 0n,
-      totalMinor: 3398n,
-      placedAt: new Date(),
-    });
-
-    const pfBody = JSON.stringify({
-      type: "package_shipped",
-      created: 1700999999,
-      data: { order: { id: 909, external_id: "TB-PF-R104" } },
-    });
-    const pfEventKey = "PRINTFUL::package_shipped:1700999999:TB-PF-R104";
-    sharedMockDb.state.webhookEvents.set(pfEventKey, {
-      id: "wh-pf-r104",
-      provider: "PRINTFUL",
-      externalEventId: "package_shipped:1700999999:TB-PF-R104",
-      eventType: "package_shipped",
-      payloadJson: JSON.parse(pfBody),
-      status: "PROCESSING",
-      attempts: 1,
-      receivedAt: tenMinAgo,
-      updatedAt: tenMinAgo,
-      processedAt: null,
-    });
-
-    const pfRes = await printfulWebhookPost(
-      new Request("http://localhost:3000/api/webhooks/fulfillment/printful", {
-        method: "POST",
-        headers: {
-          "x-pf-webhook-signature": computeHmacSha256Hex(
-            pfBody,
-            process.env.PRINTFUL_WEBHOOK_SECRET
-          ),
-        },
-        body: pfBody,
-      })
-    );
-    assert.equal(pfRes.status, 200);
-    assert.equal(
-      sharedMockDb.state.webhookEvents.get(pfEventKey)?.status,
-      "PROCESSED"
-    );
-    assert.equal(
-      sharedMockDb.state.orders.get("ord-pf-r104")?.fulfillmentStatus,
-      "SHIPPED"
-    );
   } finally {
     inngest.send = origSend;
   }
@@ -3195,7 +2937,7 @@ test("R-200: Concurrent & repeated checkouts reuse PENDING_PAYMENT order and pas
   }
 });
 
-test("R-201: src/lib/pricing has zero Number(, and catalog display prices match calculateItemQuote.totalMinor", async () => {
+test("R-201: src/lib/pricing has zero Number(, and a personalized physical item quotes to the exact BigInt total", async () => {
   sharedMockDb.reset();
 
   // 1. Verify zero `Number(` anywhere in src/lib/pricing/ and zero minorBigIntToDollarsNumber in catalog
@@ -3210,23 +2952,7 @@ test("R-201: src/lib/pricing has zero Number(, and catalog display prices match 
     );
   }
 
-  for (const rel of ["src/config/catalog.ts", "src/app/actions/catalog.ts"]) {
-    const src = fs.readFileSync(path.join(process.cwd(), rel), "utf8");
-    assert.equal(src.includes("minorBigIntToDollarsNumber"), false);
-  }
-
-  // 2. Verify static PRODUCT_CATALOG Digital Download matches 1499n ($14.99)
-  const { PRODUCT_CATALOG } = await import("@/config/catalog");
-  assert.equal(
-    PRODUCT_CATALOG["Digital Download (All 6)"]?.priceMinor,
-    DIGITAL_TOTAL_MINOR.toString()
-  );
-  assert.equal(
-    PRODUCT_CATALOG["Digital Download (All 6)"]?.formattedPrice,
-    "$14.99"
-  );
-
-  // 3. Seed CatalogProduct + CatalogVariant and verify getCatalogProducts() equals calculateItemQuote(...).totalMinor
+  // 2. Seed a CatalogProduct + CatalogVariant and quote it
   const prod = await sharedMockDb.catalogProduct.upsert({
     where: { slug: "heavy-tee" },
     update: {},
@@ -3250,29 +2976,6 @@ test("R-201: src/lib/pricing has zero Number(, and catalog display prices match 
       active: true,
     },
   });
-  await sharedMockDb.providerVariant.upsert({
-    where: {
-      providerId_catalogVariantId: {
-        providerId: "prov-printful",
-        catalogVariantId: variant.id,
-      },
-    },
-    update: {},
-    create: {
-      providerId: "prov-printful",
-      catalogVariantId: variant.id,
-      externalProductId: "71",
-      externalVariantId: "4012",
-      costMinor: 1295n,
-      currency: "USD",
-      active: true,
-    },
-  });
-
-  const { getCatalogProducts } = await import("@/app/actions/catalog");
-  const catalog = await getCatalogProducts();
-  const entry = catalog["Heavyweight Studio Tee"];
-  assert.ok(entry);
 
   const expectedQuote = calculateItemQuote({
     isDigital: false,
@@ -3287,9 +2990,8 @@ test("R-201: src/lib/pricing has zero Number(, and catalog display prices match 
     isPersonalized: true,
   });
 
-  assert.equal(entry.priceMinor, expectedQuote.totalMinor.toString());
-  assert.equal(BigInt(entry.priceMinor), 3398n);
-  assert.equal(entry.formattedPrice, "$33.98");
+  assert.equal(expectedQuote.totalMinor, 3398n);
+  assert.equal(formatUsdMinor(expectedQuote.totalMinor), "$33.98");
 });
 
 test("R-202 & R-203: Flat-rate shipping + STRIPE_TAX_ENABLED reconcile TAX_PAYABLE & SHIPPING_REVENUE to 0n, and post-commit Inngest failure never marks PAID webhook FAILED", async () => {
@@ -3354,6 +3056,8 @@ test("R-202 & R-203: Flat-rate shipping + STRIPE_TAX_ENABLED reconcile TAX_PAYAB
         name: "R202 Tee",
         category: "apparel",
         status: "ACTIVE",
+        // Only products made in-house can be bought (BRD v1.0 §10).
+        fulfillmentMode: "IN_HOUSE",
       },
     });
     const variant = await sharedMockDb.catalogVariant.upsert({
@@ -3371,13 +3075,13 @@ test("R-202 & R-203: Flat-rate shipping + STRIPE_TAX_ENABLED reconcile TAX_PAYAB
     await sharedMockDb.providerVariant.upsert({
       where: {
         providerId_catalogVariantId: {
-          providerId: "prov-printful",
+          providerId: "prov-legacy",
           catalogVariantId: variant.id,
         },
       },
       update: {},
       create: {
-        providerId: "prov-printful",
+        providerId: "prov-legacy",
         catalogVariantId: variant.id,
         externalProductId: "71",
         externalVariantId: "4012",
@@ -3421,6 +3125,60 @@ test("R-202 & R-203: Flat-rate shipping + STRIPE_TAX_ENABLED reconcile TAX_PAYAB
     const { createCheckoutSession } = await import(
       "@/lib/services/CheckoutService"
     );
+    // AC-M1: a physical item whose product is not made in-house is refused BEFORE payment.
+    // No order row is written and Stripe is never called. Covers a legacy mode and a product
+    // row with no mode at all.
+    for (const [slug, fulfillmentMode] of [
+      ["r202-legacy-tee", "PRINTFUL"],
+      ["r202-no-mode-tee", undefined],
+    ] as const) {
+      const legacyProduct = await sharedMockDb.catalogProduct.upsert({
+        where: { slug },
+        update: {},
+        create: {
+          slug,
+          name: "R202 Legacy Tee",
+          category: "apparel",
+          status: "ACTIVE",
+          ...(fulfillmentMode ? { fulfillmentMode } : {}),
+        },
+      });
+      const legacyVariant = await sharedMockDb.catalogVariant.upsert({
+        where: { sku: `TB-${slug}` },
+        update: {},
+        create: {
+          productId: legacyProduct.id,
+          sku: `TB-${slug}`,
+          color: "Black",
+          size: "L",
+          baseRetailMinor: 2599n,
+          active: true,
+        },
+      });
+      const ordersBefore = sharedMockDb.state.orders.size;
+      await assert.rejects(
+        createCheckoutSession(
+          {
+            sessionId,
+            isDigital: false,
+            catalogVariantId: legacyVariant.id,
+            placement: "front",
+            quantity: 1,
+            shippingCountry: "US",
+          },
+          { userId: "buyer-r202", anonId: null, cookieCartId: undefined }
+        ),
+        (err: unknown) =>
+          err instanceof Error &&
+          err.name === "CheckoutHttpError" &&
+          (err as Error & { status?: number }).status === 409 &&
+          err.message === "One item in your cart is not available right now",
+        `checkout must refuse a physical item whose product mode is ${String(fulfillmentMode)}`
+      );
+      assert.equal(sharedMockDb.state.orders.size, ordersBefore, "no order row is written");
+      assert.equal(capturedCreateCalls.length, 0, "Stripe is never called");
+    }
+
     const checkoutRes = await createCheckoutSession(
       {
         sessionId,

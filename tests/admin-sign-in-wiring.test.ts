@@ -862,7 +862,6 @@ test("every admin page, admin route and admin action checks access itself", () =
     "src/app/actions/gallery.ts",
     "src/app/actions/indexnow.ts",
     "src/app/actions/keepsake-admin.ts",
-    "src/app/actions/printful-admin.ts",
     "src/app/adm/admin/(panel)/background-presets/actions.ts",
   ];
   const actionFiles = collectFiles(path.join(REPO_ROOT, "src"), [".ts", ".tsx"]).filter((file) =>

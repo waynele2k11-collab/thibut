@@ -4,7 +4,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import type { ProductMock } from "@/components/studio/ProductSelectionModal";
 import { FontRegistryService, type ScriptCategory } from "@/lib/fonts/FontRegistryService";
-import { getActiveProductsForStudio } from "@/lib/fulfillment/getActiveProducts";
+import { getActiveProductsForStudio } from "@/lib/studio/getActiveProducts";
 import {
   ANON_SESSION_COOKIE,
   verifyAnonSessionToken,

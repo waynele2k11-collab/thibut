@@ -2,15 +2,18 @@ import "server-only";
 import prisma from "@/lib/prisma";
 import type { ProductMock } from "@/components/studio/ProductSelectionModal";
 import { formatMinor } from "@/lib/money";
-import { roundUpTo99Minor } from "@/lib/pricing/quote";
 
+/**
+ * The Studio's product list: active catalog products with a retail price on at least one
+ * active variant. Reads the database only; it has never called an outside provider.
+ * A variant without its own retail price is left out (there is no provider cost to price from).
+ */
 export async function getActiveProductsForStudio(): Promise<ProductMock[]> {
   const products = await prisma.catalogProduct.findMany({
     where: { status: "ACTIVE" },
     include: {
       variants: {
         include: {
-          providerVariants: true,
           mockups: {
             include: { asset: true },
           },
@@ -30,16 +33,7 @@ export async function getActiveProductsForStudio(): Promise<ProductMock[]> {
     }
 
     const resolvedVariants = activeVariants.flatMap((v) => {
-      let candidateMinor = v.baseRetailMinor;
-      if (candidateMinor <= 0n) {
-        const activePv = v.providerVariants.find(
-          (pv) => pv.active && pv.costMinor > 0n
-        );
-        if (activePv) {
-          const markup = p.defaultMarkupMinor > 0n ? p.defaultMarkupMinor : 0n;
-          candidateMinor = roundUpTo99Minor(activePv.costMinor * 2n + markup);
-        }
-      }
+      const candidateMinor = v.baseRetailMinor;
       if (candidateMinor <= 0n) {
         return [];
       }

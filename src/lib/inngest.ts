@@ -5,14 +5,13 @@
  *    - Enforces `PolicyGuard` (`allowAIRestyle`, `allowDerivative`, `INV-010`, `INV-012`) before any artwork derivative.
  *    - Renders calligraphy strictly via `CalligraphyService` (NEVER `visual-provider` raster text — `TB-CALLI-002`).
  * 2. `processOrderFulfillment` (`"order/placed"`):
- *    - Loads `Order` with `buyer`, `items` (`catalogVariant.providerVariants`, `personalizationVersion.printAsset`).
- *    - Parses & validates `order.shippingAddressJson` with `zod` and `order.buyer?.name ?? "Customer"`.
- *    - Resolves Printful integer `externalVariantId` from `ProviderVariant`.
- *    - Resolves or generates `4500x5400` `PRINT_MASTER` HTTPS URL (`printAsset` or `renderAndStorePrintMaster`).
- *    - Executes durable two-step Printful flow: `"create-printful-draft"` (`external_id: order.orderNumber`) -> `"confirm-printful-order"`.
+ *    - Every physical item is made in-house (BRD v1.0 §10). There is no outside fulfilment provider.
+ *    - Sends the order confirmation and moves the order to `IN_PRODUCTION`.
+ *    - A physical item whose product is not `IN_HOUSE` is never treated as in-house and never
+ *      skipped: the order is marked `FAILED` and the job fails (`OrderFulfillmentUnsupportedError`).
  */
 
-import { Inngest } from "inngest";
+import { Inngest, NonRetriableError } from "inngest";
 import { z } from "zod";
 import {
   culturalIntelligence,
@@ -27,16 +26,6 @@ import {
   sendOrderConfirmationEmail,
   type DigitalDownloadEmailParams,
 } from "@/lib/email";
-import { PrintfulProvider } from "@/lib/fulfillment/PrintfulProvider";
-import type { FulfillmentOrderRequest } from "@/lib/fulfillment/types";
-import {
-  adaptLegacyComposition,
-  renderAndStorePrintMaster,
-} from "@/lib/print-generator";
-import {
-  PRINT_MASTER_HEIGHT,
-  PRINT_MASTER_WIDTH,
-} from "@/lib/print/types";
 import prisma from "@/lib/prisma";
 import { CulturalKnowledgeService } from "@/lib/services/CulturalKnowledgeService";
 import { PolicyGuard } from "@/lib/services/PolicyGuard";
@@ -45,11 +34,6 @@ export interface InngestStepRunner {
   run<T>(id: string, fn: () => Promise<T> | T): Promise<T>;
 }
 
-export type PrintfulFulfillmentClient = Pick<
-  PrintfulProvider,
-  "createDraftOrder" | "confirmOrder"
->;
-
 export class OrderFulfillmentValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -57,7 +41,25 @@ export class OrderFulfillmentValidationError extends Error {
   }
 }
 
-const defaultPrintful = new PrintfulProvider();
+/** The one sentence logged and thrown when an order holds a physical item that is not made in-house. */
+export const UNSUPPORTED_FULFILMENT_MESSAGE =
+  "Order has a physical item that is not made in-house. No outside fulfilment provider exists. The order was marked FAILED for a person to handle.";
+
+/**
+ * Thrown by `executeOrderFulfillmentJob` after it has marked the order `FAILED`. The message is
+ * fixed text: it carries no customer data. Retrying cannot help, so the Inngest function turns
+ * it into a `NonRetriableError`.
+ */
+export class OrderFulfillmentUnsupportedError extends Error {
+  readonly orderId: string;
+  readonly unsupportedItemCount: number;
+  constructor(orderId: string, unsupportedItemCount: number) {
+    super(UNSUPPORTED_FULFILMENT_MESSAGE);
+    this.name = "OrderFulfillmentUnsupportedError";
+    this.orderId = orderId;
+    this.unsupportedItemCount = unsupportedItemCount;
+  }
+}
 
 // ── Inngest client singleton ──────────────────────────────────────────────────
 export const inngest = new Inngest({
@@ -108,354 +110,6 @@ export const OrderPaidEventSchema = z.object({
 });
 
 export type OrderPaidEventPayload = z.infer<typeof OrderPaidEventSchema>;
-
-const StripeNestedShippingSchema = z.object({
-  name: z.string().trim().min(1).nullable().optional(),
-  phone: z.string().trim().nullable().optional(),
-  email: z.string().email().nullable().optional(),
-  address: z.object({
-    line1: z.string().trim().min(1),
-    line2: z.string().trim().nullable().optional(),
-    city: z.string().trim().min(1),
-    state: z.string().trim().nullable().optional(),
-    country: z.string().trim().min(2).max(2),
-    postal_code: z.string().trim().min(1),
-  }),
-});
-
-const StripeFlatAddressSchema = z.object({
-  name: z.string().trim().min(1).nullable().optional(),
-  phone: z.string().trim().nullable().optional(),
-  email: z.string().email().nullable().optional(),
-  line1: z.string().trim().min(1),
-  line2: z.string().trim().nullable().optional(),
-  city: z.string().trim().min(1),
-  state: z.string().trim().nullable().optional(),
-  country: z.string().trim().min(2).max(2),
-  postal_code: z.string().trim().min(1),
-});
-
-const InternalShippingAddressSchema = z.object({
-  name: z.string().trim().min(1).nullable().optional(),
-  company: z.string().trim().nullable().optional(),
-  address1: z.string().trim().min(1),
-  address2: z.string().trim().nullable().optional(),
-  city: z.string().trim().min(1),
-  stateCode: z.string().trim().nullable().optional(),
-  state: z.string().trim().nullable().optional(),
-  countryCode: z.string().trim().min(2).max(2).optional(),
-  country: z.string().trim().min(2).max(2).optional(),
-  zip: z.string().trim().min(1).optional(),
-  postalCode: z.string().trim().min(1).optional(),
-  postal_code: z.string().trim().min(1).optional(),
-  phone: z.string().trim().nullable().optional(),
-  email: z.string().email().nullable().optional(),
-});
-
-/**
- * Validates `order.shippingAddressJson` strictly with Zod and merges `order.buyer?.name ?? "Customer"`.
- * Never falls back to hardcoded placeholder street addresses (T-203).
- */
-export function parseValidatedOrderRecipient(params: {
-  shippingAddressJson: unknown;
-  buyerName?: string | null;
-  buyerEmail?: string | null;
-}): FulfillmentOrderRequest["recipient"] {
-  const fallbackName = params.buyerName?.trim() || "Customer";
-  const fallbackEmail = params.buyerEmail?.trim() || undefined;
-
-  if (
-    params.shippingAddressJson === null ||
-    params.shippingAddressJson === undefined
-  ) {
-    throw new OrderFulfillmentValidationError(
-      "Order is missing shippingAddressJson"
-    );
-  }
-
-  const nested = StripeNestedShippingSchema.safeParse(
-    params.shippingAddressJson
-  );
-  if (nested.success) {
-    const { address } = nested.data;
-    const email = nested.data.email || fallbackEmail;
-    if (!email) {
-      throw new OrderFulfillmentValidationError(
-        "Order is missing recipient email for Printful fulfillment"
-      );
-    }
-    return {
-      name: nested.data.name?.trim() || fallbackName,
-      address1: address.line1,
-      address2: address.line2 || undefined,
-      city: address.city,
-      stateCode: address.state || undefined,
-      countryCode: address.country.toUpperCase(),
-      zip: address.postal_code,
-      phone: nested.data.phone || undefined,
-      email,
-    };
-  }
-
-  const flat = StripeFlatAddressSchema.safeParse(params.shippingAddressJson);
-  if (flat.success) {
-    const email = flat.data.email || fallbackEmail;
-    if (!email) {
-      throw new OrderFulfillmentValidationError(
-        "Order is missing recipient email for Printful fulfillment"
-      );
-    }
-    return {
-      name: flat.data.name?.trim() || fallbackName,
-      address1: flat.data.line1,
-      address2: flat.data.line2 || undefined,
-      city: flat.data.city,
-      stateCode: flat.data.state || undefined,
-      countryCode: flat.data.country.toUpperCase(),
-      zip: flat.data.postal_code,
-      phone: flat.data.phone || undefined,
-      email,
-    };
-  }
-
-  const internal = InternalShippingAddressSchema.safeParse(
-    params.shippingAddressJson
-  );
-  if (internal.success) {
-    const country = internal.data.countryCode ?? internal.data.country;
-    const zip =
-      internal.data.zip ??
-      internal.data.postalCode ??
-      internal.data.postal_code;
-    const email = internal.data.email || fallbackEmail;
-    if (!country || !zip || !email) {
-      throw new OrderFulfillmentValidationError(
-        "Order shippingAddressJson is missing countryCode, zip, or email"
-      );
-    }
-    return {
-      name: internal.data.name?.trim() || fallbackName,
-      company: internal.data.company || undefined,
-      address1: internal.data.address1,
-      address2: internal.data.address2 || undefined,
-      city: internal.data.city,
-      stateCode: internal.data.stateCode || internal.data.state || undefined,
-      countryCode: country.toUpperCase(),
-      zip,
-      phone: internal.data.phone || undefined,
-      email,
-    };
-  }
-
-  throw new OrderFulfillmentValidationError(
-    "Order shippingAddressJson failed schema validation"
-  );
-}
-
-function resolvePublicPrintAssetUrl(objectKey: string): string {
-  const trimmed = objectKey.trim();
-  if (!trimmed) {
-    throw new OrderFulfillmentValidationError("Print asset objectKey is empty");
-  }
-  if (trimmed === "https://example.com/fallback.png") {
-    throw new OrderFulfillmentValidationError(
-      "Placeholder fallback print asset URL is forbidden"
-    );
-  }
-
-  if (trimmed.startsWith("https://")) {
-    const parsed = new URL(trimmed);
-    if (parsed.hostname.toLowerCase() === "example.com") {
-      throw new OrderFulfillmentValidationError(
-        "Example domain print asset URLs are forbidden"
-      );
-    }
-    return parsed.toString();
-  }
-
-  if (trimmed.startsWith("http://")) {
-    throw new OrderFulfillmentValidationError(
-      "Print master asset URL must use HTTPS"
-    );
-  }
-
-  const rawBase =
-    process.env.PUBLIC_ASSET_BASE_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "https://storage.thibut.com";
-
-  const baseUrl = new URL(rawBase);
-  if (baseUrl.protocol !== "https:") {
-    throw new OrderFulfillmentValidationError(
-      "Configured PUBLIC_ASSET_BASE_URL must use HTTPS"
-    );
-  }
-
-  const normalizedBase = baseUrl.toString().endsWith("/")
-    ? baseUrl.toString()
-    : `${baseUrl.toString()}/`;
-  return new URL(trimmed.replace(/^\/+/, ""), normalizedBase).toString();
-}
-
-function resolvePrintfulExternalVariantId(
-  providerVariants:
-    | ReadonlyArray<{
-        externalVariantId: string;
-        active?: boolean;
-        provider?: { code: string; active?: boolean } | null;
-      }>
-    | null
-    | undefined
-): string {
-  if (!providerVariants || providerVariants.length === 0) {
-    throw new OrderFulfillmentValidationError(
-      "CatalogVariant has no mapped ProviderVariant records for fulfillment"
-    );
-  }
-
-  const preferred =
-    providerVariants.find(
-      (pv) =>
-        pv.active !== false &&
-        (!pv.provider ||
-          (pv.provider.code.toUpperCase() === "PRINTFUL" &&
-            pv.provider.active !== false))
-    ) ?? providerVariants.find((pv) => pv.active !== false);
-
-  if (!preferred) {
-    throw new OrderFulfillmentValidationError(
-      "No active Printful ProviderVariant found for order item"
-    );
-  }
-
-  const cleanId = preferred.externalVariantId.trim();
-  if (!/^\d+$/.test(cleanId) || Number.parseInt(cleanId, 10) <= 0) {
-    throw new OrderFulfillmentValidationError(
-      `ProviderVariant externalVariantId "${cleanId}" is not a valid Printful integer variant ID`
-    );
-  }
-
-  return cleanId;
-}
-
-interface OrderItemForPrintResolution {
-  id: string;
-  designVersionId: string;
-  placement: string;
-  quantity: number;
-  catalogVariant?: {
-    providerVariants?: Array<{
-      externalVariantId: string;
-      active?: boolean;
-      provider?: { code: string; active?: boolean } | null;
-    }>;
-  } | null;
-  personalizationVersion?: {
-    id: string;
-    styleSnapshot?: unknown;
-    printAsset?: {
-      id: string;
-      objectKey: string;
-      width?: number | null;
-      height?: number | null;
-    } | null;
-    session?: {
-      compositionJson?: unknown;
-    } | null;
-    designVersion?: {
-      assets?: Array<{
-        type: string;
-        asset: {
-          id: string;
-          objectKey: string;
-          width?: number | null;
-          height?: number | null;
-        };
-      }>;
-    } | null;
-  } | null;
-  snapshot?: {
-    personalizationJson?: unknown;
-  } | null;
-}
-
-async function resolveItemPrintMasterUrl(params: {
-  item: OrderItemForPrintResolution;
-  buyerId: string | null;
-}): Promise<string> {
-  const { item, buyerId } = params;
-  const existingPrintAsset = item.personalizationVersion?.printAsset;
-
-  if (existingPrintAsset?.objectKey) {
-    if (
-      (existingPrintAsset.width !== null &&
-        existingPrintAsset.width !== undefined &&
-        existingPrintAsset.width !== PRINT_MASTER_WIDTH) ||
-      (existingPrintAsset.height !== null &&
-        existingPrintAsset.height !== undefined &&
-        existingPrintAsset.height !== PRINT_MASTER_HEIGHT)
-    ) {
-      throw new OrderFulfillmentValidationError(
-        `Existing printAsset ${existingPrintAsset.id} has invalid dimensions ${String(existingPrintAsset.width)}x${String(existingPrintAsset.height)}; expected ${PRINT_MASTER_WIDTH}x${PRINT_MASTER_HEIGHT}`
-      );
-    }
-    return resolvePublicPrintAssetUrl(existingPrintAsset.objectKey);
-  }
-
-  // Check if a DesignComposition JSON exists to deterministically render a 4500x5400 @ 300 DPI PRINT_MASTER
-  const rawComposition =
-    item.personalizationVersion?.session?.compositionJson ??
-    item.personalizationVersion?.styleSnapshot ??
-    item.snapshot?.personalizationJson ??
-    null;
-
-  if (rawComposition !== null && rawComposition !== undefined) {
-    const composition = adaptLegacyComposition(rawComposition);
-    const rendered = await renderAndStorePrintMaster(composition, {
-      ownerId: buyerId,
-      designVersionId: item.designVersionId,
-      personalizationVersionId: item.personalizationVersion?.id,
-      persistAsset: true,
-    });
-
-    if (
-      rendered.width !== PRINT_MASTER_WIDTH ||
-      rendered.height !== PRINT_MASTER_HEIGHT ||
-      !rendered.objectKey
-    ) {
-      throw new OrderFulfillmentValidationError(
-        "Generated Print Master failed 4500x5400 verification"
-      );
-    }
-
-    return resolvePublicPrintAssetUrl(rendered.objectKey);
-  }
-
-  // Non-personalized DesignVersion PRINT_MASTER fallback
-  const dvPrintMaster = item.personalizationVersion?.designVersion?.assets?.find(
-    (a) => a.type === "PRINT_MASTER"
-  )?.asset;
-
-  if (dvPrintMaster?.objectKey) {
-    if (
-      (dvPrintMaster.width !== null &&
-        dvPrintMaster.width !== undefined &&
-        dvPrintMaster.width !== PRINT_MASTER_WIDTH) ||
-      (dvPrintMaster.height !== null &&
-        dvPrintMaster.height !== undefined &&
-        dvPrintMaster.height !== PRINT_MASTER_HEIGHT)
-    ) {
-      throw new OrderFulfillmentValidationError(
-        `DesignVersion PRINT_MASTER asset has invalid dimensions; expected ${PRINT_MASTER_WIDTH}x${PRINT_MASTER_HEIGHT}`
-      );
-    }
-    return resolvePublicPrintAssetUrl(dvPrintMaster.objectKey);
-  }
-
-  throw new OrderFulfillmentValidationError(
-    `OrderItem ${item.id} has neither a 4500x5400 printAsset nor a valid DesignComposition`
-  );
-}
 
 // ── 1. Personalization Job Handler (T-400, T-409) ────────────────────────────
 
@@ -668,13 +322,11 @@ export async function triggerPersonalizationPipeline(
 export async function executeOrderFulfillmentJob(params: {
   event: { data: unknown };
   step: InngestStepRunner;
-  printfulClient?: PrintfulFulfillmentClient;
 }) {
   const { orderId } = OrderPlacedEventSchema.parse(params.event.data);
   const { step } = params;
-  const printfulClient = params.printfulClient ?? defaultPrintful;
 
-  // Step 1: Load Order with buyer, catalogVariant.providerVariants, personalizationVersion.printAsset
+  // Step 1: Load the order with its buyer and each item's product
   const order = await step.run("fetch-order", async () => {
     const found = await prisma.order.findUnique({
       where: { id: orderId },
@@ -685,22 +337,6 @@ export async function executeOrderFulfillmentJob(params: {
             catalogVariant: {
               include: {
                 product: true,
-                providerVariants: {
-                  include: { provider: true },
-                },
-              },
-            },
-            personalizationVersion: {
-              include: {
-                printAsset: true,
-                session: true,
-                designVersion: {
-                  include: {
-                    assets: {
-                      include: { asset: true },
-                    },
-                  },
-                },
               },
             },
             snapshot: true,
@@ -729,131 +365,77 @@ export async function executeOrderFulfillmentJob(params: {
     );
   }
 
-  // In-house made-to-order items (BRD v1.0 §10) are produced by ThiBút, never by Printful.
-  const inHouseItems = order.items.filter(
+  // A digital item has neither a product nor a variant; the "order/paid" job delivers it.
+  // Everything else is a physical item and must be made in-house (BRD v1.0 §10).
+  const physicalItems = order.items.filter(
+    (item) => Boolean(item.catalogVariantId) || Boolean(item.catalogProductId)
+  );
+  if (physicalItems.length === 0) {
+    return {
+      skipped: true as const,
+      reason: "Order has no physical items",
+      providerOrderId: order.externalFulfillmentId ?? null,
+    };
+  }
+
+  const inHouseItems = physicalItems.filter(
     (item) => item.catalogVariant?.product?.fulfillmentMode === "IN_HOUSE"
   );
-  const providerItems = order.items.filter(
+  const unsupportedItems = physicalItems.filter(
     (item) => item.catalogVariant?.product?.fulfillmentMode !== "IN_HOUSE"
   );
 
-  if (inHouseItems.length > 0) {
-    await step.run("notify-in-house-order", async () => {
-      const recipientEmail = order.buyer?.email ?? order.buyerEmail ?? null;
-      if (!recipientEmail) {
-        return { sent: false as const, reason: "no-recipient-email" };
-      }
-      const result = await sendOrderConfirmationEmail({
-        email: recipientEmail,
-        orderNumber: order.orderNumber,
-        items: inHouseItems.map((item) => ({
-          title: item.snapshot?.designTitle ?? "ThiBút keepsake",
-          detail: [
-            item.snapshot?.productName,
-            item.snapshot?.size,
-            item.placement === "both" ? "Double-sided" : "Single-sided",
-          ]
-            .filter((part): part is string => Boolean(part))
-            .join(" · "),
-          quantity: item.quantity,
-        })),
-      });
-      return { sent: result.sent };
-    });
-  }
-
-  if (providerItems.length === 0) {
-    await step.run("start-in-house-production", async () => {
+  // Never treat an unknown item as in-house and never skip it: fail the whole order, visibly.
+  if (unsupportedItems.length > 0) {
+    await step.run("mark-order-unfulfillable", async () => {
       await prisma.order.update({
         where: { id: order.id },
-        data: { fulfillmentStatus: "IN_PRODUCTION" },
+        data: { fulfillmentStatus: "FAILED" },
       });
-      return { fulfillmentStatus: "IN_PRODUCTION" as const };
+      return { fulfillmentStatus: "FAILED" as const };
     });
-    return {
-      success: true as const,
-      providerOrderId: null,
-      fulfillmentStatus: "IN_PRODUCTION" as const,
-    };
+    console.error(`[Order Fulfilment] ${UNSUPPORTED_FULFILMENT_MESSAGE}`, {
+      orderId: order.id,
+      unsupportedItemCount: unsupportedItems.length,
+    });
+    throw new OrderFulfillmentUnsupportedError(order.id, unsupportedItems.length);
   }
 
-  // Step 2: Create Printful Draft Order (idempotent via external_id: order.orderNumber)
-  const draftResult = await step.run("create-printful-draft", async () => {
-    if (order.externalFulfillmentId) {
-      return { providerOrderId: order.externalFulfillmentId };
+  await step.run("notify-in-house-order", async () => {
+    const recipientEmail = order.buyer?.email ?? order.buyerEmail ?? null;
+    if (!recipientEmail) {
+      return { sent: false as const, reason: "no-recipient-email" };
     }
-
-    const recipient = parseValidatedOrderRecipient({
-      shippingAddressJson: order.shippingAddressJson,
-      buyerName: order.buyer?.name ?? "Customer",
-      buyerEmail: order.buyer?.email ?? order.buyerEmail ?? null,
-    });
-
-    const fulfillmentItems: FulfillmentOrderRequest["items"] = [];
-
-    for (const item of providerItems) {
-      const externalVariantId = resolvePrintfulExternalVariantId(
-        item.catalogVariant?.providerVariants
-      );
-      const printMasterUrl = await resolveItemPrintMasterUrl({
-        item,
-        buyerId: order.buyerId ?? null,
-      });
-
-      const placementOpt = (item.placement || "front").toLowerCase();
-      const files =
-        placementOpt === "both"
-          ? [
-              { url: printMasterUrl, placement: "front" },
-              { url: printMasterUrl, placement: "back" },
-            ]
-          : [{ url: printMasterUrl, placement: placementOpt }];
-
-      fulfillmentItems.push({
-        variantId: externalVariantId,
+    const result = await sendOrderConfirmationEmail({
+      email: recipientEmail,
+      orderNumber: order.orderNumber,
+      items: inHouseItems.map((item) => ({
+        title: item.snapshot?.designTitle ?? "ThiBút keepsake",
+        detail: [
+          item.snapshot?.productName,
+          item.snapshot?.size,
+          item.placement === "both" ? "Double-sided" : "Single-sided",
+        ]
+          .filter((part): part is string => Boolean(part))
+          .join(" · "),
         quantity: item.quantity,
-        files,
-      });
-    }
-
-    const draftOrder = await printfulClient.createDraftOrder({
-      externalId: order.orderNumber,
-      recipient,
-      items: fulfillmentItems,
+      })),
     });
-
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        externalFulfillmentId: draftOrder.id,
-      },
-    });
-
-    return { providerOrderId: draftOrder.id };
+    return { sent: result.sent };
   });
 
-  // Step 3: Confirm Printful Order & Transition Order.fulfillmentStatus -> PROCESSING
-  await step.run("confirm-printful-order", async () => {
-    await printfulClient.confirmOrder(draftResult.providerOrderId);
-
+  await step.run("start-in-house-production", async () => {
     await prisma.order.update({
       where: { id: order.id },
-      data: {
-        externalFulfillmentId: draftResult.providerOrderId,
-        fulfillmentStatus: "PROCESSING",
-      },
+      data: { fulfillmentStatus: "IN_PRODUCTION" },
     });
-
-    return {
-      providerOrderId: draftResult.providerOrderId,
-      fulfillmentStatus: "PROCESSING" as const,
-    };
+    return { fulfillmentStatus: "IN_PRODUCTION" as const };
   });
 
   return {
     success: true as const,
-    providerOrderId: draftResult.providerOrderId,
-    fulfillmentStatus: "PROCESSING" as const,
+    providerOrderId: null,
+    fulfillmentStatus: "IN_PRODUCTION" as const,
   };
 }
 
@@ -863,14 +445,23 @@ export const processOrderFulfillment = inngest.createFunction(
     name: "Process Order Fulfillment",
     triggers: [{ event: "order/placed" }],
   },
-  async ({ event, step }) =>
-    executeOrderFulfillmentJob({
-      event: { data: event.data },
-      step: {
-        run: async <T>(id: string, fn: () => Promise<T> | T): Promise<T> =>
-          (await step.run(id, fn)) as T,
-      },
-    })
+  async ({ event, step }) => {
+    try {
+      return await executeOrderFulfillmentJob({
+        event: { data: event.data },
+        step: {
+          run: async <T>(id: string, fn: () => Promise<T> | T): Promise<T> =>
+            (await step.run(id, fn)) as T,
+        },
+      });
+    } catch (err: unknown) {
+      if (err instanceof OrderFulfillmentUnsupportedError) {
+        // The order is already marked FAILED; a retry would only find it "not PENDING".
+        throw new NonRetriableError(err.message, { cause: err });
+      }
+      throw err;
+    }
+  }
 );
 
 export async function triggerOrderFulfillment(

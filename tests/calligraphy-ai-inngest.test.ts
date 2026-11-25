@@ -206,12 +206,7 @@ interface MockOrderRow {
     catalogVariantId?: string | null;
     catalogVariant?: {
       id: string;
-      providerVariants: Array<{
-        id: string;
-        externalVariantId: string;
-        active: boolean;
-        provider?: { code: string; active: boolean } | null;
-      }>;
+      product?: { fulfillmentMode: string } | null;
     } | null;
     personalizationVersion?: {
       id: string;
@@ -894,6 +889,8 @@ const {
   executeOrderFulfillmentJob,
   triggerOrderFulfillment,
   OrderFulfillmentValidationError,
+  OrderFulfillmentUnsupportedError,
+  UNSUPPORTED_FULFILMENT_MESSAGE,
 } = await import("@/lib/inngest");
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1685,10 +1682,10 @@ test("T-105 & T-401: /api/personalization/analyze + /generate + /detect-language
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 6. INNGEST GENERATION & TWO-STEP PRINTFUL FULFILLMENT (T-203, T-400, T-409)
+// 6. INNGEST GENERATION & IN-HOUSE ORDER FULFILMENT (T-203, T-400, T-409)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test("T-203, T-400 & T-409: Inngest personalization enforces PolicyGuard + CalligraphyService, and order fulfillment runs two-step Printful flow on 'order/placed'", async () => {
+test("T-203, T-400 & T-409: Inngest personalization enforces PolicyGuard + CalligraphyService, and order fulfillment on 'order/placed' fails an order that holds an item not made in-house", async () => {
   resetState();
   resetRateLimitStore();
 
@@ -1812,86 +1809,33 @@ test("T-203, T-400 & T-409: Inngest personalization enforces PolicyGuard + Calli
     inngest.send = origSend;
   }
 
-  // C. Reject missing shipping address or non-integer externalVariantId or example.com fallback URL
-  state.orders.set("ord-bad-address", {
-    id: "ord-bad-address",
-    orderNumber: "TB-BAD-ADDR",
+  // C. An order with no items is rejected before anything is written
+  state.orders.set("ord-empty", {
+    id: "ord-empty",
+    orderNumber: "TB-EMPTY",
     buyerId: null,
     buyerEmail: "buyer@example.org",
     buyer: null,
     shippingAddressJson: null,
     externalFulfillmentId: null,
     fulfillmentStatus: "PENDING",
-    items: [
-      {
-        id: "item-bad",
-        designVersionId: "dv-1",
-        placement: "front",
-        quantity: 1,
-        catalogVariant: {
-          id: "cv-uuid",
-          providerVariants: [
-            {
-              id: "pv-1",
-              externalVariantId: "4012",
-              active: true,
-              provider: { code: "PRINTFUL", active: true },
-            },
-          ],
-        },
-        personalizationVersion: {
-          id: "pver-1",
-          printAsset: {
-            id: "asset-pm-1",
-            objectKey: "https://storage.thibut.com/print-masters/pm1.png",
-            width: 4500,
-            height: 5400,
-          },
-        },
-      },
-    ],
+    items: [],
   });
 
   await assert.rejects(
     () =>
       executeOrderFulfillmentJob({
-        event: { data: { orderId: "ord-bad-address" } },
+        event: { data: { orderId: "ord-empty" } },
         step: stepRunner,
       }),
     (err: unknown) => err instanceof OrderFulfillmentValidationError
   );
+  assert.equal(state.orders.get("ord-empty")?.fulfillmentStatus, "PENDING");
 
-  // D. Full Two-Step Printful Fulfillment with dynamic 4500x5400 Print Master generation + integer externalVariantId
-  process.env.DATABASE_URL = "postgresql://mock-unit-test";
-  const printfulCalls: Array<{
-    stepType: "draft" | "confirm";
-    payload: unknown;
-  }> = [];
-
-  const mockPrintful = {
-    async createDraftOrder(req: unknown) {
-      printfulCalls.push({ stepType: "draft", payload: req });
-      // Verify order.fulfillmentStatus is STILL PENDING during draft creation before confirm step
-      return {
-        id: "98765432",
-        externalId: "TB-2026-0001",
-        status: "DRAFT" as const,
-        totalCostMinor: 1495n,
-        currency: "USD",
-      };
-    },
-    async confirmOrder(providerOrderId: string) {
-      // Verify externalFulfillmentId was ALREADY persisted in DB by "create-printful-draft"!
-      assert.equal(
-        state.orders.get("ord-good")?.externalFulfillmentId,
-        "98765432"
-      );
-      printfulCalls.push({ stepType: "confirm", payload: providerOrderId });
-    },
-  };
-
-  state.orders.set("ord-good", {
-    id: "ord-good",
+  // D. A physical item that is not made in-house fails the order. There is no outside
+  //    fulfilment provider: the item is never treated as in-house and never skipped.
+  state.orders.set("ord-not-in-house", {
+    id: "ord-not-in-house",
     orderNumber: "TB-2026-0001",
     buyerId: "buyer-77",
     buyerEmail: "linh@thibut.com",
@@ -1915,21 +1859,14 @@ test("T-203, T-400 & T-409: Inngest personalization enforces PolicyGuard + Calli
     fulfillmentStatus: "PENDING",
     items: [
       {
-        id: "item-pre-rendered",
+        id: "item-legacy-garment",
         designVersionId: "dv-pre",
         placement: "front",
         quantity: 2,
-        catalogVariantId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", // Internal UUID must NEVER be sent to Printful!
+        catalogVariantId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
         catalogVariant: {
           id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-          providerVariants: [
-            {
-              id: "pv-printful-4012",
-              externalVariantId: "4012",
-              active: true,
-              provider: { code: "PRINTFUL", active: true },
-            },
-          ],
+          product: { fulfillmentMode: "PRINTFUL" },
         },
         personalizationVersion: {
           id: "pver-pre",
@@ -1943,119 +1880,67 @@ test("T-203, T-400 & T-409: Inngest personalization enforces PolicyGuard + Calli
         },
       },
       {
-        id: "item-dynamic-render",
-        designVersionId: "dv-dyn",
+        id: "item-keepsake",
+        designVersionId: "dv-keepsake",
         placement: "both",
         quantity: 1,
         catalogVariantId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
         catalogVariant: {
           id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-          providerVariants: [
-            {
-              id: "pv-printful-4018",
-              externalVariantId: "4018",
-              active: true,
-              provider: { code: "PRINTFUL", active: true },
-            },
-          ],
+          product: { fulfillmentMode: "IN_HOUSE" },
         },
-        personalizationVersion: {
-          id: "pver-dyn",
-          printAsset: null, // Forces renderAndStorePrintMaster(4500x5400 @ 300 DPI)!
-          session: {
-            compositionJson: {
-              version: 1,
-              canvas: { width: 4500, height: 5400, dpi: 300 },
-              placement: "both",
-              layers: [
-                {
-                  id: "cal-1",
-                  type: "calligraphy",
-                  zIndex: 1,
-                  visible: true,
-                  opacity: 1,
-                  text: "Bình An",
-                  fontFamily: "UtmThuphapThienAn",
-                  colorHex: "#121212",
-                  layout: "HORIZONTAL",
-                  transform: { x: 0.5, y: 0.5, scale: 1, rotation: 0 },
-                },
-              ],
-            },
-          },
-        },
+        personalizationVersion: null,
       },
     ],
   });
 
   recordedSteps.length = 0;
-  const fulfillResult = await executeOrderFulfillmentJob({
-    event: { data: { orderId: "ord-good" } },
-    step: stepRunner,
-    printfulClient: mockPrintful,
-  });
-
-  assert.equal(fulfillResult.success, true);
-  assert.equal(fulfillResult.providerOrderId, "98765432");
-
-  // Verify exact two-step durability sequence
-  assert.deepEqual(recordedSteps, [
-    "fetch-order",
-    "create-printful-draft",
-    "confirm-printful-order",
-  ]);
-  assert.equal(printfulCalls.length, 2);
-  assert.equal(printfulCalls[0].stepType, "draft");
-  assert.equal(printfulCalls[1].stepType, "confirm");
-  assert.equal(printfulCalls[1].payload, "98765432");
-
-  const draftPayload = printfulCalls[0].payload as {
-    externalId: string;
-    recipient: {
-      name: string;
-      address1: string;
-      city: string;
-      stateCode?: string;
-      countryCode: string;
-      zip: string;
-    };
-    items: Array<{
-      variantId: string;
-      quantity: number;
-      files: Array<{ url: string; placement: string }>;
-    }>;
+  const loggedErrors: unknown[][] = [];
+  const originalConsoleError = console.error;
+  console.error = (...args: unknown[]) => {
+    loggedErrors.push(args);
   };
+  try {
+    await assert.rejects(
+      () =>
+        executeOrderFulfillmentJob({
+          event: { data: { orderId: "ord-not-in-house" } },
+          step: stepRunner,
+        }),
+      (err: unknown) =>
+        err instanceof OrderFulfillmentUnsupportedError &&
+        err.message === UNSUPPORTED_FULFILMENT_MESSAGE &&
+        err.unsupportedItemCount === 1
+    );
+  } finally {
+    console.error = originalConsoleError;
+  }
 
-  assert.equal(draftPayload.externalId, "TB-2026-0001");
-  assert.equal(draftPayload.recipient.name, "Linh Nguyễn");
-  assert.equal(draftPayload.recipient.address1, "742 Evergreen Terrace");
-  assert.equal(draftPayload.recipient.city, "Seattle");
-  assert.equal(draftPayload.recipient.stateCode, "WA");
-  assert.equal(draftPayload.recipient.countryCode, "US");
-  assert.equal(draftPayload.recipient.zip, "98101");
+  // Marked FAILED for a person to handle; the in-house item was not confirmed or started.
+  assert.deepEqual(recordedSteps, ["fetch-order", "mark-order-unfulfillable"]);
+  const failedOrder = state.orders.get("ord-not-in-house");
+  assert.equal(failedOrder?.fulfillmentStatus, "FAILED");
+  assert.equal(failedOrder?.externalFulfillmentId, null);
 
-  // Integer Printful variant IDs — NEVER internal UUIDs
-  assert.equal(draftPayload.items[0].variantId, "4012");
-  assert.equal(draftPayload.items[1].variantId, "4018");
-  assert.equal(draftPayload.items[1].files.length, 2);
+  // No print master is rendered for an order any more.
+  assert.equal(state.personalizationVersionUpdates.length, 0);
+
+  // Logged once as a fixed sentence with ids and a count only.
+  assert.equal(loggedErrors.length, 1);
   assert.equal(
-    draftPayload.items[1].files[0].url.startsWith(
-      "https://storage.thibut.com/print-masters/"
-    ),
-    true
+    loggedErrors[0][0],
+    `[Order Fulfilment] ${UNSUPPORTED_FULFILMENT_MESSAGE}`
   );
+  assert.equal(JSON.stringify(loggedErrors).includes("linh@thibut.com"), false);
+  assert.equal(JSON.stringify(loggedErrors).includes("Evergreen"), false);
 
-  // Verify dynamic Print Master stored 4500x5400 Asset and updated PersonalizationVersion
-  assert.equal(state.personalizationVersionUpdates.length, 1);
-  const generatedPmAsset = state.assets.get(
-    state.personalizationVersionUpdates[0].printAssetId
-  );
-  assert.ok(generatedPmAsset);
-  assert.equal(generatedPmAsset.width, 4500);
-  assert.equal(generatedPmAsset.height, 5400);
-
-  // Order persisted externalFulfillmentId and transitioned to PROCESSING
-  const updatedOrder = state.orders.get("ord-good");
-  assert.equal(updatedOrder?.externalFulfillmentId, "98765432");
-  assert.equal(updatedOrder?.fulfillmentStatus, "PROCESSING");
+  // A second run finds the order no longer PENDING and changes nothing.
+  recordedSteps.length = 0;
+  const rerun = await executeOrderFulfillmentJob({
+    event: { data: { orderId: "ord-not-in-house" } },
+    step: stepRunner,
+  });
+  assert.equal("skipped" in rerun && rerun.skipped, true);
+  assert.deepEqual(recordedSteps, ["fetch-order"]);
+  assert.equal(state.orders.get("ord-not-in-house")?.fulfillmentStatus, "FAILED");
 });

@@ -50,7 +50,7 @@ export default function ArtistsPage() {
             Thi Bút helps introduce it to the world.&rdquo;
           </h2>
           <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">
-            We handle cultural interpretation engines, automated 300 DPI print-master rendering, worldwide Printful fulfillment, and secure customer billing so creators can focus on original artistic expression.
+            We handle cultural interpretation engines, automated 300 DPI print-master rendering, made-to-order production, and secure customer billing so creators can focus on original artistic expression.
           </p>
         </Card>
 

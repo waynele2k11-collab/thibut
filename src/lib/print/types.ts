@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 /**
- * Authoritative Print Master Constants (INV-013 & Printful Production Spec).
+ * Authoritative Print Master Constants (INV-013). 4500 x 5400 px at 300 DPI is a 15 x 18 inch
+ * print area; the size is kept so every stored print master and calligraphy render stays valid.
  * Canvas dimensions are strictly server-controlled and NEVER supplied by clients.
  */
 export const PRINT_MASTER_WIDTH = 4500 as const;

@@ -21,7 +21,7 @@
 | Double-sided price | `CatalogProduct.sidePricing = "MULTIPLIER"` and `doubleSidedMultiplierBps` (16000 = 1.6×). See `resolveSideSurchargeMinor` in `src/lib/pricing/quote.ts`. |
 | Storefront read model | `src/lib/catalog/keepsakeCatalog.ts` |
 | Buy Now | `addCatalogItemToCartAction` in `src/app/actions/cart.ts` → existing cart → `executeCartCheckout` → Stripe → webhook settlement. No personalization session is created. |
-| Fulfilment | `executeOrderFulfillmentJob` in `src/lib/inngest.ts`: in-house items skip Printful, the order moves to `IN_PRODUCTION`, and a confirmation email is sent. |
+| Fulfilment | `executeOrderFulfillmentJob` in `src/lib/inngest.ts`: every physical item is made in-house: a confirmation email is sent and the order moves to `IN_PRODUCTION`. An order that holds a physical item whose product is not `IN_HOUSE` is marked `FAILED` and the job fails; there is no outside fulfilment provider. |
 | Administration | `/adm/admin/catalog` (prices, status, multiplier), `/adm/admin/catalog/designs`, `/adm/admin/catalog/categories`, and fulfilment controls on `/adm/admin/orders`. Actions in `src/app/actions/keepsake-admin.ts`. |
 | Seed | `npm run db:seed:keepsakes` (idempotent; never overwrites administrator edits). |
 

@@ -23,7 +23,7 @@ export function isPrismaUniqueConstraintError(err: unknown): boolean {
  * Race-free WebhookEvent lease acquisition & stale PROCESSING recovery (INV-007, R-104).
  */
 export async function claimWebhookEventLease(params: {
-  provider: "STRIPE" | "PRINTFUL";
+  provider: "STRIPE";
   externalEventId: string;
   eventType: string;
   payloadJson: Prisma.InputJsonValue;

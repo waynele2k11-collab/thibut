@@ -944,6 +944,9 @@ model CatalogVariant {
 }
 
 // Fulfillment provider registry (§32)
+// LEGACY, UNUSED: every product is made in-house and no code reads or writes this table.
+// It cannot be dropped while ProviderVariant (below) still points at it. Kept for history;
+// see docs/ADMIN_CLEANUP_PLAN.md (AC-11) before dropping it.
 model FulfillmentProviderRecord {
   id       String  @id @default(uuid())
   code     String  @unique // "PRINTFUL" | "PRINTIFY" | "GELATO"
@@ -955,6 +958,11 @@ model FulfillmentProviderRecord {
 }
 
 // Maps Thi Bút catalog → provider external IDs (§33)
+// LEGACY, STILL READ. No code writes it any more, but pricing (src/lib/pricing/quote.ts),
+// checkout (src/lib/services/CheckoutService.ts, src/app/checkout/checkoutLoader.ts) and the
+// cart (src/app/actions/cart.ts) READ it for the provider cost of a variant. DO NOT DROP this
+// table, and do not remove the relation, until those reads are gone: every cart and checkout
+// query would fail. An active row with a zero cost or a non-USD currency makes a quote throw.
 model ProviderVariant {
   id                String                    @id @default(uuid())
   providerId        String
@@ -991,6 +999,7 @@ model DesignProduct {
 }
 
 // Print area specifications per product placement (§35)
+// LEGACY: written only by the removed print-on-demand catalog seed. Kept for history (AC-11).
 model PrintArea {
   id               String         @id @default(uuid())
   catalogProductId String
@@ -1007,6 +1016,9 @@ model PrintArea {
 }
 
 // Customer-facing preview mockups (§36) — NOT production assets
+// LEGACY, STILL READ. No code writes it any more. The Studio product list
+// (src/lib/studio/getActiveProducts.ts) and the checkout page loader
+// (src/app/checkout/checkoutLoader.ts) READ it for preview images. Do not drop it while they do.
 model ProductMockup {
   id                       String              @id @default(uuid())
   personalizationVersionId String?
@@ -1113,6 +1125,8 @@ model Order {
   anonymousSessionId      String?
   shippingAddressJson     Json?
   stripeCheckoutSessionId String?           @unique
+  // LEGACY: an outside provider's order id on orders that predate in-house production.
+  // Never written now; kept for ever as order history.
   externalFulfillmentId   String?           @unique
   trackingNumber          String?
   trackingCarrier         String?

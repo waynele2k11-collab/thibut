@@ -503,9 +503,57 @@ test("T-301 / INV-013: generatePrintMasterPng renders 4500x5400 RGBA transparent
       nonTransparentPixels > 1000,
       `Expected > 1000 rendered ink pixels, got ${nonTransparentPixels}`
     );
+
+    // 4. Stored print master: with a database, the render is saved as a 4500x5400 Asset, linked
+    //    to its design version as PRINT_MASTER and set on the PersonalizationVersion. (This check
+    //    lived in the order-fulfilment test while print masters were rendered for an outside
+    //    print provider. The renderer is unchanged. `renderAndStorePrintMaster` has no caller
+    //    left in src/: it is kept for calligraphy. `api/print-master` and the digital download
+    //    service call `generatePrintMasterPng`, which this function wraps.)
+    resetHarnessState();
+    process.env.DATABASE_URL = "postgresql://mock-unit-test";
+    harnessState.personalizationVersions.set("pver-stored-master", {
+      id: "pver-stored-master",
+      printAssetId: null,
+      styleSnapshot: null,
+    });
+
+    const stored = await renderAndStorePrintMaster(fixture, {
+      ownerId: null,
+      designVersionId: "dv-stored-master",
+      personalizationVersionId: "pver-stored-master",
+      persistAsset: true,
+    });
+
+    assert.equal(stored.width, PRINT_MASTER_WIDTH);
+    assert.equal(stored.height, PRINT_MASTER_HEIGHT);
+    assert.ok(stored.assetId, "a stored print master returns its Asset id");
+    assert.ok(stored.objectKey);
+
+    const storedAsset = harnessState.assets.get(stored.assetId ?? "");
+    assert.ok(storedAsset, "the Asset row was created");
+    assert.equal(storedAsset.width, 4500);
+    assert.equal(storedAsset.height, 5400);
+    assert.equal(storedAsset.mimeType, "image/png");
+    assert.equal(storedAsset.visibility, "PRIVATE");
+    assert.equal(storedAsset.sha256, stored.sha256);
+
+    assert.equal(
+      harnessState.personalizationVersions.get("pver-stored-master")?.printAssetId,
+      stored.assetId
+    );
+    assert.deepEqual(harnessState.designVersionAssets, [
+      {
+        designVersionId: "dv-stored-master",
+        assetId: stored.assetId,
+        type: "PRINT_MASTER",
+      },
+    ]);
   } finally {
     if (savedDbUrl !== undefined) {
       process.env.DATABASE_URL = savedDbUrl;
+    } else {
+      delete process.env.DATABASE_URL;
     }
   }
 });

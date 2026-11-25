@@ -112,8 +112,6 @@ jobs:
       FULFILLMENT_SECRET_KEY: ci-fulfillment-secret-minimum-32-chars!!
       STRIPE_SECRET_KEY: sk_test_ci_e2e_key_non_placeholder
       STRIPE_WEBHOOK_SECRET: whsec_ci_e2e_webhook_secret_key
-      PRINTFUL_API_KEY: pf_ci_test_token
-      PRINTFUL_WEBHOOK_SECRET: pf_whsec_ci_test_secret
       INNGEST_SIGNING_KEY: signkey-prod-ci-e2e-minimum-32-chars!!
       BLOB_READ_WRITE_TOKEN: vercel_blob_rw_ci_test_token
     steps:

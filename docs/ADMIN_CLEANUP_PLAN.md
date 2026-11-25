@@ -160,7 +160,7 @@ After removal the job must not quietly accept an item that is not in-house. Rule
 | Item | Holds | Action |
 | --- | --- | --- |
 | `CatalogProduct.fulfillmentMode`, default `'PRINTFUL'` (migration `0003_keepsake_catalog`) | Mode per product | Change the default to `'IN_HOUSE'` in a new additive migration, so a product made without a mode can never count as Printful. No row is changed |
-| `FulfillmentProviderRecord`, `ProviderVariant` | Printful ids and costs | Leave. Mark "legacy, unused". Optional drop later (AC-09) only after a count shows zero rows |
+| `FulfillmentProviderRecord`, `ProviderVariant` | Printful ids and costs | Leave. `FulfillmentProviderRecord` is unused. `ProviderVariant` is NOT unused: pricing, checkout and the cart still read it (see AC-11). Neither can be dropped while those reads exist |
 | `PrintArea`, `ProductMockup` | Print areas and mockup images | Leave. The Studio's product list still reads `ProductMockup` |
 | `Order.externalFulfillmentId` | Printful order id on old orders | Leave for ever: order history |
 | `WebhookEvent.provider` | Text | Leave |
@@ -275,7 +275,7 @@ If the custom-order work has taken migration number `0005` first, AC-05 takes th
 | AC-08 | Gallery: remove admin Gallery, `components/gallery/*`, `api/checkout/gallery`, `api/admin/gallery/*`, `app/actions/gallery.ts`, the gallery branch in `CheckoutService.ts` and `pricing/quote.ts`, gallery scripts, `public/gallery` | D-2 | One cycle, with a security-first review because checkout changes |
 | AC-09 | Admin Studio as a brush-text tool: no product step, no quote, no cart | D-5 | Two cycles |
 | AC-10 | Digital downloads: remove the service, route, tokens, links and the `order/paid` job | D-4 | One cycle |
-| AC-11 | Optional database clean-up: drop `ProviderVariant`, `FulfillmentProviderRecord` and, if the Studio no longer reads them, `ProductMockup` and `PrintArea` | AC-03, AC-09, zero-row counts, founder approval | One migration. Never the order, payment, ledger or earnings tables |
+| AC-11 | Optional database clean-up. `ProviderVariant` CANNOT be dropped while code reads it: `src/lib/pricing/quote.ts` (provider cost per item), `src/lib/services/CheckoutService.ts`, `src/app/actions/cart.ts` and `src/app/checkout/checkoutLoader.ts` all include `providerVariants`, so every cart and checkout query would fail. `FulfillmentProviderRecord` cannot be dropped before it, because `ProviderVariant` points at it. `ProductMockup` is read by the Studio product list and the checkout page loader. Order of work: first a reviewed code change that removes those reads without changing any price, then zero-row counts, then the drop. `PrintArea` has no reader left | AC-03, AC-09, the reads removed in a security-reviewed step, zero-row counts, founder approval | One migration. Never the order, payment, ledger or earnings tables |
 
 ## 9. Founder decisions
 
@@ -322,3 +322,52 @@ Remove nothing now. This is what each phase would leave unused.
 | AC-10 (digital downloads) | Nothing | `@vercel/blob` is still used by fonts, uploads and print masters |
 
 **`npm audit` (31 findings):** unknown. `package-lock.json` does not say which packages the findings are in, and no audit could be run here. Removing the three AI packages and their dependencies may remove some. Run `npm audit` on the Mac before and after AC-07 and compare; do not run `npm audit fix --force`.
+
+## Founder go-ahead (2026-11-25)
+
+The founder approved steps 1 to 3 (AC-01, AC-02, AC-03) with "yes, 1-3". He was shown the seven decisions with a recommendation each and asked to proceed on them; the recommendations are used where a step needs one (D-6 hidden pages stay reachable by address; D-7 Users hidden). D-1 to D-5 are not acted on in these three steps. Branch: `feat/admin-cleanup`.
+
+## As built: AC-01, AC-02, AC-03 (2026-11-25)
+
+Not yet reviewed. Nothing here has run in a browser, a build or against a database.
+
+| Task | What was done |
+| --- | --- |
+| AC-01 | The two provider settings left `env.ts` (required list and schema) and the `launch-readiness` list. A test now proves the live site starts without them and still refuses to start without each setting the business uses |
+| AC-02 | Sidebar: Dashboard, Orders, Catalog, Keepsake Editor, Fonts, Calligraphy, Admin Studio, Finance. Dashboard: orders awaiting production, paid orders this month, active keepsake products, published catalog designs, failed orders, recent orders. Orders and the fulfilment action say "handled by an outside provider (legacy)". Finance lists the ledger only. Sellers, Art, Gallery, Presets, Knowledge and Users keep their pages and their guard |
+| AC-03 | Removed: the Products page, `printful-admin.ts`, `PrintfulProvider.ts`, `fulfillment/types.ts`, `CatalogSyncService.ts`, the provider webhook route, `config/catalog.ts`, `actions/catalog.ts`, `public/mockups/printful/` and ten scripts. `getActiveProducts.ts` moved to `src/lib/studio/` without its provider-cost fallback. The two names left `.env.example` and CI. `db:seed` left `package.json` |
+
+**The paid-order job now.** Every physical item must be in-house. If one is not (any mode other than exactly `IN_HOUSE`, or a product that cannot be read), the job marks the order `FAILED`, logs one fixed sentence with the order id and a count, and fails without retry. Nothing is confirmed or started for that order, including its in-house items. The Orders page shows it as FAILED, and it can be moved by hand from there. Digital items (no product and no variant) are left to the `order/paid` job.
+
+**Differences from the plan.**
+
+| Plan | As built | Why |
+| --- | --- | --- |
+| AC-01 marks the two `.env.example` lines "legacy" and AC-03 removes them | Removed once, in AC-03, together with the CI values | One change per file |
+| AC-03 list of scripts to remove | Also removed `disable-hardcoded.ts` and `disable-no-mockups.ts` | Each switches off every product without a provider mapping or a mockup, which is every keepsake product |
+| `seed-catalog.ts` removed after moving preset seeding | Removed as is | `prisma/seed-presets.ts` already seeds the presets; `create-admin.ts` creates the ADMIN role |
+| `app/actions/fonts.ts` removed as dead code | Left | It belongs to the font library, which stays |
+| Image host removed (AC-04) | Not done | AC-04 needs the two database counts in section 4.5 first |
+| Default of `fulfillmentMode` (AC-05) | Not changed | Needs a migration. Legacy tables and the order's provider id are marked in schema comments only |
+
+**Removed files are parked, not deleted.** They sit in `_to_delete/` with a `.removed` suffix (Git ignores the folder and sees the originals as deleted). On your computer: `rm -rf _to_delete`.
+
+**One thing to do outside the code.** `scripts/fetch-printful-mockups.ts` and `scripts/test-printful.js` both held the same real provider key written into the file. It is in the Git history (commit `fabb491`) and has been pushed. Revoke that key in the provider's dashboard.
+
+## After the review (2026-11-25)
+
+The independent review is `docs/ADMIN_CLEANUP_REVIEW.md`: no Blocker, one High (the provider key above, an action outside the code), two Medium, six Low. What changed afterwards:
+
+| Finding | What was done |
+| --- | --- |
+| AC-M1 a paid order could end FAILED | Stopped before payment. `assertPhysicalItemsMadeInHouse` in `CheckoutService.ts` refuses the cart, direct and gallery checkouts with "One item in your cart is not available right now" (409) when a physical item's product is not exactly `IN_HOUSE`; both add-to-cart actions refuse such a product too. The rule is in `src/lib/catalog/fulfilmentMode.ts`. It is a validation only: no price, total, ledger, earnings, order-creation or signature code changed. The paid-order job keeps its fail-loudly rule as the last line of defence |
+| AC-M1, the admin signal | The dashboard shows an alert at the top, "N paid orders need attention", linking to `Orders?filter=attention`. The Orders page shows the reason under such an order |
+| AC-L2 legacy orders stay in the counts | The alert and the "awaiting production" number leave out any order that carries an outside provider's order id |
+| AC-M2 wrong "unused" comment | The schema comment on `ProviderVariant` now says it is still read by pricing, checkout and the cart and must not be dropped; the comment on `ProductMockup` names both readers. AC-11 above was rewritten. Schema change: comments only |
+| AC-L1 moving a FAILED order was one click | The form shows a required confirmation box for such an order, and the action refuses the move without it. `Order` has no notes field, so no reason is stored |
+| AC-L3 digital items | Kept the new behaviour. The old job sent every item that was not in-house, digital items included, to the provider step, which threw for an item with no provider variant: a print-on-demand accident, not a rule. Digital-only orders are no longer counted as "awaiting production" |
+| AC-L4 | `renderAndStorePrintMaster` has no caller left in `src/`; it is kept on purpose for calligraphy (it renders and stores the 4500 × 5400 print master). `api/print-master` and the digital download service call `generatePrintMasterPng`. The test comment was corrected |
+| Hidden page without its own guard | `background-presets/new/page.tsx` now calls `requireAdmin()` like the other admin pages |
+| AC-L5, AC-L6 | Left: already scheduled (AC-04) or cosmetic |
+
+Still to do from AC-M1: AC-05 (make `IN_HOUSE` the column default), which needs a migration the founder runs.
